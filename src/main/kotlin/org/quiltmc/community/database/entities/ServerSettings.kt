@@ -13,7 +13,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.Serializable
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.ServerSettingsCollection
-import org.quiltmc.community.database.enums.QuiltServerType
+import org.quiltmc.community.database.enums.LadysnakeServerType
 import org.quiltmc.community.getGuildIgnoring403
 
 @Serializable
@@ -27,7 +27,7 @@ data class ServerSettings(
     var cozyLogChannel: Snowflake? = null,
     var messageLogCategory: Snowflake? = null,
 
-    var quiltServerType: QuiltServerType? = null,
+    var ladysnakeServerType: LadysnakeServerType? = null,
     var leaveServer: Boolean = false,
 ) : Entity<Snowflake> {
     suspend fun save() {
@@ -84,10 +84,10 @@ data class ServerSettings(
         builder.append("\n\n")
 
         if (showQuiltSettings) {
-            builder.append("**Quilt Server Type:** ")
+            builder.append("**Ladysnake Server Type:** ")
 
-            if (quiltServerType != null) {
-                builder.append(quiltServerType!!.readableName)
+            if (ladysnakeServerType != null) {
+                builder.append(ladysnakeServerType!!.readableName)
             } else {
                 builder.append(":x: Not configured")
             }

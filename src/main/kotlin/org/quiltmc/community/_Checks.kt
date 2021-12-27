@@ -8,41 +8,41 @@ import dev.kord.common.entity.Permission
 import mu.KotlinLogging
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 
-suspend fun CheckContext<*>.inCommunity() {
+suspend fun CheckContext<*>.inLadysnake() {
     anyGuild()
 
     if (!passed) {
         return
     }
 
-    val logger = KotlinLogging.logger("org.quiltmc.community.inCommunity")
+    val logger = KotlinLogging.logger("org.quiltmc.community.inLadysnake")
 
     val collection = getKoin().get<ServerSettingsCollection>()
-    val settings = collection.getCommunity()
+    val settings = collection.getLadysnake()
 
     if (settings == null) {
-        logger.failed("Community server hasn't been configured yet.")
-        fail("Community server hasn't been configured yet.")
+        logger.failed("Ladysnake server hasn't been configured yet.")
+        fail("Ladysnake server hasn't been configured yet.")
     } else {
         inGuild(settings._id)
     }
 }
 
-suspend fun CheckContext<*>.inToolchain() {
+suspend fun CheckContext<*>.inYoutube() {
     anyGuild()
 
     if (!passed) {
         return
     }
 
-    val logger = KotlinLogging.logger("org.quiltmc.community.inCommunity")
+    val logger = KotlinLogging.logger("org.quiltmc.community.inYoutube")
 
     val collection = getKoin().get<ServerSettingsCollection>()
-    val settings = collection.getToolchain()
+    val settings = collection.getYoutube()
 
     if (settings == null) {
-        logger.failed("Toolchain server hasn't been configured yet.")
-        fail("Toolchain server hasn't been configured yet.")
+        logger.failed("Youtube server hasn't been configured yet.")
+        fail("Youtube server hasn't been configured yet.")
     } else {
         inGuild(settings._id)
     }
@@ -89,21 +89,21 @@ suspend fun CheckContext<*>.hasPermissionInMainGuild(perm: Permission) {
     }
 }
 
-suspend fun CheckContext<*>.inQuiltGuild() {
+suspend fun CheckContext<*>.inLadysnakeGuild() {
     if (!passed) {
         return
     }
 
-    val logger = KotlinLogging.logger("org.quiltmc.community.inQuiltGuild")
+    val logger = KotlinLogging.logger("org.quiltmc.community.inLadysnakeGuild")
     val guild = guildFor(event)
 
     if (guild == null) {
         logger.nullGuild(event)
 
-        fail("Must be in one of the Quilt servers")
+        fail("Must be in one of the Ladysnake servers")
     } else {
         if (guild.id !in GUILDS) {
-            fail("Must be in one of the Quilt servers")
+            fail("Must be in one of the Ladysnake servers")
         }
     }
 }
@@ -113,9 +113,9 @@ suspend fun CheckContext<*>.hasBaseModeratorRole() {
         return
     }
 
-    inQuiltGuild()
+    inLadysnakeGuild()
 
-    if (this.passed) {  // They're on a Quilt guild
+    if (this.passed) {  // They're on a Ladysnake guild
         val logger = KotlinLogging.logger("org.quiltmc.community.hasBaseModeratorRole")
         val member = memberFor(event)?.asMemberOrNull()
 
@@ -125,9 +125,9 @@ suspend fun CheckContext<*>.hasBaseModeratorRole() {
             fail()
         } else {
             if (!member.roleIds.any { it in MODERATOR_ROLES }) {
-                logger.failed("Member does not have a Quilt base moderator role")
+                logger.failed("Member does not have a Ladysnake base moderator role")
 
-                fail("Must be a Quilt moderator, with the `Moderators` role")
+                fail("Must be a Ladysnake moderator, with the `Moderators` role")
             }
         }
     }
@@ -147,9 +147,9 @@ suspend fun CheckContext<*>.notHasBaseModeratorRole() {
         fail()
     } else {
         if (member.roleIds.any { it in MODERATOR_ROLES }) {
-            logger.failed("Member has a Quilt base moderator role")
+            logger.failed("Member has a Ladysnake base moderator role")
 
-            fail("Must **not** be a Quilt moderator")
+            fail("Must **not** be a Ladysnake moderator")
         }
     }
 }

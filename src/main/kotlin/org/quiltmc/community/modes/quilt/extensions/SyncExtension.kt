@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
 import org.quiltmc.community.GUILDS
-import org.quiltmc.community.inQuiltGuild
+import org.quiltmc.community.inLadysnakeGuild
 
 private val BAN_PERMS: Array<Permission> = arrayOf(Permission.BanMembers, Permission.Administrator)
 private val ROLE_PERMS: Array<Permission> = arrayOf(Permission.ManageRoles, Permission.Administrator)
@@ -103,14 +103,14 @@ class SyncExtension : Extension() {
             name = "sync"
             description = "Synchronisation commands."
 
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { hasBanOrRolePerms() }
 
             chatCommand {
                 name = "bans"
                 description = "Additively synchronise bans between all servers, so that everything matches."
 
-                check { inQuiltGuild() }
+                check { inLadysnakeGuild() }
                 check { hasBanPerms() }
 
                 requireBotPermissions(Permission.BanMembers)
@@ -175,7 +175,7 @@ class SyncExtension : Extension() {
                 name = "roles"
                 description = "Additively synchronise roles between all servers, so that everything matches."
 
-                check { inQuiltGuild() }
+                check { inLadysnakeGuild() }
                 check { hasRolePerms() }
 
                 requireBotPermissions(Permission.ManageRoles)
@@ -276,7 +276,7 @@ class SyncExtension : Extension() {
         }
 
         event<BanAddEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             action {
                 val guilds = getGuilds().filter { it.id != event.guildId }
@@ -293,7 +293,7 @@ class SyncExtension : Extension() {
         }
 
         event<BanRemoveEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             action {
                 val guilds = getGuilds().filter { it.id != event.guildId }
@@ -307,7 +307,7 @@ class SyncExtension : Extension() {
         }
 
         event<MemberUpdateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             action {
                 val delta = MemberDelta.from(event.old, event.member) ?: return@action

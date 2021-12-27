@@ -54,7 +54,7 @@ import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import java.time.format.DateTimeFormatter
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 val SPEAKING_PERMISSIONS: Array<Permission> = arrayOf(
@@ -65,7 +65,7 @@ val SPEAKING_PERMISSIONS: Array<Permission> = arrayOf(
     Permission.SendMessagesInThreads,
 )
 
-val DELETE_DELAY = Duration.seconds(10)  // Seconds
+val DELETE_DELAY = 10.seconds  // Seconds
 
 class UtilityExtension : Extension() {
     override val name: String = "utility"
@@ -85,7 +85,7 @@ class UtilityExtension : Extension() {
 
     override suspend fun setup() {
         event<MessageCreateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { failIf { event.message.type != MessageType.ChannelPinnedMessage } }
             check { failIf { event.message.data.authorId != event.kord.selfId } }
 
@@ -97,7 +97,7 @@ class UtilityExtension : Extension() {
         }
 
         event<TextChannelThreadCreateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { failIf(event.channel.ownerId == kord.selfId) }
             check { failIf(event.channel.member != null) }  // We only want thread creation, not join
 
@@ -107,8 +107,8 @@ class UtilityExtension : Extension() {
                 logger.info { "Thread created by ${owner.tag}" }
 
                 val role = when (event.channel.guildId) {
-                    COMMUNITY_GUILD -> event.channel.guild.getRole(COMMUNITY_MODERATOR_ROLE)
-                    TOOLCHAIN_GUILD -> event.channel.guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
+                    LADYSNAKE_GUILD -> event.channel.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
+                    YOUTUBE_GUILD -> event.channel.guild.getRole(YOUTUBE_MODERATOR_ROLE)
 
                     else -> return@action
                 }
@@ -119,7 +119,7 @@ class UtilityExtension : Extension() {
                 }
 
                 event.channel.withTyping {
-                    delay(Duration.Companion.seconds(3))
+                    delay(3.seconds)
                 }
 
                 message.edit {
@@ -127,7 +127,7 @@ class UtilityExtension : Extension() {
                 }
 
                 event.channel.withTyping {
-                    delay(Duration.Companion.seconds(3))
+                    delay(3.seconds)
                 }
 
                 message.edit {
@@ -794,8 +794,8 @@ class UtilityExtension : Extension() {
 
                 action {
                     val roleId = when (guild!!.id) {
-                        COMMUNITY_GUILD -> COMMUNITY_MODERATOR_ROLE
-                        TOOLCHAIN_GUILD -> TOOLCHAIN_MODERATOR_ROLE
+                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
                         else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
@@ -849,8 +849,8 @@ class UtilityExtension : Extension() {
 
                 action {
                     val roleId = when (guild!!.id) {
-                        COMMUNITY_GUILD -> COMMUNITY_MODERATOR_ROLE
-                        TOOLCHAIN_GUILD -> TOOLCHAIN_MODERATOR_ROLE
+                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
                         else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
@@ -916,8 +916,8 @@ class UtilityExtension : Extension() {
                     }
 
                     val staffRoleId = when (guild?.id) {
-                        COMMUNITY_GUILD -> COMMUNITY_MODERATOR_ROLE
-                        TOOLCHAIN_GUILD -> TOOLCHAIN_MODERATOR_ROLE
+                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
                         else -> null
                     }

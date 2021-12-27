@@ -39,7 +39,7 @@ import org.quiltmc.community.*
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import java.time.Instant as jtInstant
 
@@ -71,7 +71,7 @@ class MessageLogExtension : Extension() {
         messageChannel = Channel(50)
 
         event<GuildCreateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             action {
                 addRotator(event.guild)
@@ -79,7 +79,7 @@ class MessageLogExtension : Extension() {
         }
 
         event<MessageBulkDeleteEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             action {
                 // Do this as early as possible so that we can catch the usual creation events
@@ -220,7 +220,7 @@ class MessageLogExtension : Extension() {
         }
 
         event<MessageDeleteEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             check {
                 failIf(
@@ -230,7 +230,7 @@ class MessageLogExtension : Extension() {
 
             action {
                 // Wait here in case we get a bulk deletion event
-                delay(Duration.seconds(1))
+                delay(1.seconds)
 
                 if (event.messageId in bulkDeletedMessages) {
                     bulkDeletedMessages.remove(event.messageId)
@@ -305,7 +305,7 @@ class MessageLogExtension : Extension() {
         }
 
         event<MessageUpdateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
 
             check {
                 failIf(

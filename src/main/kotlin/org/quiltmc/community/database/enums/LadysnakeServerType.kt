@@ -4,7 +4,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.C
 import kotlinx.serialization.Serializable
 
 @Serializable
-enum class QuiltServerType(override val readableName: String) : ChoiceEnum {
-    COMMUNITY("Community"),
-    TOOLCHAIN("Toolchain")
+enum class LadysnakeServerType(override val readableName: String) : ChoiceEnum {
+    LADYSNAKE("Ladysnake"),
+    YOUTUBE("Rat's YouTube"),
 }

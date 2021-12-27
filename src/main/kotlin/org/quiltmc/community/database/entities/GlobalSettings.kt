@@ -12,6 +12,9 @@ import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import org.quiltmc.community.GITHUB_LOG_CHANNEL
+import org.quiltmc.community.LADYSNAKE_GUILD
+import org.quiltmc.community.SUGGESTION_CHANNEL
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.getGuildIgnoring403
@@ -25,13 +28,13 @@ data class GlobalSettings(
     var appealsInvite: String? = null,
     var githubToken: String? = null,
 
-    val quiltGuilds: MutableSet<Snowflake> = mutableSetOf(
-        Snowflake(817576132726620200U),  // Community
-        Snowflake(833872081585700874U),  // Toolchain
+    val ladysnakeGuilds: MutableSet<Snowflake> = mutableSetOf(
+        LADYSNAKE_GUILD,
+//        YOUTUBE_GUILD,
     ),
 
-    var suggestionChannel: Snowflake? = Snowflake(832353359074689084U),
-    var githubLogChannel: Snowflake? = Snowflake(906285091481849876U),
+    var suggestionChannel: Snowflake? = SUGGESTION_CHANNEL,
+    var githubLogChannel: Snowflake? = GITHUB_LOG_CHANNEL,
 ) : Entity<UUID> {
     suspend fun save() {
         val collection = getKoin().get<GlobalSettingsCollection>()
@@ -79,10 +82,10 @@ data class GlobalSettings(
         }
 
         builder.append("\n\n")
-        builder.append("__**Quilt Servers**__\n")
+        builder.append("__**Ladysnake Servers**__\n")
 
-        if (quiltGuilds.isNotEmpty()) {
-            quiltGuilds.forEach {
+        if (ladysnakeGuilds.isNotEmpty()) {
+            ladysnakeGuilds.forEach {
                 val guild = kord.getGuildIgnoring403(it)
 
                 if (guild == null) {

@@ -13,8 +13,8 @@ import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.rest.builder.message.create.allowedMentions
 import org.koin.core.component.inject
-import org.quiltmc.community.TOOLCHAIN_GUILD
-import org.quiltmc.community.TOOLCHAIN_MODERATOR_ROLE
+import org.quiltmc.community.YOUTUBE_GUILD
+import org.quiltmc.community.YOUTUBE_MODERATOR_ROLE
 import org.quiltmc.community.database.collections.TeamCollection
 import org.quiltmc.community.database.entities.Team
 
@@ -28,7 +28,7 @@ class SubteamsExtension : Extension() {
             name = "team"
             description = "Manage your teams"
 
-            guild(TOOLCHAIN_GUILD)
+            guild(YOUTUBE_GUILD)
 
             publicSubCommand(::TeamArguments) {
                 name = "add"
@@ -89,10 +89,10 @@ class SubteamsExtension : Extension() {
             name = "manage-teams"
             description = "Change which roles can manage each other"
 
-            guild(TOOLCHAIN_GUILD)
+            guild(YOUTUBE_GUILD)
 
-            allowRole(TOOLCHAIN_MODERATOR_ROLE)
-            check { hasRole(TOOLCHAIN_MODERATOR_ROLE) }
+            allowRole(YOUTUBE_MODERATOR_ROLE)
+            check { hasRole(YOUTUBE_MODERATOR_ROLE) }
 
             ephemeralSubCommand(::ManageTeamAllowArguments) {
                 name = "allow"
@@ -132,17 +132,17 @@ class SubteamsExtension : Extension() {
     }
 
     inner class TeamArguments : Arguments() {
-        val role by role("team", "Which team to add", requiredGuild = { TOOLCHAIN_GUILD })
-        val targetUser by member("user", "Who to add to the team", requiredGuild = { TOOLCHAIN_GUILD })
+        val role by role("team", "Which team to add", requiredGuild = { YOUTUBE_GUILD })
+        val targetUser by member("user", "Who to add to the team", requiredGuild = { YOUTUBE_GUILD })
     }
 
     inner class ManageTeamAllowArguments : Arguments() {
-        val superior by role("superior", "The superior role", requiredGuild = { TOOLCHAIN_GUILD })
-        val inferior by role("inferior", "The inferior role", requiredGuild = { TOOLCHAIN_GUILD })
+        val superior by role("superior", "The superior role", requiredGuild = { YOUTUBE_GUILD })
+        val inferior by role("inferior", "The inferior role", requiredGuild = { YOUTUBE_GUILD })
     }
 
     inner class ManageTeamDisallowArguments : Arguments() {
-        val role by role("role", "Role to disallow managing for", requiredGuild = { TOOLCHAIN_GUILD })
+        val role by role("role", "Role to disallow managing for", requiredGuild = { YOUTUBE_GUILD })
     }
 
     private suspend fun Member.mayManageRole(role: Role): Boolean =

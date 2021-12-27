@@ -29,11 +29,11 @@ import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.GlobalSettings
 import org.quiltmc.community.database.entities.ServerSettings
-import org.quiltmc.community.database.enums.QuiltServerType
+import org.quiltmc.community.database.enums.LadysnakeServerType
 import org.quiltmc.community.hasPermissionInMainGuild
-import org.quiltmc.community.inToolchain
+import org.quiltmc.community.inYoutube
 import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 // TODO: Implement these settings in other parts of the bot, and add logging
@@ -66,7 +66,7 @@ class SettingsExtension : Extension() {
                 } else if (settings.leaveServer) {
                     logger.info { "Leaving guild, as configured: ${event.guild.name} (${event.guild.id.value})" }
 
-                    delay(Duration.seconds(2))
+                    delay(2.seconds)
 
                     event.guild.leave()
                 }
@@ -144,7 +144,7 @@ class SettingsExtension : Extension() {
                 name = "github-log-channel"
                 description = "Set or get the channel used for logging GitHub command actions"
 
-                check { inToolchain() }
+                check { inYoutube() }
 
                 action {
                     val settings = globalSettings.get()!!
@@ -168,48 +168,49 @@ class SettingsExtension : Extension() {
 
             ephemeralSubCommand(::GuildArg) {
                 name = "add-guild"
-                description = "Mark a server as an official Quilt server"
+                description = "Mark a server as an official Ladysnake server"
 
                 action {
                     val settings = globalSettings.get()!!
+                    val server = arguments.server
 
-                    if (arguments.server.id in settings.quiltGuilds) {
+                    if (server.id in settings.ladysnakeGuilds) {
                         respond {
-                            content = ":x: **${arguments.server.name}** is already marked as an official Quilt guild."
+                            content = ":x: **${server.name}** is already marked as an official Ladysnake guild."
                         }
 
                         return@action
                     }
 
-                    settings.quiltGuilds.add(arguments.server.id)
+                    settings.ladysnakeGuilds.add(server.id)
                     settings.save()
 
                     respond {
-                        content = "**${arguments.server.name}** marked as an official Quilt guild."
+                        content = "**${server.name}** marked as an official Ladysnake guild."
                     }
                 }
             }
 
             ephemeralSubCommand(::GuildSnowflakeArg) {
                 name = "remove-guild"
-                description = "Unmark a server as an official Quilt server"
+                description = "Unmark a server as an official Ladysnake server"
 
                 action {
                     val settings = globalSettings.get()!!
 
-                    if (arguments.serverId !in settings.quiltGuilds) {
+                    if (arguments.serverId !in settings.ladysnakeGuilds) {
                         respond {
-                            content = ":x: `${arguments.serverId.value}` is not marked as an official Quilt guild."
+                            content = ":x: `${arguments.serverId.value}` is not marked as an official Ladysnake guild."
                         }
 
                         return@action
                     }
 
-                    settings.quiltGuilds.remove(arguments.serverId)
+                    settings.ladysnakeGuilds.remove(arguments.serverId)
                     settings.save()
 
                     respond {
-                        content = "`${arguments.serverId.value}` is no longer marked as an official Quilt guild."
+                        content = "`${arguments.serverId.value}` is no longer marked as an official Ladysnake guild."
                     }
                 }
             }
@@ -241,7 +242,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -267,7 +268,7 @@ class SettingsExtension : Extension() {
                             settings.apply(
                                 this,
                                 arguments.serverId != null ||
-                                        settings.quiltServerType != null ||
+                                        settings.ladysnakeServerType != null ||
                                         guild?.id == MAIN_GUILD
                             )
                         }
@@ -287,7 +288,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -329,7 +330,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -387,7 +388,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -445,7 +446,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -505,7 +506,7 @@ class SettingsExtension : Extension() {
 
                         if (!context.passed) {
                             respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
+                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
                             }
 
                             return@action
@@ -558,9 +559,9 @@ class SettingsExtension : Extension() {
                 }
             }
 
-            ephemeralSubCommand(::QuiltServerTypeArg) {
-                name = "quilt-server-type"
-                description = "For Quilt servers: Set or remove the Quilt server type flag for a server"
+            ephemeralSubCommand(::LadysnakeServerTypeArg) {
+                name = "ladysnake-server-type"
+                description = "For Ladysnake servers: Set or remove the Ladysnake server type flag for a server"
 
                 check { hasPermissionInMainGuild(Permission.Administrator) }
 
@@ -594,14 +595,14 @@ class SettingsExtension : Extension() {
                         }
                     }
 
-                    settings.quiltServerType = arguments.type
+                    settings.ladysnakeServerType = arguments.type
                     settings.save()
 
                     respond {
-                        content = if (settings.quiltServerType == null) {
-                            "**Server no longer flagged as a Quilt server:** `${settings._id.value}`"
+                        content = if (settings.ladysnakeServerType == null) {
+                            "**Server no longer flagged as a Ladysnake server:** `${settings._id.value}`"
                         } else {
-                            "**Server flagged as the ${settings.quiltServerType!!.readableName} server:** " +
+                            "**Server flagged as the ${settings.ladysnakeServerType!!.readableName} server:** " +
                                     "`${settings._id.value}`"
                         }
                     }
@@ -610,7 +611,7 @@ class SettingsExtension : Extension() {
 
             ephemeralSubCommand(::ShouldLeaveArg) {
                 name = "set-leave-server"
-                description = "For Quilt servers: Set whether Cozy should automatically leave a server"
+                description = "For Ladysnake servers: Set whether Cozy should automatically leave a server"
 
                 check { hasPermissionInMainGuild(Permission.Administrator) }
 
@@ -700,10 +701,10 @@ class SettingsExtension : Extension() {
         val serverId by optionalSnowflake("server", "Server ID, if not the current one")
     }
 
-    inner class QuiltServerTypeArg : Arguments() {
-        val type by optionalEnumChoice<QuiltServerType>(
+    inner class LadysnakeServerTypeArg : Arguments() {
+        val type by optionalEnumChoice<LadysnakeServerType>(
             "type",
-            "Quilt server type",
+            "Ladysnake server type",
             "Server type"
         )
 

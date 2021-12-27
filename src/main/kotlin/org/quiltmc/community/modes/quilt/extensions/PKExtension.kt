@@ -40,7 +40,7 @@ class PKExtension : Extension() {
                     flags.hasUsedPK = true
                     flags.save()
 
-                    settings.getCommunity()?.getConfiguredLogChannel()?.createMessage {
+                    settings.getLadysnake()?.getConfiguredLogChannel()?.createMessage {
                         embed {
                             title = "New PK user"
                             color = DISCORD_FUCHSIA

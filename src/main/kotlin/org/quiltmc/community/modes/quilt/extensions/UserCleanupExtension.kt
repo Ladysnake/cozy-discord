@@ -15,13 +15,14 @@ import org.koin.core.component.inject
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.hasPermissionInMainGuild
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.ExperimentalTime
 
 private const val MAX_PENDING_DAYS = 3
 
-private val TASK_DELAY = Duration.hours(1)
-private val MAX_PENDING_DURATION = Duration.days(MAX_PENDING_DAYS)
+private val TASK_DELAY = 1.hours
+private val MAX_PENDING_DURATION = MAX_PENDING_DAYS.days
 
 class UserCleanupExtension : Extension() {
     override val name: String = "user-cleanup"
@@ -47,7 +48,7 @@ class UserCleanupExtension : Extension() {
                     val removed = taskRun()
 
                     respond {
-                        content = "Kicked $removed accounts across all Quilt servers."
+                        content = "Kicked $removed accounts across all Ladysnake servers."
                     }
                 }
             }
@@ -60,7 +61,7 @@ class UserCleanupExtension : Extension() {
 
         try {
             val guilds = servers
-                .getByQuiltServers()
+                .getByLadysnakeServers()
                 .toList()
                 .mapNotNull { kord.getGuild(it._id) }
 

@@ -8,7 +8,7 @@ import org.litote.kmongo.ne
 import org.quiltmc.community.database.Collection
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.entities.ServerSettings
-import org.quiltmc.community.database.enums.QuiltServerType
+import org.quiltmc.community.database.enums.LadysnakeServerType
 
 class ServerSettingsCollection : KoinComponent {
     private val database: Database by inject()
@@ -17,17 +17,17 @@ class ServerSettingsCollection : KoinComponent {
     suspend fun get(id: Snowflake) =
         col.findOne(ServerSettings::_id eq id)
 
-    fun getByQuiltServers() =
-        col.find(ServerSettings::quiltServerType ne null)
+    fun getByLadysnakeServers() =
+        col.find(ServerSettings::ladysnakeServerType ne null)
 
-    fun getByServerType(type: QuiltServerType?) =
-        col.find(ServerSettings::quiltServerType eq type)
+    fun getByServerType(type: LadysnakeServerType?) =
+        col.find(ServerSettings::ladysnakeServerType eq type)
 
-    suspend fun getCommunity() =
-        col.findOne(ServerSettings::quiltServerType eq QuiltServerType.COMMUNITY)
+    suspend fun getLadysnake() =
+        col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.LADYSNAKE)
 
-    suspend fun getToolchain() =
-        col.findOne(ServerSettings::quiltServerType eq QuiltServerType.TOOLCHAIN)
+    suspend fun getYoutube() =
+        col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.YOUTUBE)
 
     suspend fun set(settings: ServerSettings) =
         col.save(settings)

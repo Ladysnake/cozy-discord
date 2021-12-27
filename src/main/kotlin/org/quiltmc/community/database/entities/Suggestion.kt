@@ -11,6 +11,8 @@ import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
 data class Suggestion(
     override val _id: Snowflake,
+    val guildId: Snowflake,
+    val channelId: Snowflake,
 
     var comment: String? = null,
     var status: SuggestionStatus = SuggestionStatus.Open,

@@ -12,44 +12,20 @@ import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import org.quiltmc.community.modes.quilt.extensions.*
+import org.quiltmc.community.modes.quilt.extensions.PKExtension
+import org.quiltmc.community.modes.quilt.extensions.SyncExtension
+import org.quiltmc.community.modes.quilt.extensions.UserCleanupExtension
+import org.quiltmc.community.modes.quilt.extensions.UtilityExtension
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
 import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.minecraft.MinecraftExtension
+import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 
-val MODE = envOrNull("MODE")?.lowercase() ?: "quilt"
+val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
 
-suspend fun setupCollab() = ExtensibleBot(DISCORD_TOKEN) {
-    common()
-    database()
-
-    extensions {
-        sentry {
-            distribution = "collab"
-        }
-    }
-}
-
-suspend fun setupDev() = ExtensibleBot(DISCORD_TOKEN) {
-    common()
-    database()
-
-    extensions {
-        add(::SubteamsExtension)
-
-        if (GITHUB_TOKEN != null) {
-            add(::GithubExtension)
-        }
-
-        sentry {
-            distribution = "dev"
-        }
-    }
-}
-
-suspend fun setupQuilt() = ExtensibleBot(DISCORD_TOKEN) {
+suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
     common()
     database(true)
     settings()
@@ -75,43 +51,34 @@ suspend fun setupQuilt() = ExtensibleBot(DISCORD_TOKEN) {
         add(::SyncExtension)
         add(::UserCleanupExtension)
         add(::UtilityExtension)
+        add(::ModerationExtension)
+
+        if (GITHUB_TOKEN != null) {
+            add(::GithubExtension)
+        }
 
         extMappings { }
 
         extPhishing {
-            appName = "QuiltMC's Cozy Bot"
+            appName = "Ladysnake's Modification of Quilt's Cozy Bot"
             detectionAction = DetectionAction.Kick
-            logChannelName = "cozy-logs"
+            logChannelName = "hissie-logs"
             requiredCommandPermission = null
 
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { notHasBaseModeratorRole() }
         }
 
         sentry {
-            distribution = "community"
+            distribution = "ladysnake"
         }
     }
 }
 
-suspend fun setupShowcase() = ExtensibleBot(DISCORD_TOKEN) {
-    common()
-    database()
-    settings()
-
-    extensions {
-        sentry {
-            distribution = "showcase"
-        }
-    }
-}
-
+@Suppress("UseIfInsteadOfWhen") // currently only one mode but that could change
 suspend fun main() {
     val bot = when (MODE) {
-        "dev" -> setupDev()
-        "collab" -> setupCollab()
-        "quilt" -> setupQuilt()
-        "showcase" -> setupShowcase()
+        "ladysnake" -> setupLadysnake()
 
         else -> error("Invalid mode: $MODE")
     }

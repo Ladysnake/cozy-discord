@@ -23,9 +23,9 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.embed
-import io.ktor.client.HttpClient
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.request.get
+import io.ktor.client.*
+import io.ktor.client.features.json.*
+import io.ktor.client.request.*
 import kotlinx.datetime.Clock
 import mu.KotlinLogging
 import org.apache.commons.text.StringEscapeUtils
@@ -43,9 +43,8 @@ private val LINK_REGEX = "<a href=\"(?<url>[^\"]+)\"[^>]*>(?<text>[^<]+)</a>".to
 
 @Suppress("MagicNumber", "UnderscoresInNumericLiterals")
 private val CHANNELS: List<Snowflake> = listOf(
-//    Snowflake(828218532671389736L),  // Testing
-    Snowflake(838805249271267398L),  // Community
-    Snowflake(834195264629243904L),  // Toolchain
+    LADYSNAKE_GUILD,
+//    YOUTUBE_GUILD,
 )
 
 class MinecraftExtension : Extension() {
@@ -143,8 +142,8 @@ class MinecraftExtension : Extension() {
                     description = "Forget a version (the last one by default), allowing it to be relayed again."
 
                     when (guildId) {
-                        COMMUNITY_GUILD -> check { hasRole(COMMUNITY_MODERATOR_ROLE) }
-                        TOOLCHAIN_GUILD -> check { hasRole(TOOLCHAIN_MODERATOR_ROLE) }
+                        LADYSNAKE_GUILD -> check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
+                        YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
                     }
 
                     check { hasPermission(Permission.Administrator) }
@@ -179,8 +178,8 @@ class MinecraftExtension : Extension() {
                     description = "Run the check task now, without waiting for it."
 
                     when (guildId) {
-                        COMMUNITY_GUILD -> check { hasRole(COMMUNITY_MODERATOR_ROLE) }
-                        TOOLCHAIN_GUILD -> check { hasRole(TOOLCHAIN_MODERATOR_ROLE) }
+                        LADYSNAKE_GUILD -> check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
+                        YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
                     }
 
                     action {
@@ -310,7 +309,7 @@ class MinecraftExtension : Extension() {
             patchNote.title
         }
 
-        if (guildId == COMMUNITY_GUILD) {
+        if (guildId == LADYSNAKE_GUILD) {
             when (this) {
                 is TextChannel -> startPublicThreadWithMessage(
                     message.id,

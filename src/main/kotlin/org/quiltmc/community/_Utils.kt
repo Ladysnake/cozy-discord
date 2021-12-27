@@ -93,6 +93,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
             }
 
             loadModule {
+                // TODO this should be done with annotations or something
                 single { FilterCollection() } bind FilterCollection::class
                 single { FilterEventCollection() } bind FilterEventCollection::class
                 single { GlobalSettingsCollection() } bind GlobalSettingsCollection::class
@@ -102,6 +103,8 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
                 single { SuggestionsCollection() } bind SuggestionsCollection::class
                 single { TeamCollection() } bind TeamCollection::class
                 single { UserFlagsCollection() } bind UserFlagsCollection::class
+                single { InvalidMentionsCollection() } bind InvalidMentionsCollection::class
+                single { UserRestrictionsCollection() } bind UserRestrictionsCollection::class
             }
 
             if (migrate) {
@@ -186,3 +189,5 @@ suspend fun EmbedBuilder.userField(user: UserBehavior, role: String, inline: Boo
         this.inline = inline
     }
 }
+
+suspend fun UserBehavior.softMention() = asUser().run { "@$tag" }

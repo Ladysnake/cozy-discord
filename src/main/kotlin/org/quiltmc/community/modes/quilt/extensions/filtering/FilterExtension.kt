@@ -63,7 +63,7 @@ class FilterExtension : Extension() {
         event<MessageCreateEvent> {
             check { event.message.author != null }
             check { isNotBot() }
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { notHasBaseModeratorRole() }
 
             action {
@@ -74,7 +74,7 @@ class FilterExtension : Extension() {
         event<MessageUpdateEvent> {
             check { event.message.asMessageOrNull()?.author != null }
             check { isNotBot() }
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { notHasBaseModeratorRole() }
 
             action {
@@ -109,7 +109,7 @@ class FilterExtension : Extension() {
                         filter.match = arguments.match
                         filters.set(filter)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN
@@ -152,7 +152,7 @@ class FilterExtension : Extension() {
                         filter.matchType = arguments.matchType
                         filters.set(filter)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN
@@ -195,7 +195,7 @@ class FilterExtension : Extension() {
                         filter.action = arguments.action
                         filters.set(filter)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN
@@ -238,7 +238,7 @@ class FilterExtension : Extension() {
                         filter.pingStaff = arguments.ping
                         filters.set(filter)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN
@@ -281,7 +281,7 @@ class FilterExtension : Extension() {
                         filters.set(filter)
                         filterCache[filter._id] = filter
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN
@@ -324,7 +324,7 @@ class FilterExtension : Extension() {
                         filters.remove(filter)
                         filterCache.remove(filter._id)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 title = "Filter deleted"
@@ -518,6 +518,8 @@ class FilterExtension : Extension() {
                     reason = "Banned by filter: $_id"
                 }
             }
+
+            null -> {}
         }
 
         filterEvents.add(
@@ -527,8 +529,8 @@ class FilterExtension : Extension() {
         guild.getCozyLogChannel()?.createMessage {
             if (pingStaff) {
                 val modRole = when (guild.id) {
-                    COMMUNITY_GUILD -> guild.getRole(COMMUNITY_MODERATOR_ROLE)
-                    TOOLCHAIN_GUILD -> guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
+                    LADYSNAKE_GUILD -> guild.getRole(LADYSNAKE_MODERATOR_ROLE)
+                    YOUTUBE_GUILD -> guild.getRole(YOUTUBE_MODERATOR_ROLE)
 
                     else -> null
                 }

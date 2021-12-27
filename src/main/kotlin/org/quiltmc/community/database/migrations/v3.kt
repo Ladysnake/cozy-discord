@@ -6,7 +6,7 @@ import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.eq
 import org.litote.kmongo.replaceOne
 import org.litote.kmongo.replaceUpsert
-import org.quiltmc.community.COMMUNITY_GUILD
+import org.quiltmc.community.LADYSNAKE_GUILD
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
@@ -29,7 +29,7 @@ suspend fun v3(db: CoroutineDatabase) {
                     OwnedThread(
                         it.thread!!,
                         it.owner,
-                        COMMUNITY_GUILD
+                        LADYSNAKE_GUILD
                     ),
 
                     replaceUpsert()

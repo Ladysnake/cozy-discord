@@ -51,7 +51,7 @@ import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.Suggestion
-import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 private const val ACTION_DOWN = "down"
@@ -100,7 +100,7 @@ class SuggestionsExtension : Extension() {
 
             action {
                 event.message.channel.withTyping {
-                    delay(Duration.seconds(TUPPERBOX_DELAY))
+                    delay(TUPPERBOX_DELAY.seconds)
 
                     // If it's been yeeted, it's probably been moderated or proxied
                     event.message.channel.getMessageOrNull(event.message.id) ?: return@action
@@ -114,6 +114,8 @@ class SuggestionsExtension : Extension() {
                     if (pkMessage != null) {
                         Suggestion(
                             _id = id,
+                            guildId = event.guildId!!,
+                            channelId = event.message.channelId,
                             text = event.message.content,
 
                             owner = pkMessage.sender,
@@ -135,6 +137,8 @@ class SuggestionsExtension : Extension() {
                     if (pkMessage == null) {
                         Suggestion(
                             _id = id,
+                            guildId = event.guildId!!,
+                            channelId = event.message.channelId,
                             text = event.message.content,
 
                             owner = event.message.author!!.id,
@@ -305,7 +309,7 @@ class SuggestionsExtension : Extension() {
             name = "edit-suggestion"
             description = "Edit one of your suggestions"
 
-            guild(COMMUNITY_GUILD)
+            guild(LADYSNAKE_GUILD)
 
             action {
                 if (arguments.suggestion.owner != user.id) {
@@ -331,11 +335,11 @@ class SuggestionsExtension : Extension() {
             name = "suggestion"
             description = "Suggestion state change commands"
 
-            guild(COMMUNITY_GUILD)
+            guild(LADYSNAKE_GUILD)
 
             MODERATOR_ROLES.forEach(::allowRole)
 
-            check { hasRole(COMMUNITY_MODERATOR_ROLE) }
+            check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
 
             action {
                 val status = arguments.status
@@ -403,8 +407,8 @@ class SuggestionsExtension : Extension() {
                 suggestion.threadButtons = threadMessage.id
 
                 val modRole = when (thread.guildId) {
-                    COMMUNITY_GUILD -> thread.guild.getRole(COMMUNITY_MODERATOR_ROLE)
-                    TOOLCHAIN_GUILD -> thread.guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
+                    LADYSNAKE_GUILD -> thread.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
+                    YOUTUBE_GUILD -> thread.guild.getRole(YOUTUBE_MODERATOR_ROLE)
 
                     else -> return
                 }
@@ -413,14 +417,14 @@ class SuggestionsExtension : Extension() {
                     content = "Oh right, better get the mods in..."
                 }
 
-                delay(Duration.seconds(3))
+                delay(3.seconds)
 
                 pingMessage.edit {
                     content = "Oh right, better get the mods in...\n" +
                             "Hey, ${modRole.mention}! Squirrel!"
                 }
 
-                delay(Duration.seconds(3))
+                delay(3.seconds)
 
                 pingMessage.delete("Removing temporary moderator ping message.")
             }
@@ -453,8 +457,8 @@ class SuggestionsExtension : Extension() {
         val user = kord.getUser(suggestion.owner) ?: return
 
         val suggestionMessage = if (suggestion.message != null) {
-            kord.getGuild(COMMUNITY_GUILD)
-                ?.getChannelOf<GuildMessageChannel>(SUGGESTION_CHANNEL)
+            kord.getGuild(suggestion.guildId)
+                ?.getChannelOf<GuildMessageChannel>(suggestion.channelId)
                 ?.getMessageOrNull(suggestion.message!!)
         } else {
             null

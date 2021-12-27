@@ -40,6 +40,8 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
     members {
         all()
+
+        fillPresences = true
     }
 
     extensions {

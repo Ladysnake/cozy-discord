@@ -3,18 +3,19 @@ package org.quiltmc.community.modes.quilt.extensions
 import com.kotlindiscord.kord.extensions.DISCORD_FUCHSIA
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
-import dev.kord.common.entity.MessageType
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
+import kotlinx.coroutines.delay
 import org.koin.core.component.inject
 import org.quiltmc.community.api.pluralkit.PluralKit
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.userField
+
+private const val PK_DELAY_MILLIS: Long = 500
 
 class PKExtension : Extension() {
     override val name: String = "pluralkit"
@@ -26,13 +27,12 @@ class PKExtension : Extension() {
 
     override suspend fun setup() {
         event<MessageCreateEvent> {
-            check { failIfNot(event.message.type == MessageType.Default) }
-            check { failIf(event.message.data.authorId == event.kord.selfId) }
-            check { failIf(event.message.author?.isBot == true) }
-            check { failIf(event.message.data.webhookId.value != null) }
+            check { failIf(event.message.data.webhookId.value == null) }
             check { failIf(event.message.interaction != null) }
 
             action {
+                delay(PK_DELAY_MILLIS)  // To allow the PK API to catch up
+
                 val pkMessage = pluralKit.getMessageOrNull(event.message.id) ?: return@action
                 val flags = userFlags.get(pkMessage.sender) ?: UserFlags(pkMessage.sender, false)
 

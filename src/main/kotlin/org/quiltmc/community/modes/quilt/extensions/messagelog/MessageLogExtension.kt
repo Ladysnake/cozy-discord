@@ -478,6 +478,8 @@ class MessageLogExtension : Extension() {
     }
 
     private suspend fun EmbedBuilder.addMessage(message: Message) {
+        val messageType = message.type::class.simpleName ?: "Unknown"
+
         val author = message.author
 
         footer {
@@ -573,6 +575,12 @@ class MessageLogExtension : Extension() {
                 value = message.reactions.sumOf { reaction -> reaction.count }.toString()
                 inline = true
             }
+        }
+
+        field {
+            name = "Type"
+            value = messageType
+            inline = true
         }
     }
 

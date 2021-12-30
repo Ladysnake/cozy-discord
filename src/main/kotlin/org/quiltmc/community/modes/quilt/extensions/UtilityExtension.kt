@@ -1,4 +1,4 @@
-@file:OptIn(ExperimentalTime::class, KordPreview::class)
+@file:OptIn(ExperimentalTime::class, KordPreview::class, InternalCoroutinesApi::class)
 
 @file:Suppress("MagicNumber")  // Yep. I'm done.
 
@@ -20,7 +20,6 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.edit
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondEphemeral
-import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
@@ -36,8 +35,8 @@ import dev.kord.core.event.channel.thread.ThreadUpdateEvent
 import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.core.event.guild.GuildUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
+import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
@@ -102,14 +101,34 @@ class UtilityExtension : Extension() {
         }
 
         event<MessageCreateEvent> {
-            check { inLadysnakeGuild() }
             check { failIf { event.message.type != MessageType.ChannelPinnedMessage } }
-            check { failIf { event.message.data.authorId != event.kord.selfId } }
+//            check { failIf { event.message.data.authorId != event.kord.selfId } }
 
             action {
                 delay(DELETE_DELAY)
 
                 event.message.deleteIgnoringNotFound()
+            }
+        }
+
+        event<MessageCreateEvent> {
+            check { failIf { event.message.type != MessageType.ThreadCreated } }
+
+            action {
+                // discord is so very concern
+                // i need to get the first message in the thread to check whether i should delete the creation message
+
+                // oh did i mention the discord api puts the thread channel id as part of the "message reference"
+                val thread = event.message.messageReference?.channel?.asChannelOf<ThreadChannel>()
+                    ?: return@action
+
+                val firstMessage = thread.messages.firstOrNull() ?: return@action
+
+                if (firstMessage.messageReference != null && firstMessage.messageReference!!.message != null) {
+                    delay(DELETE_DELAY)
+
+                    event.message.delete("Removing thread creation message of a thread with a parent message")
+                }
             }
         }
 

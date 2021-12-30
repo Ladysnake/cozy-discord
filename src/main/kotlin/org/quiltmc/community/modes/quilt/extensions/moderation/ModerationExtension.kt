@@ -362,22 +362,14 @@ class ModerationExtension(
                     action(::timeout)
                 }
             }
-            ephemeralSlashCommand({ object : RequiredMentionable("The user to kick", verifyIsUser) {
-                val reason by string("reason", "The reason for kicking the user.")
-            } }) {
+            ephemeralSlashCommand({ RequiresReason("The user to kick") }) {
                 name = "kick"
                 description = "Kick a user from the server."
 
                 MODERATOR_ROLES.forEach(::allowRole)
 
                 action {
-                    val user = arguments.mentionable
-                    if (user !is User) {
-                        respond {
-                            content = "You can only kick users."
-                        }
-                        return@action
-                    }
+                    val user = arguments.user
 
                     val guild = getGuild()!!.asGuild()
                     val member = guild.getMember(user.id)
@@ -637,10 +629,7 @@ class ModerationExtension(
             throw DiscordRelayedException("This command can only be used in a guild.")
         }
 
-        val user = context.arguments.mentionable
-        if (user !is User) {
-            throw DiscordRelayedException("You must mention a user and not a role or @everyone.")
-        }
+        val user = context.arguments.user
         val member = user.asMember(context.guild!!.id)
 
         val reason = context.arguments.reason
@@ -727,13 +716,7 @@ class ModerationExtension(
     }
 
     private suspend fun <T : TimeoutArguments> timeout(context: EphemeralSlashCommandContext<T>) {
-        val user = context.arguments.mentionable
-        if (user !is User) {
-            context.respond {
-                content = "That's not a user!"
-            }
-            return
-        }
+        val user = context.arguments.user
         val member = user.asMember(context.guild!!.id)
 
         val reason = context.arguments.reason
@@ -857,18 +840,18 @@ class ModerationExtension(
         val channel: Channel?
     }
 
-    open class RequiredMentionable(mentionableDesc: String, validator: Validator<KordEntity> = null) : Arguments() {
-        val mentionable by mentionable(
-            "entity",
+    open class RequiredUser(mentionableDesc: String, validator: Validator<KordEntity> = null) : Arguments() {
+        val user by user(
+            "user",
             mentionableDesc,
             validator = validator
         )
     }
 
     class PurgeArguments : Arguments(), ChannelTargetArguments {
-        val amount by defaultingInt("amount", "The amount of messages to purge", 1)
-        val user by optionalUser("user", "The user to purge messages from")
-        override val channel by optionalChannel("channel", "The channel to purge messages from")
+        val amount by int("amount", "The amount of messages to purge")
+        val user by optionalUser("user", "The user to purge messages from (all if omitted)")
+        override val channel by optionalChannel("channel", "The channel to purge messages from (current if omitted)")
     }
 
     class ChannelSlowModeArguments : Arguments(), ChannelTargetArguments, RequiredInt {
@@ -897,7 +880,11 @@ class ModerationExtension(
         override val channel by optionalChannel("channel", "The channel to set slowmode for")
     }
 
-    class MentionArguments : RequiredMentionable("The role or user to warn people about when mentioning them") {
+    class MentionArguments : Arguments() {
+        val mentionable by mentionable(
+            "entity",
+            "The role or user to warn people about when mentioning them"
+        )
         val allowDirectMentions by defaultingBoolean(
             "allow-direct-mentions",
             "Whether to allow the role or user to be mentioned directly in a message",
@@ -910,14 +897,14 @@ class ModerationExtension(
         )
     }
 
-    abstract class RequiresReason(
+    open class RequiresReason(
         mentionableDesc: String,
         validator: Validator<KordEntity> = null
-    ) : RequiredMentionable(mentionableDesc, validator) {
+    ) : RequiredUser(mentionableDesc, validator) {
         val reason by string("reason", "The reason for the action")
     }
 
-    abstract class BanArguments : RequiresReason("The user to ban", verifyIsUser) {
+    abstract class BanArguments : RequiresReason("The user to ban") {
         abstract val length: Long
 
         val daysToDelete by banDeleteDaySelector()
@@ -965,7 +952,7 @@ class ModerationExtension(
         )
     }
 
-    abstract class TimeoutArguments : RequiresReason("The user to timeout", verifyIsUser), RequiredLong
+    abstract class TimeoutArguments : RequiresReason("The user to timeout"), RequiredLong
 
     class ChoiceTimeoutArguments : TimeoutArguments() {
         @Suppress("MagicNumber")
@@ -1045,12 +1032,6 @@ class ModerationExtension(
     }
 
     companion object {
-        val verifyIsUser: Validator<KordEntity> = { _, value ->
-            if (value !is User) {
-                throw DiscordRelayedException("That's not a user!")
-            }
-        }
-
         @Suppress("MagicNumber")
         internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice(
             "delete-days",

@@ -112,6 +112,9 @@ tasks.jar {
     }
 }
 
+// add detekt checks when building for testing (in the IDE and such)
+tasks.getByName("classes").dependsOn("detekt")
+
 java {
     // Current LTS version of Java
     sourceCompatibility = JavaVersion.VERSION_16

@@ -6,8 +6,7 @@ package org.quiltmc.community.modes.quilt.extensions.suggestions
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.checks.hasRole
-import com.kotlindiscord.kord.extensions.checks.inChannel
-import com.kotlindiscord.kord.extensions.checks.inTopChannel
+import com.kotlindiscord.kord.extensions.checks.topChannelFor
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescedString
@@ -96,7 +95,7 @@ class SuggestionsExtension : Extension() {
             check { failIf(event.message.content.trim().isEmpty()) }
             check { failIf(event.message.interaction != null) }
 
-            check { inChannel(SUGGESTION_CHANNEL) }
+            check { failIfNot(event.message.channelId in SUGGESTION_CHANNELS) }
 
             action {
                 event.message.channel.withTyping {
@@ -188,7 +187,7 @@ class SuggestionsExtension : Extension() {
         }
 
         event<MessageCreateEvent> {
-            check { failIfNot(event.message.channelId == SUGGESTION_CHANNEL) }
+            check { failIfNot(event.message.channelId in SUGGESTION_CHANNELS) }
             check { failIfNot(event.message.type == MessageType.ThreadCreated) }
 
             action {
@@ -198,7 +197,7 @@ class SuggestionsExtension : Extension() {
 
         event<InteractionCreateEvent> {
             check { failIfNot(event.interaction is ButtonInteraction) }
-            check { inTopChannel(SUGGESTION_CHANNEL) }
+            check { failIfNot(topChannelFor(event)!!.id in SUGGESTION_CHANNELS) }
 
             action {
                 val interaction = event.interaction as ButtonInteraction
@@ -287,7 +286,7 @@ class SuggestionsExtension : Extension() {
         }
 
         event<ThreadChannelCreateEvent> {
-            check { inTopChannel(SUGGESTION_CHANNEL) }
+            check { failIfNot(event.channel.parent.id in SUGGESTION_CHANNELS) }
 
             check { failIf(event.channel.ownerId == kord.selfId) }
 
@@ -373,7 +372,7 @@ class SuggestionsExtension : Extension() {
     }
 
     suspend fun sendSuggestion(suggestion: Suggestion) {
-        val channel = getChannel()
+        val channel = kord.getChannelOf<GuildMessageChannel>(suggestion.channelId)!!
 
         if (suggestion.message == null) {
             val message = channel.createMessage { suggestion(suggestion) }
@@ -501,8 +500,6 @@ class SuggestionsExtension : Extension() {
             }
         }
     }
-
-    suspend fun getChannel() = kord.getChannelOf<GuildMessageChannel>(SUGGESTION_CHANNEL)!!
 
     fun MessageCreateBuilder.suggestion(suggestion: Suggestion, sendEmbed: Boolean = true) {
         val id = suggestion._id.value

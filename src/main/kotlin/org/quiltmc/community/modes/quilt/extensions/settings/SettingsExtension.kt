@@ -10,6 +10,7 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
+import com.kotlindiscord.kord.extensions.commands.application.slash.group
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
@@ -286,411 +287,481 @@ class SettingsExtension : Extension() {
                 }
             }
 
-            ephemeralSubCommand(::OptionalGuildSnowflakeArg) {
-                name = "get"
-                description = "Retrieve Cozy's server configuration"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = "Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    respond {
-                        embed {
-                            settings.apply(
-                                this,
-                                arguments.serverId != null ||
-                                        settings.ladysnakeServerType != null ||
-                                        guild?.id == MAIN_GUILD
-                            )
-                        }
-                    }
+            group("general") {
+                this@SettingsExtension.logger.error {
+                    "This shouldn't be required to be in a group! Kordex is a bit funky though"
                 }
-            }
 
-            ephemeralSubCommand(::PrefixServerArg) {
-                name = "command-prefix"
-                description = "Configure Cozy's command prefix"
+                description = "General commands which don't fit in any other category"
 
-                action {
-                    val context = CheckContext(event, getLocale())
+                ephemeralSubCommand(::OptionalGuildSnowflakeArg) {
+                    name = "get"
+                    description = "Retrieve Cozy's server configuration"
 
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
+                    action {
+                        val context = CheckContext(event, getLocale())
 
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
                             }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = "Unknown guild ID: `${arguments.serverId?.value}`"
                         }
 
-                        return@action
-                    }
-
-                    settings.commandPrefix = arguments.prefix
-                    settings.save()
-
-                    respond {
-                        content = "**Command prefix set:** `${settings.commandPrefix}`"
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::RoleServerArg) {
-                name = "add-moderator-role"
-                description = "Add a role that should be given moderator permissions"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.role.guildId != settings._id) {
-                        respond {
-                            content = ":x: That role doesn't belong to the guild with ID: `${settings._id.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.role.id in settings.moderatorRoles) {
-                        respond {
-                            content = ":x: That role is already marked as a moderator role"
-                        }
-
-                        return@action
-                    }
-
-                    settings.moderatorRoles.add(arguments.role.id)
-                    settings.save()
-
-                    respond {
-                        content = "Moderator role added: ${arguments.role.mention}"
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::RoleServerArg) {
-                name = "remove-moderator-role"
-                description = "Remove a configured moderator role"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.role.guildId != settings._id) {
-                        respond {
-                            content = ":x: That role doesn't belong to the guild with ID: `${settings._id.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.role.id !in settings.moderatorRoles) {
-                        respond {
-                            content = ":x: That role is not marked as a moderator role"
-                        }
-
-                        return@action
-                    }
-
-                    settings.moderatorRoles.remove(arguments.role.id)
-                    settings.save()
-
-                    respond {
-                        content = "Moderator role removed: ${arguments.role.mention}"
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::TopMessageChannelGuildArg) {
-                name = "cozy-log-channel"
-                description = "Configure the channel Cozy should send log messages to"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.channel == null) {
-                        respond {
-                            content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel?.value}>"
-                        }
-
-                        return@action
-                    }
-
-                    val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-                    if (channel.guildId != settings._id) {
-                        respond {
-                            content = ":x: That channel doesn't belong to the guild with ID: `${settings._id.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    settings.cozyLogChannel = channel.id
-                    settings.save()
-
-                    respond {
-                        content = "**Cozy logging channel set:** ${channel.mention}"
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::CategoryGuildArg) {
-                name = "message-log-category"
-                description = "Configure the category Cozy should use for message logs"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Ladysnake community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.category == null) {
-                        respond {
-                            content = "**Current message log category:** <#${settings.messageLogCategory?.value}>"
-                        }
-
-                        return@action
-                    }
-
-                    val category = event.kord.getChannelOf<Category>(arguments.category!!.id)!!
-
-                    if (category.guildId != settings._id) {
-                        respond {
-                            content = ":x: That category doesn't belong to the guild with ID: `${settings._id.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    settings.messageLogCategory = category.id
-                    settings.save()
-
-                    respond {
-                        content = "**Message log category set:** ${category.mention}"
-                    }
-
-                    event.kord.launch {
-                        // Trigger a rotation, to be safe.
-                        messageLogExtension?.getRotator(settings._id)?.populate()
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::LadysnakeServerTypeArg) {
-                name = "ladysnake-server-type"
-                description = "For Ladysnake servers: Set or remove the Ladysnake server type flag for a server"
-
-                check { hasPermissionInMainGuild(Permission.Administrator) }
-
-                action {
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.type != null) {
-                        val existingServers = serverSettings.getByServerType(arguments.type).toList()
-
-                        if (existingServers.isNotEmpty()) {
-                            respond {
-                                content = ":x: The following servers are already flagged as the" +
-                                        " ${arguments.type!!.readableName} server: \n\n" +
-
-                                        existingServers.joinToString("\n") { "`${it._id}`" }
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    settings.ladysnakeServerType = arguments.type
-                    settings.save()
-
-                    respond {
-                        content = if (settings.ladysnakeServerType == null) {
-                            "**Server no longer flagged as a Ladysnake server:** `${settings._id.value}`"
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
                         } else {
-                            "**Server flagged as the ${settings.ladysnakeServerType!!.readableName} server:** " +
-                                    "`${settings._id.value}`"
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = "Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        respond {
+                            embed {
+                                settings.apply(
+                                    this,
+                                    arguments.serverId != null ||
+                                            settings.ladysnakeServerType != null ||
+                                            guild?.id == MAIN_GUILD
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::PrefixServerArg) {
+                    name = "command-prefix"
+                    description = "Configure Cozy's command prefix"
+
+                    action {
+                        val context = CheckContext(event, getLocale())
+
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = "Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        settings.commandPrefix = arguments.prefix
+                        settings.save()
+
+                        respond {
+                            content = "**Command prefix set:** `${settings.commandPrefix}`"
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+                    name = "cozy-log-channel"
+                    description = "Configure the channel Cozy should send log messages to"
+
+                    action {
+                        val context = CheckContext(event, getLocale())
+
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.channel == null) {
+                            respond {
+                                content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel?.value}>"
+                            }
+
+                            return@action
+                        }
+
+                        val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+                        if (channel.guildId != settings._id) {
+                            respond {
+                                content =
+                                    ":x: That channel doesn't belong to the guild with ID: `${settings._id.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        settings.cozyLogChannel = channel.id
+                        settings.save()
+
+                        respond {
+                            content = "**Cozy logging channel set:** ${channel.mention}"
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::CategoryGuildArg) {
+                    name = "message-log-category"
+                    description = "Configure the category Cozy should use for message logs"
+
+                    action {
+                        val context = CheckContext(event, getLocale())
+
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.category == null) {
+                            respond {
+                                content = "**Current message log category:** <#${settings.messageLogCategory?.value}>"
+                            }
+
+                            return@action
+                        }
+
+                        val category = event.kord.getChannelOf<Category>(arguments.category!!.id)!!
+
+                        if (category.guildId != settings._id) {
+                            respond {
+                                content =
+                                    ":x: That category doesn't belong to the guild with ID: `${settings._id.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        settings.messageLogCategory = category.id
+                        settings.save()
+
+                        respond {
+                            content = "**Message log category set:** ${category.mention}"
+                        }
+
+                        event.kord.launch {
+                            // Trigger a rotation, to be safe.
+                            messageLogExtension?.getRotator(settings._id)?.populate()
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::LadysnakeServerTypeArg) {
+                    name = "ladysnake-server-type"
+                    description = "For Ladysnake servers: Set or remove the Ladysnake server type flag for a server"
+
+                    check { hasPermissionInMainGuild(Permission.Administrator) }
+
+                    action {
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.type != null) {
+                            val existingServers = serverSettings.getByServerType(arguments.type).toList()
+
+                            if (existingServers.isNotEmpty()) {
+                                respond {
+                                    content = ":x: The following servers are already flagged as the" +
+                                            " ${arguments.type!!.readableName} server: \n\n" +
+
+                                            existingServers.joinToString("\n") { "`${it._id}`" }
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        settings.ladysnakeServerType = arguments.type
+                        settings.save()
+
+                        respond {
+                            content = if (settings.ladysnakeServerType == null) {
+                                "**Server no longer flagged as a Ladysnake server:** `${settings._id.value}`"
+                            } else {
+                                "**Server flagged as the ${settings.ladysnakeServerType!!.readableName} server:** " +
+                                        "`${settings._id.value}`"
+                            }
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::ShouldLeaveArg) {
+                    name = "set-leave-server"
+                    description = "For Ladysnake servers: Set whether Cozy should automatically leave a server"
+
+                    check { hasPermissionInMainGuild(Permission.Administrator) }
+
+                    action {
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        } ?: ServerSettings(guild!!.id)
+
+                        settings.leaveServer = arguments.shouldLeave
+                        settings.save()
+
+                        respond {
+                            content = if (arguments.shouldLeave) {
+                                "**Server will now be left automatically:** `${settings._id.value}`"
+                            } else {
+                                "**Server will not left automatically:** `${settings._id.value}`"
+                            }
+                        }
+
+                        if (settings.leaveServer) {
+                            event.kord.getGuild(settings._id)?.leave()
                         }
                     }
                 }
             }
 
-            ephemeralSubCommand(::ShouldLeaveArg) {
-                name = "set-leave-server"
-                description = "For Ladysnake servers: Set whether Cozy should automatically leave a server"
+            group("thread-only") {
+                description = "Commands for managing thread-only channels"
 
-                check { hasPermissionInMainGuild(Permission.Administrator) }
+                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+                    name = "add"
+                    description = "For Ladysnake servers: Add a channel to the list of " +
+                            "channels that are only for threads"
 
-                action {
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    } ?: ServerSettings(guild!!.id)
+                    check { hasPermissionInMainGuild(Permission.Administrator) }
 
-                    settings.leaveServer = arguments.shouldLeave
-                    settings.save()
-
-                    respond {
-                        content = if (arguments.shouldLeave) {
-                            "**Server will now be left automatically:** `${settings._id.value}`"
+                    action {
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
                         } else {
-                            "**Server will not left automatically:** `${settings._id.value}`"
+                            serverSettings.get(arguments.serverId!!)
+                        } ?: ServerSettings(guild!!.id)
+
+                        settings.threadOnlyChannels.add(arguments.channel?.id ?: channel.id)
+                        settings.save()
+
+                        respond {
+                            content = "**Channel added to thread-only channels:** `${settings._id.value}`"
                         }
                     }
+                }
 
-                    if (settings.leaveServer) {
-                        event.kord.getGuild(settings._id)?.leave()
+                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+                    name = "remove"
+                    description = "For Ladysnake servers: Remove a channel from the list of " +
+                            "channels that are only for threads"
+
+                    check { hasPermissionInMainGuild(Permission.Administrator) }
+
+                    action {
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        } ?: ServerSettings(guild!!.id)
+
+                        settings.threadOnlyChannels.remove(arguments.channel?.id ?: channel.id)
+                        settings.save()
+
+                        respond {
+                            content = "**Channel removed from thread-only channels:** `${settings._id.value}`"
+                        }
+                    }
+                }
+            }
+
+            group("mod-roles") {
+                description = "Commands for managing mod roles"
+
+                ephemeralSubCommand(::RoleServerArg) {
+                    name = "add"
+                    description = "Add a role that should be given moderator permissions"
+
+                    action {
+                        val context = CheckContext(event, getLocale())
+
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.role.guildId != settings._id) {
+                            respond {
+                                content = ":x: That role doesn't belong to the guild with ID: `${settings._id.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.role.id in settings.moderatorRoles) {
+                            respond {
+                                content = ":x: That role is already marked as a moderator role"
+                            }
+
+                            return@action
+                        }
+
+                        settings.moderatorRoles.add(arguments.role.id)
+                        settings.save()
+
+                        respond {
+                            content = "Moderator role added: ${arguments.role.mention}"
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::RoleServerArg) {
+                    name = "remove"
+                    description = "Remove a configured moderator role"
+
+                    action {
+                        val context = CheckContext(event, getLocale())
+
+                        if (arguments.serverId != null) {
+                            context.hasPermissionInMainGuild(Permission.Administrator)
+
+                            if (!context.passed) {
+                                respond {
+                                    content =
+                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                }
+
+                                return@action
+                            }
+                        }
+
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        }
+
+                        if (settings == null) {
+                            respond {
+                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.role.guildId != settings._id) {
+                            respond {
+                                content = ":x: That role doesn't belong to the guild with ID: `${settings._id.value}`"
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.role.id !in settings.moderatorRoles) {
+                            respond {
+                                content = ":x: That role is not marked as a moderator role"
+                            }
+
+                            return@action
+                        }
+
+                        settings.moderatorRoles.remove(arguments.role.id)
+                        settings.save()
+
+                        respond {
+                            content = "Moderator role removed: ${arguments.role.mention}"
+                        }
                     }
                 }
             }

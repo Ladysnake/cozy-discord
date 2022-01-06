@@ -48,13 +48,19 @@ internal val YOUTUBE_GUILD = Snowflake(
 internal val GUILDS = envOrNull("GUILDS")?.split(',')?.map { Snowflake(it.trim()) }
     ?: listOf(LADYSNAKE_GUILD, YOUTUBE_GUILD)
 
-internal val SUGGESTION_CHANNEL = Snowflake(
+internal val LADYSNAKE_SUGGESTION_CHANNEL = Snowflake(
     envOrNull("SUGGESTION_CHANNEL_ID")?.toLong() ?: 477596847129624591
 )
+
+internal val SUGGESTION_CHANNELS = envOrNull("SUGGESTION_CHANNELS")?.split(',')?.map { Snowflake(it.trim()) }
+    ?: listOf(LADYSNAKE_SUGGESTION_CHANNEL)
 
 internal val GITHUB_LOG_CHANNEL = Snowflake(
     envOrNull("GITHUB_LOG_CHANNEL_ID")?.toLong() ?: 558629602206023691
 )
+
+internal val THREAD_ONLY_CHANNELS = envOrNull("THREAD_ONLY_CHANNELS")?.split(',')
+    ?.map { Snowflake(it.trim()) } ?: listOf()
 
 internal val MAX_MESSAGES_PER_MINUTE = envOrNull("MAX_MESSAGES_PER_MINUTE")?.toInt() ?: 20
 internal val MAX_MESSAGES_PER_SECOND = envOrNull("MAX_MESSAGES_PER_SECOND")?.toInt() ?: 3

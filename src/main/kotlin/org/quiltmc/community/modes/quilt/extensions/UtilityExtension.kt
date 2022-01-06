@@ -5,10 +5,7 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.*
-import com.kotlindiscord.kord.extensions.checks.channelType
-import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.checks.isInThread
-import com.kotlindiscord.kord.extensions.checks.isNotBot
+import com.kotlindiscord.kord.extensions.checks.*
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
@@ -21,6 +18,7 @@ import com.kotlindiscord.kord.extensions.types.edit
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
+import com.kotlindiscord.kord.extensions.utils.dm
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.*
@@ -53,6 +51,7 @@ import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.UserFlags
+import org.quiltmc.community.database.getSettings
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -65,7 +64,19 @@ val SPEAKING_PERMISSIONS: Array<Permission> = arrayOf(
     Permission.SendMessagesInThreads,
 )
 
-val DELETE_DELAY = 10.seconds  // Seconds
+val THREAD_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
+    ChannelType.PublicGuildThread,
+    ChannelType.PublicNewsThread,
+    ChannelType.PrivateThread,
+)
+
+val TEXT_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
+    ChannelType.GuildText,
+    ChannelType.GuildNews,
+)
+
+val DELETE_DELAY = 10.seconds
+val MESSAGE_EDIT_DELAY = 3.seconds
 
 class UtilityExtension : Extension() {
     override val name: String = "utility"
@@ -254,7 +265,7 @@ class UtilityExtension : Extension() {
                 check { isInThread() }
 
                 action {
-                    val channel = channel.asChannel() as ThreadChannel
+                    val channel = channel.asChannelOf<ThreadChannel>()
                     val member = user.asMember(guild!!.id)
                     val roles = member.roles.toList().map { it.id }
 
@@ -285,7 +296,7 @@ class UtilityExtension : Extension() {
                 check { isInThread() }
 
                 action {
-                    val channel = channel.asChannel() as ThreadChannel
+                    val channel = channel.asChannelOf<ThreadChannel>()
                     val member = user.asMember(guild!!.id)
                     val roles = member.roles.toList().map { it.id }
 
@@ -454,7 +465,7 @@ class UtilityExtension : Extension() {
                     description = "Rename the current thread, if you have permission"
 
                     action {
-                        val channel = channel.asChannel() as ThreadChannel
+                        val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
                         val roles = member.roles.toList().map { it.id }
 
@@ -491,7 +502,7 @@ class UtilityExtension : Extension() {
                     description = "Archive the current thread, if you have permission"
 
                     action {
-                        val channel = channel.asChannel() as ThreadChannel
+                        val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
                         val roles = member.roles.toList().map { it.id }
                         val ownedThread = threads.get(channel)
@@ -563,7 +574,7 @@ class UtilityExtension : Extension() {
                     description = "Pin a message in this thread, if you have permission"
 
                     action {
-                        val channel = channel.asChannel() as ThreadChannel
+                        val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
                         val roles = member.roles.toList().map { it.id }
 
@@ -599,7 +610,7 @@ class UtilityExtension : Extension() {
                     description = "Unpin a message in this thread, if you have permission"
 
                     action {
-                        val channel = channel.asChannel() as ThreadChannel
+                        val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
                         val roles = member.roles.toList().map { it.id }
 
@@ -642,7 +653,7 @@ class UtilityExtension : Extension() {
                     }
 
                     action {
-                        val channel = channel.asChannel() as ThreadChannel
+                        val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
 
                         if (channel.isArchived) {
@@ -690,7 +701,7 @@ class UtilityExtension : Extension() {
                 check { hasBaseModeratorRole() }
 
                 action {
-                    val targetChannel = (arguments.target ?: channel.asChannel()) as GuildMessageChannel
+                    val targetChannel = (arguments.target ?: channel.asChannel()).asChannelOf<GuildMessageChannel>()
 
                     targetChannel.createMessage(arguments.message)
 
@@ -941,11 +952,11 @@ class UtilityExtension : Extension() {
                 action {
                     var channelObj = arguments.channel ?: channel.asChannel()
 
-                    if (channelObj is ThreadChannel) {
-                        channelObj = channelObj.parent.asChannel()
+                    if (channelObj.type in THREAD_CHANNEL_TYPES) {
+                        channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
                     }
 
-                    if (channelObj !is TextChannel) {  // Should never happen, but we handle it for safety
+                    if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
                         respond {
                             content = "This command can only be run in a guild text channel."
                         }
@@ -958,7 +969,7 @@ class UtilityExtension : Extension() {
                         else -> null
                     }
 
-                    val ch = channelObj as TextChannel
+                    val ch = channelObj.asChannelOf<TextChannel>()
 
                     if (staffRoleId != null) {
                         ch.editRolePermission(staffRoleId) {
@@ -1003,17 +1014,17 @@ class UtilityExtension : Extension() {
                 action {
                     var channelObj = arguments.channel ?: channel.asChannel()
 
-                    if (channelObj is ThreadChannel) {
-                        channelObj = (channelObj as ThreadChannel).parent.asChannel()
+                    if (channelObj.type in THREAD_CHANNEL_TYPES) {
+                        channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
                     }
 
-                    if (channelObj !is TextChannel) {  // Should never happen, but we handle it for safety
+                    if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
                         respond {
                             content = "This command can only be run in a guild text channel."
                         }
                     }
 
-                    val ch = channelObj as TextChannel
+                    val ch = channelObj.asChannelOf<TextChannel>()
 
                     ch.getPermissionOverwritesForRole(guild!!.id)
                         ?.delete("Channel unlocked by ${user.asUser().tag}")
@@ -1035,16 +1046,88 @@ class UtilityExtension : Extension() {
                     }
                 }
             }
+
+            event<MessageCreateEvent> {
+                check { inLadysnakeGuild() }
+                check { isNotBot() }
+                check { isNotInThread() }
+                check { failIfNot(event.message.channelId in THREAD_ONLY_CHANNELS) }
+
+                action {
+                    val settings = event.getGuild()!!.getSettings() ?: return@action
+                    if (event.message.channelId in settings.threadOnlyChannels) {
+                        if (event.message.attachments.isEmpty()) {
+                            event.message.delete("Found in thread-only channel without attachment")
+                            event.member!!.dm {
+                                content = "Your message in <#${event.message.channelId}> was deleted. " +
+                                        "Please use the appropriate thread to talk about a post in this channel."
+                            }
+                        } else {
+                            val channel = event.message.channel.asChannelOf<TextChannel>()
+
+                            val messageContent = event.message.content
+
+                            @Suppress("MagicNumber")
+                            val threadName = if (messageContent.isBlank()) {
+                                val attachments = event.message.attachments
+                                if (attachments.size == 1) {
+                                    attachments.first().filename
+                                } else {
+                                    attachments.size.toString() + " attachments"
+                                }
+                            } else if (messageContent.length > 25) {
+                                messageContent.substring(0, 22) + "..."
+                            } else {
+                                messageContent
+                            }
+
+                            val thread = channel.startPublicThreadWithMessage(
+                                event.message.id,
+                                threadName,
+                                event.getGuild()!!.getMaxArchiveDuration(),
+                                "Automatic thread for thread-only channel"
+                            )
+
+                            logger.info { "Thread auto-created for ${event.message.author!!.tag}" }
+
+                            val role = when (event.message.getGuild().id) {
+                                LADYSNAKE_GUILD -> event.message.getGuild().getRole(LADYSNAKE_MODERATOR_ROLE)
+                                YOUTUBE_GUILD -> event.message.getGuild().getRole(YOUTUBE_MODERATOR_ROLE)
+                                else -> return@action
+                            }
+
+                            thread.addUser(event.message.author!!.id)
+
+                            val message = thread.createMessage {
+                                content = "Oh hey there, we just gotta do a bit of moderator-related setup " +
+                                        "for this fun new creation..."
+                            }
+
+                            thread.withTyping {
+                                delay(MESSAGE_EDIT_DELAY)
+                            }
+
+                            message.edit {
+                                content = "Hey, ${role.mention}! Say cheese!"
+                            }
+
+                            thread.withTyping {
+                                delay(MESSAGE_EDIT_DELAY)
+                            }
+
+                            message.edit {
+                                content = "Welcome to your thread, ${event.message.author!!.mention}! " +
+                                        "You can discuss your post with others here, and you can use the thread " +
+                                        "commands, both `/thread` and the message commands, to manage your thread. "
+                            }
+
+                            message.pin("First message in the thread.")
+                        }
+                    }
+                }
+            }
         }
     }
-
-    suspend fun Guild.getModLogChannel() =
-        channels.firstOrNull { it.name == "moderation-log" }
-            ?.asChannelOrNull() as? GuildMessageChannel
-
-    suspend fun Guild.getCozyLogChannel() =
-        channels.firstOrNull { it.name == "cozy-logs" }
-            ?.asChannelOrNull() as? GuildMessageChannel
 
     inner class PinMessageArguments : Arguments() {
         val message by message("message", "Message link or ID to pin/unpin")

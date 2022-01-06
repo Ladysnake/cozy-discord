@@ -4,7 +4,7 @@ import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.litote.kmongo.exists
 import org.litote.kmongo.setValue
 import org.quiltmc.community.LADYSNAKE_GUILD
-import org.quiltmc.community.SUGGESTION_CHANNEL
+import org.quiltmc.community.LADYSNAKE_SUGGESTION_CHANNEL
 import org.quiltmc.community.database.collections.InvalidMentionsCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.collections.UserRestrictionsCollection
@@ -22,7 +22,7 @@ suspend fun v10(db: CoroutineDatabase) {
 
         updateMany(
             Suggestion::channelId exists false,
-            setValue(Suggestion::channelId, SUGGESTION_CHANNEL)
+            setValue(Suggestion::channelId, LADYSNAKE_SUGGESTION_CHANNEL)
         )
     }
 }

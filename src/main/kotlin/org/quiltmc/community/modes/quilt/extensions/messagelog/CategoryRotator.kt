@@ -1,5 +1,6 @@
 package org.quiltmc.community.modes.quilt.extensions.messagelog
 
+import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
@@ -168,7 +169,7 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
                     if (curPos != i) {
                         logger.debug { "Updating channel position for ${c.name}: $curPos -> $i" }
 
-                        (allChannels[i] as TextChannel).edit {
+                        (allChannels[i].asChannelOf<TextChannel>()).edit {
                             position = i
                         }
                     }

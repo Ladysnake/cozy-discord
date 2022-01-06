@@ -11,16 +11,22 @@ import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
+import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Guild
+import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
+import kotlin.time.Duration
 
 @Suppress("MagicNumber")  // It's the status code...
 suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
@@ -33,6 +39,34 @@ suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
 
             null
         }
+
+/**
+ * Time out a user. This is an extension function at this time
+ * because it is not currently implemented in Kord or elsewhere in Kordex
+ */
+suspend fun Member.timeout(length: Duration) {
+    edit {
+        communicationDisabledUntil = Clock.System.now() + length
+    }
+}
+
+/**
+ * Time out a user. This is an extension function at this time
+ * because it is not currently implemented in Kord or elsewhere in Kordex
+ */
+suspend fun Member.timeoutUntil(time: Instant) {
+    edit {
+        communicationDisabledUntil = time
+    }
+}
+
+suspend fun Guild.getModLogChannel() =
+    channels.firstOrNull { it.name == "moderation-log" }
+        ?.asChannelOrNull() as? GuildMessageChannel
+
+suspend fun Guild.getCozyLogChannel() =
+    channels.firstOrNull { it.name == "cozy-logs" }
+        ?.asChannelOrNull() as? GuildMessageChannel
 
 fun String.chunkByWhitespace(length: Int): List<String> {
     if (length <= 0) {
@@ -105,6 +139,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
                 single { UserFlagsCollection() } bind UserFlagsCollection::class
                 single { InvalidMentionsCollection() } bind InvalidMentionsCollection::class
                 single { UserRestrictionsCollection() } bind UserRestrictionsCollection::class
+                single { LotteryCollection() } bind LotteryCollection::class
             }
 
             if (migrate) {

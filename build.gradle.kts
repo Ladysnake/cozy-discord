@@ -100,7 +100,7 @@ gitHooks {
 // If you don't want the import, remove it and use org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 tasks.withType<KotlinCompile> {
     // Current LTS version of Java
-    kotlinOptions.jvmTarget = "16"
+    kotlinOptions.jvmTarget = "17"
 
     kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 }
@@ -118,8 +118,8 @@ tasks.getByName("classes").dependsOn("detekt")
 
 java {
     // Current LTS version of Java
-    sourceCompatibility = JavaVersion.VERSION_16
-    targetCompatibility = JavaVersion.VERSION_16
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 }
 
 detekt {

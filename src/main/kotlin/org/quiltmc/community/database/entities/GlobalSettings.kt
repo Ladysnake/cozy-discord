@@ -14,7 +14,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import org.quiltmc.community.GITHUB_LOG_CHANNEL
 import org.quiltmc.community.LADYSNAKE_GUILD
-import org.quiltmc.community.SUGGESTION_CHANNEL
+import org.quiltmc.community.LADYSNAKE_SUGGESTION_CHANNEL
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.getGuildIgnoring403
@@ -33,7 +33,10 @@ data class GlobalSettings(
 //        YOUTUBE_GUILD,
     ),
 
-    var suggestionChannel: Snowflake? = SUGGESTION_CHANNEL,
+    var suggestionChannel: Snowflake? = LADYSNAKE_SUGGESTION_CHANNEL,
+    var suggestionChannels: MutableSet<Snowflake> = mutableSetOf(
+        LADYSNAKE_SUGGESTION_CHANNEL
+    ),
     var githubLogChannel: Snowflake? = GITHUB_LOG_CHANNEL,
 ) : Entity<UUID> {
     suspend fun save() {
@@ -64,13 +67,11 @@ data class GlobalSettings(
         }
 
         builder.append("\n\n")
-        builder.append("**Suggestions Channel:** ")
+        builder.append("**Suggestions Channels:** \n")
 
-        if (suggestionChannel != null) {
-            builder.append("<#${suggestionChannel!!.value}>")
-        } else {
-            builder.append(":x: Not configured")
-        }
+        builder.append(
+            suggestionChannels.joinToString("\n") { "• <#$it>" }
+        )
 
         builder.append("\n")
         builder.append("**/github Log Channel:** ")

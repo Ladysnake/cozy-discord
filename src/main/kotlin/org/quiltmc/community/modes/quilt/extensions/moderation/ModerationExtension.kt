@@ -1,6 +1,7 @@
 package org.quiltmc.community.modes.quilt.extensions.moderation
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
+import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.defaultingNumberChoice
@@ -26,10 +27,7 @@ import dev.kord.core.any
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.entity.KordEntity
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.Role
-import dev.kord.core.entity.User
+import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.message.MessageCreateEvent
@@ -104,17 +102,6 @@ class ModerationExtension(
                         }
                         if (!checkUsers || message.author == targetUser) {
                             deletedMessageList.add(message.data.id)
-                            reportToModChannel {
-                                title = "Message purged"
-                                description = message.content
-                                author {
-                                    name = message.author?.username
-                                    icon = message.author?.avatar?.url
-                                }
-                                footer {
-                                    text = "Purged by ${user.softMention()}"
-                                }
-                            }
                         }
 
                         if (deletedMessageList.size >= arguments.amount) {
@@ -176,6 +163,8 @@ class ModerationExtension(
             // map of user ids to the most recent message ids
             val recentMessages = mutableMapOf<Snowflake, MutableList<Snowflake>>()
             event<MessageCreateEvent> {
+                check { isNotBot() } // oh man my bot is going crazy
+
                 action {
                     if (event.member?.roles?.any { it.id in MODERATOR_ROLES } == true) {
                         return@action
@@ -192,7 +181,7 @@ class ModerationExtension(
                     }
                     if (recentMessagesForUser.size > MAX_MESSAGES_PER_MINUTE) {
                         event.message.delete()
-                        event.message.author.tryDM {
+                        event.message.author.tryDM(event.getGuild()) {
                             content = "You have exceeded the maximum amount of messages per minute. " +
                                     "Please wait a minute before sending another message."
                         }
@@ -204,7 +193,7 @@ class ModerationExtension(
                     }
                     if (spamCheck.size > MAX_MESSAGES_PER_SECOND) {
                         event.message.delete()
-                        event.message.author.tryDM {
+                        event.message.author.tryDM(event.getGuild()) {
                             content = "You have exceeded the maximum amount of messages per second. " +
                                     "Please wait a second before sending another message."
                         }
@@ -241,7 +230,7 @@ class ModerationExtension(
                     val mentions = event.message.mentionedUserIds + event.message.mentionedRoleIds
                     if (mentions.size > MAX_MENTIONS_PER_MESSAGE && MAX_MENTIONS_PER_MESSAGE != 0) {
                         event.message.delete()
-                        event.message.author.tryDM {
+                        event.message.author.tryDM(event.getGuild()) {
                             content = "You have exceeded the maximum amount of mentions per message. " +
                                     "Please do not mention more than $MAX_MENTIONS_PER_MESSAGE users."
                         }
@@ -381,7 +370,7 @@ class ModerationExtension(
                                     arguments.reason
                         }
 
-                        reportToModChannel {
+                        reportToModChannel(guild.asGuild()) {
                             description = "Kicked ${user.mention}"
                             field {
                                 name = "Reason"
@@ -389,7 +378,7 @@ class ModerationExtension(
                             }
                         }
                     } catch (e: RestRequestException) {
-                        reportToModChannel {
+                        reportToModChannel(guild.asGuild()) {
                             description = "Kicked ${user.mention}"
                             field {
                                 name = "Reason"
@@ -437,7 +426,7 @@ class ModerationExtension(
                                 deleteMessagesDays = arguments.banDeleteDays
                             }
 
-                            reportToModChannel {
+                            reportToModChannel(guild?.asGuild()) {
                                 title = "Banned id: ${arguments.user}"
                                 field {
                                     name = "Reason"
@@ -480,7 +469,7 @@ class ModerationExtension(
 
                             restriction.save()
 
-                            reportToModChannel {
+                            reportToModChannel(guild?.asGuild()) {
                                 title = "Timed out id: ${arguments.user}"
                                 field {
                                     name = "Reason"
@@ -516,13 +505,7 @@ class ModerationExtension(
                 }
             }
 
-            var unbanUsers: suspend () -> Unit = {}
-
-            val unbanUsersSchedulerTask: suspend () -> Unit = {
-                scheduler.schedule(1.seconds, callback = unbanUsers)
-            }
-
-            unbanUsers = {
+            val unbanUsers: suspend () -> Unit = {
                 val timedOutIds = userRestrictions.getAll()
                     .filter { !it.isBanned && it.returningBanTime != null }
                     .map { it to kord.getGuild(it.guildId)?.getMemberOrNull(it._id) }
@@ -570,11 +553,17 @@ class ModerationExtension(
                     guild.unban(userId)
                     userRestrictions.remove(userId) // remove the restriction
                 }
-
-                scheduler.schedule(4.seconds, callback = unbanUsersSchedulerTask)
             }
 
-            unbanUsers()
+            var repeatingTask = {}
+
+            repeatingTask = {
+                scheduler.schedule(1.seconds, callback = unbanUsers)
+                @Suppress("MagicNumber")
+                scheduler.schedule(5.seconds, callback = repeatingTask)
+            }
+
+            repeatingTask()
         }
 
         logger.info {
@@ -584,10 +573,12 @@ class ModerationExtension(
     }
 
     private suspend inline fun reportToModChannel(
+        guild: Guild? = null,
         text: String = "",
         embed: EmbedBuilder.() -> Unit = {}
     ) {
         val channel = modReportChannel
+            ?: guild?.getModLogChannel()?.id
             ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
             ?: return
 
@@ -616,7 +607,7 @@ class ModerationExtension(
         kord.rest.channel.patchChannel(channel.id, ChannelModifyPatchRequest(
             rateLimitPerUser = slowmode.optionalInt()
         ), reason = "Slowmode set by ${context.user}")
-        reportToModChannel {
+        reportToModChannel(context.guild?.asGuild()) {
             title = "Slowmode set"
             description =
                 "Slowmode for ${channel.mention} was set to $slowmode seconds by ${context.user.softMention()}."
@@ -653,7 +644,7 @@ class ModerationExtension(
                         context.arguments.reason
             }
 
-            reportToModChannel {
+            reportToModChannel(context.guild?.asGuild()) {
                 description = "Banned ${user.mention}"
                 field {
                     name = "Reason"
@@ -673,7 +664,7 @@ class ModerationExtension(
                 }
             }
         } catch (e: RestRequestException) {
-            reportToModChannel {
+            reportToModChannel(context.guild?.asGuild()) {
                 description = "Banned ${user.mention}"
                 field {
                     name = "Reason"
@@ -742,7 +733,7 @@ class ModerationExtension(
                         context.arguments.reason
             }
 
-            reportToModChannel {
+            reportToModChannel(context.guild?.asGuild()) {
                 description = "Timed out ${user.mention}"
                 field {
                     name = "Reason"
@@ -762,7 +753,7 @@ class ModerationExtension(
                 }
             }
         } catch (e: RestRequestException) {
-            reportToModChannel {
+            reportToModChannel(context.guild?.asGuild()) {
                 description = "Timed out ${user.mention}"
                 field {
                     name = "Reason"
@@ -793,18 +784,18 @@ class ModerationExtension(
         }
     }
 
-    private suspend fun User?.tryDM(builder: UserMessageCreateBuilder.() -> Unit) {
+    private suspend fun User?.tryDM(guild: Guild? = null, builder: UserMessageCreateBuilder.() -> Unit) {
         if (this != null) {
             try {
                 this.getDmChannel().createMessage(builder)
             } catch (e: RestRequestException) {
-                reportToModChannel {
+                reportToModChannel(guild) {
                     title = "DM failed"
                     description = "Failed to send DM to $mention. (the user likely has DMs disabled)"
                 }
             }
         } else {
-            reportToModChannel {
+            reportToModChannel(guild) {
                 title = "DM failed"
                 description = "Failed to send DM to null user."
             }

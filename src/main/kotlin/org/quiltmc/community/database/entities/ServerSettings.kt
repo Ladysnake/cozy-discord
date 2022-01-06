@@ -8,6 +8,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.channel.Category
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.Serializable
@@ -29,6 +30,7 @@ data class ServerSettings(
 
     var ladysnakeServerType: LadysnakeServerType? = null,
     var leaveServer: Boolean = false,
+    val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
 ) : Entity<Snowflake> {
     suspend fun save() {
         val collection = getKoin().get<ServerSettingsCollection>()
@@ -120,15 +122,32 @@ data class ServerSettings(
             builder.append(":x: No roles configured")
         }
 
+        builder.append("\n\n")
+        builder.append("**__Thread Only Channels__**\n")
+
+        if (threadOnlyChannels.isNotEmpty()) {
+            threadOnlyChannels.forEach {
+                val channel = guild?.getChannelOfOrNull<GuildMessageChannel>(it)
+
+                if (channel != null) {
+                    builder.append("**»** **${channel.name}** (`${it.value}`)\n")
+                } else {
+                    builder.append("**»** `${it.value}`\n")
+                }
+            }
+        } else {
+            builder.append(":x: No channels configured")
+        }
+
         with(embedBuilder) {
             color = DISCORD_BLURPLE
             description = builder.toString()
             title = "Settings"
 
-            if (guild != null) {
-                title += ": ${guild.name}"
+            title += if (guild != null) {
+                ": ${guild.name}"
             } else {
-                title += " (${_id.value})"
+                " (${_id.value})"
             }
         }
     }

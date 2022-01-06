@@ -9,6 +9,7 @@ import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.isEphemeral
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.Optional
+import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
@@ -191,7 +192,7 @@ class MessageLogExtension : Extension() {
 
                                 field {
                                     name = "Parent Channel"
-                                    value = (event.channel as ThreadChannel).parent.mention
+                                    value = (event.channel.asChannelOf<ThreadChannel>()).parent.mention
                                     inline = true
                                 }
                             } else {
@@ -271,7 +272,7 @@ class MessageLogExtension : Extension() {
 
                                     field {
                                         name = "Parent Channel"
-                                        value = (event.channel as ThreadChannel).parent.mention
+                                        value = (event.channel.asChannelOf<ThreadChannel>()).parent.mention
                                         inline = true
                                     }
                                 } else {
@@ -399,13 +400,13 @@ class MessageLogExtension : Extension() {
     }
 
     private suspend fun addRotator(guild: Guild) {
-        val category = MESSAGE_LOG_CATEGORIES.mapNotNull {
+        val category = MESSAGE_LOG_CATEGORIES.firstNotNullOfOrNull {
             try {
                 guild.getChannelOrNull(it) as? Category
             } catch (e: IllegalArgumentException) {
                 null  // Channel isn't on this guild
             }
-        }.firstOrNull()
+        }
 
         if (category == null) {
             logger.warn {

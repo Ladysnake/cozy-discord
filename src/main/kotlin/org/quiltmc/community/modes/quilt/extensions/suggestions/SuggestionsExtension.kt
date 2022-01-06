@@ -60,7 +60,8 @@ private const val ACTION_UP = "up"
 private const val THREAD_INTRO = "This message is at the top of the thread.\n\n" +
         "If this is your suggestion, **please** use `/thread rename` to change the " +
         "name of the thread! You're also welcome to use the other `/thread` commands to manage " +
-        "your suggestion thread as needed."
+        "your suggestion thread as needed. You can edit your suggestion at any time using the `/edit-suggestion`" +
+        " command."
 
 private const val COMMENT_SIZE_LIMIT: Long = 800
 private const val SUGGESTION_SIZE_LIMIT: Long = 1000
@@ -70,6 +71,8 @@ private const val TUPPERBOX_DELAY: Long = 5
 private val EMOTE_DOWNVOTE = ReactionEmoji.Unicode("⬇️")
 private val EMOTE_REMOVE = ReactionEmoji.Unicode("\uD83D\uDDD1️")
 private val EMOTE_UPVOTE = ReactionEmoji.Unicode("⬆️")
+
+private val CLEAR_WORDS = arrayOf("clear", "null")
 
 class SuggestionsExtension : Extension() {
     override val name: String = "suggestions"
@@ -332,7 +335,7 @@ class SuggestionsExtension : Extension() {
 
         ephemeralSlashCommand(::SuggestionStateArguments) {
             name = "suggestion"
-            description = "Suggestion state change commands"
+            description = "Suggestion state change command; \"clear\" to remove comment"
 
             guild(LADYSNAKE_GUILD)
 
@@ -344,7 +347,14 @@ class SuggestionsExtension : Extension() {
                 val status = arguments.status
 
                 arguments.suggestion.status = status
-                arguments.suggestion.comment = arguments.comment ?: arguments.suggestion.comment
+
+                if (arguments.comment != null) {
+                    arguments.suggestion.comment = if (arguments.comment!!.lowercase() in CLEAR_WORDS) {
+                        null
+                    } else {
+                        arguments.comment
+                    }
+                }
 
                 suggestions.set(arguments.suggestion)
                 sendSuggestion(arguments.suggestion)

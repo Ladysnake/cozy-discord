@@ -11,6 +11,7 @@ import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
+import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
@@ -30,15 +31,15 @@ import kotlin.time.Duration
 
 @Suppress("MagicNumber")  // It's the status code...
 suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
-        try {
-            getGuild(id)
-        } catch (e: RestRequestException) {
-            if (e.status.code != 403) {
-                throw(e)
-            }
-
-            null
+    try {
+        getGuild(id)
+    } catch (e: RestRequestException) {
+        if (e.status.code != 403) {
+            throw(e)
         }
+
+        null
+    }
 
 /**
  * Time out a user. This is an extension function at this time
@@ -127,7 +128,6 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
             }
 
             loadModule {
-                // TODO this should be done with annotations or something
                 single { FilterCollection() } bind FilterCollection::class
                 single { FilterEventCollection() } bind FilterEventCollection::class
                 single { GlobalSettingsCollection() } bind GlobalSettingsCollection::class
@@ -220,6 +220,15 @@ suspend fun EmbedBuilder.userField(user: UserBehavior, role: String, inline: Boo
     field {
         name = role
         value = "${user.mention} (`${user.id}` / `${user.asUser().tag}`)"
+
+        this.inline = inline
+    }
+}
+
+fun EmbedBuilder.channelField(channel: MessageChannelBehavior, title: String, inline: Boolean = false) {
+    field {
+        this.name = title
+        this.value = "${channel.mention} (`${channel.id}`)"
 
         this.inline = inline
     }

@@ -1166,83 +1166,92 @@ class UtilityExtension : Extension() {
                     }
                 }
             }
+        }
 
-            event<MessageCreateEvent> {
-                check { inLadysnakeGuild() }
-                check { isNotBot() }
-                check { isNotInThread() }
-                check { failIfNot(event.message.channelId in THREAD_ONLY_CHANNELS) }
+        event<MessageCreateEvent> {
+            check { inLadysnakeGuild() }
+            check { isNotBot() }
+            check { isNotInThread() }
+            check { failIfNot(event.message.channelId in THREAD_ONLY_CHANNELS) }
 
-                action {
-                    val settings = event.getGuild()!!.getSettings() ?: return@action
-                    if (event.message.channelId in settings.threadOnlyChannels) {
-                        if (event.message.attachments.isEmpty()) {
-                            event.message.delete("Found in thread-only channel without attachment")
-                            event.member!!.dm {
-                                content = "Your message in <#${event.message.channelId}> was deleted. " +
-                                        "Please use the appropriate thread to talk about a post in this channel."
-                            }
-                        } else {
-                            val channel = event.message.channel.asChannelOf<TextChannel>()
-
-                            val messageContent = event.message.content
-
-                            @Suppress("MagicNumber")
-                            val threadName = if (messageContent.isBlank()) {
-                                val attachments = event.message.attachments
-                                if (attachments.size == 1) {
-                                    attachments.first().filename
-                                } else {
-                                    attachments.size.toString() + " attachments"
-                                }
-                            } else if (messageContent.length > 25) {
-                                messageContent.substring(0, 22) + "..."
-                            } else {
-                                messageContent
-                            }
-
-                            val thread = channel.startPublicThreadWithMessage(
-                                event.message.id,
-                                threadName,
-                                event.getGuild()!!.getMaxArchiveDuration(),
-                                "Automatic thread for thread-only channel"
-                            )
-
-                            logger.info { "Thread auto-created for ${event.message.author!!.tag}" }
-
-                            val role = when (event.message.getGuild().id) {
-                                LADYSNAKE_GUILD -> event.message.getGuild().getRole(LADYSNAKE_MODERATOR_ROLE)
-                                YOUTUBE_GUILD -> event.message.getGuild().getRole(YOUTUBE_MODERATOR_ROLE)
-                                else -> return@action
-                            }
-
-                            thread.addUser(event.message.author!!.id)
-
-                            val message = thread.createMessage {
-                                content = "Oh hey there, we just gotta do a bit of moderator-related setup " +
-                                        "for this fun new creation..."
-                            }
-
-                            thread.withTyping {
-                                delay(MESSAGE_EDIT_DELAY)
-                            }
-
-                            message.edit {
-                                content = "Hey, ${role.mention}! Say cheese!"
-                            }
-
-                            thread.withTyping {
-                                delay(MESSAGE_EDIT_DELAY)
-                            }
-
-                            message.edit {
-                                content = "Welcome to your thread, ${event.message.author!!.mention}! " +
-                                        "You can discuss your post with others here, and you can use the thread " +
-                                        "commands, both `/thread` and the message commands, to manage your thread. "
-                            }
-
-                            message.pin("First message in the thread.")
+            action {
+                val settings = event.getGuild()!!.getSettings() ?: return@action
+                if (event.message.channelId in settings.threadOnlyChannels) {
+                    if (event.message.attachments.isEmpty()) {
+                        event.message.delete("Found in thread-only channel without attachment")
+                        event.member!!.dm {
+                            content = "Your message in <#${event.message.channelId}> was deleted. " +
+                                    "Please use the appropriate thread to talk about a post in this channel."
                         }
+                    } else {
+                        val channel = event.message.channel.asChannelOf<TextChannel>()
+
+                        val messageContent = event.message.content
+
+                        @Suppress("MagicNumber")
+                        val threadName = if (messageContent.isBlank()) {
+                            val attachments = event.message.attachments
+                            if (attachments.size == 1) {
+                                attachments.first().filename
+                            } else {
+                                attachments.size.toString() + " attachments"
+                            }
+                        } else if (messageContent.length > 25) {
+                            messageContent.substring(0, 22) + "..."
+                        } else {
+                            messageContent
+                        }
+
+                        val thread = channel.startPublicThreadWithMessage(
+                            event.message.id,
+                            threadName,
+                            event.getGuild()!!.getMaxArchiveDuration(),
+                            "Automatic thread for thread-only channel"
+                        )
+
+                        val ownedThread = OwnedThread(
+                            thread.id,
+                            event.member!!.id,
+                            event.guildId!!,
+                            preventArchiving = false
+                        )
+
+                        threads.set(ownedThread)
+
+                        logger.info { "Thread auto-created for ${event.message.author!!.tag}" }
+
+                        val role = when (event.message.getGuild().id) {
+                            LADYSNAKE_GUILD -> event.message.getGuild().getRole(LADYSNAKE_MODERATOR_ROLE)
+                            YOUTUBE_GUILD -> event.message.getGuild().getRole(YOUTUBE_MODERATOR_ROLE)
+                            else -> return@action
+                        }
+
+                        thread.addUser(event.message.author!!.id)
+
+                        val message = thread.createMessage {
+                            content = "Oh hey there, we just gotta do a bit of moderator-related setup " +
+                                    "for this fun new creation..."
+                        }
+
+                        thread.withTyping {
+                            delay(MESSAGE_EDIT_DELAY)
+                        }
+
+                        message.edit {
+                            content = "Hey, ${role.mention}! Say cheese!"
+                        }
+
+                        thread.withTyping {
+                            delay(MESSAGE_EDIT_DELAY)
+                        }
+
+                        message.edit {
+                            content = "Welcome to your thread, ${event.message.author!!.mention}! " +
+                                    "You can discuss your post with others here, and you can use the thread " +
+                                    "commands, both `/thread` and the message commands, to manage your thread. "
+                        }
+
+                        message.pin("First message in the thread.")
                     }
                 }
             }

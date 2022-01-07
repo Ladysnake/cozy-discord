@@ -26,6 +26,7 @@ data class ServerSettings(
     val moderatorRoles: MutableSet<Snowflake> = mutableSetOf(),
 
     var cozyLogChannel: Snowflake? = null,
+    var filterLogChannel: Snowflake? = null,
     var messageLogCategory: Snowflake? = null,
 
     var ladysnakeServerType: LadysnakeServerType? = null,
@@ -72,6 +73,17 @@ data class ServerSettings(
             builder.append("<#${cozyLogChannel!!.value}>")
         } else {
             builder.append(":x: Not configured")
+        }
+
+        if (showQuiltSettings) {
+            builder.append("\n")
+            builder.append("**Filter Logs:** ")
+
+            if (filterLogChannel != null) {
+                builder.append("<#${filterLogChannel!!.value}>")
+            } else {
+                builder.append(":x: Not configured")
+            }
         }
 
         builder.append("\n")

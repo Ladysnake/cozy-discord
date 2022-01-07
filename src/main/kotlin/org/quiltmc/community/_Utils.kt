@@ -13,6 +13,7 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -63,10 +64,6 @@ suspend fun Member.timeoutUntil(time: Instant) {
 
 suspend fun Guild.getModLogChannel() =
     channels.firstOrNull { it.name == "moderation-log" }
-        ?.asChannelOrNull() as? GuildMessageChannel
-
-suspend fun Guild.getCozyLogChannel() =
-    channels.firstOrNull { it.name == "cozy-logs" }
         ?.asChannelOrNull() as? GuildMessageChannel
 
 fun String.chunkByWhitespace(length: Int): List<String> {
@@ -214,6 +211,18 @@ suspend fun Kord?.getGithubLogChannel(): GuildMessageChannel? {
     val channelId = getKoin().get<GlobalSettingsCollection>().get()?.githubLogChannel ?: return null
 
     return this?.getChannelOf(channelId)
+}
+
+suspend fun Guild.getCozyLogChannel(): GuildMessageChannel? {
+    val channelId = getKoin().get<ServerSettingsCollection>().get(id)?.cozyLogChannel ?: return null
+
+    return getChannelOf(channelId)
+}
+
+suspend fun Guild.getFilterLogChannel(): GuildMessageChannel? {
+    val channelId = getKoin().get<ServerSettingsCollection>().get(id)?.filterLogChannel ?: return null
+
+    return getChannelOf(channelId)
 }
 
 suspend fun EmbedBuilder.userField(user: UserBehavior, role: String, inline: Boolean = false) {

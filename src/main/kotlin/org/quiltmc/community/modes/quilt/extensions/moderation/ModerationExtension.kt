@@ -24,6 +24,7 @@ import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.optionalInt
 import dev.kord.core.any
+import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -35,6 +36,7 @@ import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -164,6 +166,7 @@ class ModerationExtension(
             val recentMessages = mutableMapOf<Snowflake, MutableList<Snowflake>>()
             event<MessageCreateEvent> {
                 check { isNotBot() } // oh man my bot is going crazy
+                check { notHasBaseModeratorRole() } // mods can spam :pineapple:
 
                 action {
                     if (event.member?.roles?.any { it.id in MODERATOR_ROLES } == true) {
@@ -179,6 +182,22 @@ class ModerationExtension(
                     recentMessagesForUser.removeAll {
                         (it.timeMark + 60.seconds).hasPassedNow()
                     }
+
+                    // also check for spam that happened in a second
+                    val spamCheck = recentMessagesForUser.filterNot {
+                        (it.timeMark + 1.seconds).hasPassedNow()
+                    }
+
+                    if (spamCheck.size > ABSOLUTE_MAX_PER_SECOND || spamCheck.size > ABSOLUTE_MAX_PER_MINUTE) {
+                        // over the limit, time the user out
+                        event.message.getAuthorAsMember()?.timeout(2.minutes)
+                        event.message.author.tryDM(event.getGuild()) {
+                            content = "You have been timed out for spamming in an associated server. " +
+                                    "Please do not spam."
+                        }
+                        return@action
+                    }
+
                     if (recentMessagesForUser.size > MAX_MESSAGES_PER_MINUTE) {
                         event.message.delete()
                         event.message.author.tryDM(event.getGuild()) {
@@ -187,10 +206,6 @@ class ModerationExtension(
                         }
                     }
 
-                    // also check for spam that happened in a second
-                    val spamCheck = recentMessagesForUser.filterNot {
-                        (it.timeMark + 1.seconds).hasPassedNow()
-                    }
                     if (spamCheck.size > MAX_MESSAGES_PER_SECOND) {
                         event.message.delete()
                         event.message.author.tryDM(event.getGuild()) {
@@ -270,7 +285,7 @@ class ModerationExtension(
 
                 action {
                     val guild = getGuild()?.asGuild() ?: return@action
-                    if (arguments.mentionable is Role && arguments.allowReplyMentions) {
+                    if (arguments.mentionable is Role && arguments.allowReplyMentions == true) {
                         throw DiscordRelayedException("You cannot allow reply mentions for a role.")
                     }
 
@@ -282,13 +297,51 @@ class ModerationExtension(
                         else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
                     }
 
-                    val invalidMention = invalidMentions.get(id)
-                        ?: InvalidMention(id, type)
+                    fun b2s(b: Boolean?) = when (b) {
+                        true -> "Enabled"
+                        false -> "Disabled"
+                        else -> "Unchanged"
+                    }
 
-                    invalidMention.allowsDirectMentions = arguments.allowDirectMentions
-                    invalidMention.allowsReplyMentions = arguments.allowReplyMentions
+                    val mention = when (mentionable) {
+                        is Role -> mentionable.mention
+                        is User -> mentionable.mention
+                        else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
+                    }
+
+                    val invalidMention = invalidMentions.get(id)
+                        ?: run {
+                            val newMention = InvalidMention(id, type)
+                            if (arguments.allowDirectMentions != null) {
+                                newMention.allowsDirectMentions = arguments.allowDirectMentions!!
+                            }
+                            if (arguments.allowReplyMentions != null) {
+                                newMention.allowsReplyMentions = arguments.allowReplyMentions!!
+                            }
+
+                            invalidMentions.set(newMention)
+
+                            respond {
+                                content = "Mention settings for $mention have been created: " +
+                                    "Direct mentions: ${b2s(newMention.allowsDirectMentions)}, " +
+                                    "Reply mentions: ${b2s(newMention.allowsReplyMentions)}"
+                            }
+                            return@action
+                        }
+
+                    invalidMention.allowsDirectMentions =
+                        arguments.allowDirectMentions ?: invalidMention.allowsDirectMentions
+
+                    invalidMention.allowsReplyMentions =
+                        arguments.allowReplyMentions ?: invalidMention.allowsReplyMentions
 
                     invalidMentions.set(invalidMention)
+
+                    respond {
+                        content = "Mention settings for $mention have been updated: " +
+                            "Direct mentions: ${b2s(arguments.allowDirectMentions)}, " +
+                            "Reply mentions: ${b2s(arguments.allowReplyMentions)}"
+                    }
                 }
             }
             ephemeralSlashCommand(::MentionArguments) {
@@ -396,6 +449,76 @@ class ModerationExtension(
 
                     respond {
                         content = "Kicked ${user.softMention()} (${user.id})."
+                    }
+                }
+            }
+            ephemeralSlashCommand(::NoteArguments) {
+                name = "note"
+                description = "Add a note to a user, message, or both, for only moderators to see."
+
+                MODERATOR_ROLES.forEach(::allowRole)
+
+                action {
+                    val user = arguments.user
+                    val message = arguments.messageId?.let {
+                        guild?.asGuildOrNull()?.getModLogChannel()?.getMessageOrNull(it)
+                    }
+
+                    val note = arguments.note
+                    val userMention = user?.mention ?: "Unknown user"
+                    val currentTime = Clock.System.now().toDiscord(TimestampType.Default)
+
+                    if (message != null) {
+                        val embed = message.embeds.firstOrNull()
+                        message.edit {
+                            if (embed == null) {
+                                embed {
+                                    title = "Added notes"
+
+                                    note(note, userMention)
+                                }
+                            } else {
+                                embed {
+                                    for (f in embed.fields) {
+                                        field {
+                                            name = f.name
+                                            value = f.value
+                                            inline = f.inline
+                                        }
+                                    }
+
+                                    fields.firstOrNull { it.name == "Notes" }?.let {
+                                        // field exists, append to it
+                                        it.value = """
+                                            $it
+                                            
+                                            Note added by $userMention at $currentTime:
+                                            > $note
+                                        """.trimIndent()
+                                    } ?: note(note, userMention)
+                                }
+                            }
+                        }
+                    } else if (user != null) {
+                        reportToModChannel(guild?.asGuild()) {
+                            title = "User note"
+                            description = """
+                                This is auto-generated as a start for notes for ${user.mention}.
+                                Future additions should be added with `/note` and specifying `message-id`
+                            """.trimIndent()
+
+                            note(note, userMention)
+                        }
+                    } else {
+                        reportToModChannel {
+                            title = "Note"
+                            description = """
+                                This is auto-generated as a start for notes with no user or previous action.
+                                Future additions should be added with `/note` and specifying `message-id`
+                            """.trimIndent()
+
+                            note(note, userMention)
+                        }
                     }
                 }
             }
@@ -802,6 +925,16 @@ class ModerationExtension(
         }
     }
 
+    private fun EmbedBuilder.note(noteText: String, modMention: String) {
+        field {
+            name = "Notes"
+            value = """
+                Note added by $modMention at ${Clock.System.now().toDiscord(TimestampType.Default)}:
+                > $noteText
+            """.trimIndent()
+        }
+    }
+
     enum class Module {
         PURGE,
         USER_MANAGEMENT,
@@ -875,16 +1008,19 @@ class ModerationExtension(
         val mentionable by mentionable(
             "entity",
             "The role or user to warn people about when mentioning them"
-        )
-        val allowDirectMentions by defaultingBoolean(
+        ) { _, entity ->
+            if (entity is RoleBehavior && entity.id == entity.guildId) {
+                throw IllegalArgumentException("Setting permissions for @everyone should be done through settings.")
+            }
+        }
+
+        val allowDirectMentions by optionalBoolean(
             "allow-direct-mentions",
-            "Whether to allow the role or user to be mentioned directly in a message",
-            false
+            "Whether to allow the role or user to be mentioned directly in a message"
         )
-        val allowReplyMentions by defaultingBoolean(
+        val allowReplyMentions by optionalBoolean(
             "allow-reply-mentions",
-            "Whether to allow the user to be mentioned in a reply to a message",
-            false
+            "Whether to allow the user to be mentioned in a reply to a message"
         )
     }
 
@@ -1020,6 +1156,12 @@ class ModerationExtension(
         )
 
         val banDeleteDays by banDeleteDaySelector()
+    }
+
+    class NoteArguments : Arguments() {
+        val note by string("note", "The note to add")
+        val messageId by optionalSnowflake("message-id", "An optional log message to add the note to")
+        val user by optionalUser("user", "An optional user to add the note to, if message-id is not specified")
     }
 
     companion object {

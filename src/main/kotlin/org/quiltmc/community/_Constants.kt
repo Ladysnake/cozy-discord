@@ -8,6 +8,7 @@ import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import dev.kord.common.entity.Snowflake
+import kotlin.math.ceil
 
 internal val DISCORD_TOKEN = env("TOKEN")
 internal val GITHUB_TOKEN = envOrNull("GITHUB_TOKEN")
@@ -65,3 +66,6 @@ internal val THREAD_ONLY_CHANNELS = envOrNull("THREAD_ONLY_CHANNELS")?.split(','
 internal val MAX_MESSAGES_PER_MINUTE = envOrNull("MAX_MESSAGES_PER_MINUTE")?.toInt() ?: 20
 internal val MAX_MESSAGES_PER_SECOND = envOrNull("MAX_MESSAGES_PER_SECOND")?.toInt() ?: 3
 internal val MAX_MENTIONS_PER_MESSAGE = envOrNull("MAX_MENTIONS_PER_MESSAGE")?.toInt() ?: 3
+
+internal val ABSOLUTE_MAX_PER_SECOND = ceil(MAX_MESSAGES_PER_SECOND * 1.5).toInt()
+internal val ABSOLUTE_MAX_PER_MINUTE = ceil(MAX_MESSAGES_PER_MINUTE * 1.5).toInt()

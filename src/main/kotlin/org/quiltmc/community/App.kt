@@ -52,6 +52,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         add(::UtilityExtension)
         add(::ModerationExtension)
         add(::UserFunExtension)
+        add(::PersistentCacheExtension)
 
         if (GITHUB_TOKEN != null) {
             add(::GithubExtension)

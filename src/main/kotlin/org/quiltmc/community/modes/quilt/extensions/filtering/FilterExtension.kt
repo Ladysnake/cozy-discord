@@ -300,7 +300,7 @@ class FilterExtension : Extension() {
                         filter.note = arguments.note
                         filters.set(filter)
 
-                        this@FilterExtension.kord.getGuild(COMMUNITY_GUILD)
+                        this@FilterExtension.kord.getGuild(LADYSNAKE_GUILD)
                             ?.getCozyLogChannel()
                             ?.createEmbed {
                                 color = DISCORD_GREEN

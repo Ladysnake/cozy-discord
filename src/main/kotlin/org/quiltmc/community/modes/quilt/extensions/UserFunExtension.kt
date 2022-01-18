@@ -1,7 +1,6 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
-import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
@@ -454,25 +453,38 @@ class UserFunExtension : Extension() {
     }
 
     class AssignableComplete : Arguments() {
-        val channel by channel(
-            "channel",
-            "The channel to send the message to",
+        val channel by channel {
+            name = "channel"
+            description = "The channel to send the message to"
             requireSameGuild = true
-        ) { _, channel ->
-            if (channel.type !in listOf(ChannelType.GuildText, ChannelType.GuildNews)) {
-                throw DiscordRelayedException("You must specify a text channel!")
+
+            validate {
+                failIf { value.type !in listOf(ChannelType.GuildText, ChannelType.GuildNews) }
             }
         }
     }
 
     class AssignableAdd : Arguments() {
-        val role by role("role", "The role to add")
+        val role by role {
+            name = "role"
+            description = "The role to add"
+        }
 
-        val emoji by optionalString("emoji", "The emoji to use for this role")
+        val emoji by optionalString {
+            name = "emoji"
+            description = "The emoji to use for this role"
+        }
     }
 
     class BeanArguments : Arguments() {
-        val user by user("user", "The user to bean")
-        val reason by string("reason", "The reason for the bean")
+        val user by user {
+            name = "user"
+            description = "The user to bean"
+        }
+
+        val reason by string {
+            name = "reason"
+            description = "The reason for the bean"
+        }
     }
 }

@@ -146,10 +146,10 @@ class ModerationExtension(
                 ephemeralSubCommand({
                     object : Arguments(), ChannelTargetArguments, RequiredInt {
                         override val i = 0
-                        override val channel by optionalChannel(
-                            "channel",
-                            "The channel to disable slowmode in"
-                        )
+                        override val channel by optionalChannel {
+                            name = "channel"
+                            description = "The channel to disable slowmode in"
+                        }
                     }
                 }) {
                     name = "off"
@@ -965,70 +965,107 @@ class ModerationExtension(
     }
 
     open class RequiredUser(mentionableDesc: String, validator: Validator<KordEntity> = null) : Arguments() {
-        val user by user(
-            "user",
-            mentionableDesc,
-            validator = validator
-        )
+        val user by user {
+            name = "user"
+            description = mentionableDesc
+            validate(validator)
+        }
     }
 
     class PurgeArguments : Arguments(), ChannelTargetArguments {
-        val amount by int("amount", "The amount of messages to purge")
-        val user by optionalUser("user", "The user to purge messages from (all if omitted)")
-        override val channel by optionalChannel("channel", "The channel to purge messages from (current if omitted)")
+        val amount by int {
+            name = "amount"
+            description = "The amount of messages to delete"
+
+            validate {
+                failIf("You must specify some amount of messages!") { value < 0 }
+            }
+        }
+
+        val user by optionalUser {
+            name = "user"
+            description = "The user to purge messages from (all if omitted)"
+        }
+
+        override val channel by optionalChannel {
+            name = "channel"
+            description = "The channel to purge messages from (current if omitted)"
+        }
     }
 
     class ChannelSlowModeArguments : Arguments(), ChannelTargetArguments, RequiredInt {
-        override val i by defaultingInt("rate", "The minimum time to wait between messages in seconds", 1)
+        override val i by int {
+            name = "seconds"
+            description = "The minimum time to wait between messages in seconds"
 
-        override val channel by optionalChannel("channel", "The channel to set slowmode for")
+            validate {
+                failIf("You must specify a positive length!") { value < 0 }
+            }
+        }
+
+        override val channel by optionalChannel {
+            name = "channel"
+            description = "The channel to set slowmode for (current if omitted)"
+        }
     }
 
     class ChannelDefaultSlowModeArguments : Arguments(), ChannelTargetArguments, RequiredInt {
         @Suppress("MagicNumber")
-        override val i by intChoice("rate", "The time between messages to wait", mapOf(
-            "1 second" to 1,
-            "5 seconds" to 5,
-            "10 seconds" to 10,
-            "30 seconds" to 30,
-            "1 minute" to 60,
-            "5 minutes" to 300,
-            "10 minutes" to 600,
-            "30 minutes" to 1_800,
-            "1 hour" to 3_600,
-            "2 hours" to 7_200,
-            "3 hours" to 10_800,
-            "6 hours" to 21_600,
-        ))
+        override val i by intChoice {
+            name = "seconds"
+            description = "The minimum time to wait between messages in seconds"
 
-        override val channel by optionalChannel("channel", "The channel to set slowmode for")
+            choices["1 second"] = 1
+            choices["5 seconds"] = 5
+            choices["10 seconds"] = 10
+            choices["30 seconds"] = 30
+            choices["1 minute"] = 60
+            choices["5 minutes"] = 300
+            choices["10 minutes"] = 600
+            choices["30 minutes"] = 1_800
+            choices["1 hour"] = 3_600
+            choices["2 hours"] = 7_200
+            choices["3 hours"] = 10_800
+            choices["6 hours"] = 21_600
+        }
+
+        override val channel by optionalChannel {
+            name = "channel"
+            description = "The channel to set slowmode for (current if omitted)"
+        }
     }
 
     class MentionArguments : Arguments() {
-        val mentionable by mentionable(
-            "entity",
-            "The role or user to warn people about when mentioning them"
-        ) { _, entity ->
-            if (entity is RoleBehavior && entity.id == entity.guildId) {
-                throw IllegalArgumentException("Setting permissions for @everyone should be done through settings.")
+        val mentionable by mentionable {
+            name = "entity"
+            description = "The role or user to warn people about when mentioning them"
+
+            validate {
+                failIf("@everyone should be configured in server settings!") {
+                    value is RoleBehavior && (value as RoleBehavior).guildId == value.id
+                }
             }
         }
 
-        val allowDirectMentions by optionalBoolean(
-            "allow-direct-mentions",
-            "Whether to allow the role or user to be mentioned directly in a message"
-        )
-        val allowReplyMentions by optionalBoolean(
-            "allow-reply-mentions",
-            "Whether to allow the user to be mentioned in a reply to a message"
-        )
+        val allowDirectMentions by optionalBoolean {
+            name = "allow-direct-mentions"
+            description = "Whether to allow the role or user to be mentioned directly in a message"
+        }
+
+        val allowReplyMentions by optionalBoolean {
+            name = "allow-reply-mentions"
+            description = "Whether to allow the user (role not supported) to be mentioned in a reply to a message"
+        }
     }
 
     open class RequiresReason(
         mentionableDesc: String,
         validator: Validator<KordEntity> = null
     ) : RequiredUser(mentionableDesc, validator) {
-        val reason by string("reason", "The reason for the action")
+        val reason by string {
+            name = "reason"
+            description = "The reason for the action"
+        }
     }
 
     abstract class BanArguments : RequiresReason("The user to ban") {
@@ -1039,137 +1076,153 @@ class ModerationExtension(
 
     class CustomBanArguments : BanArguments() {
         @Suppress("MagicNumber")
-        override val length by defaultingLong(
-            "length",
-            "The length of the ban in seconds, 0 for indefinite, or -1 to end (default 1 month)",
-            2_592_000
-        )
+        override val length by defaultingLong {
+            name = "length"
+            description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default 1 month)"
+            defaultValue = 2_592_000
+        }
     }
 
     class ChoiceBanArguments : BanArguments() {
         @Suppress("MagicNumber")
-        override val length by defaultingNumberChoice(
-            "length",
-            "The length of the ban (default 1 month)",
-            2_592_000,
-            choices = mapOf(
-                "1 minute" to 60,
-                "5 minutes" to 300,
-                "10 minutes" to 600,
-                "30 minutes" to 1_800,
-                "1 hour" to 3_600,
-                "2 hours" to 7_200,
-                "3 hours" to 10_800,
-                "6 hours" to 21_600,
-                "1 day" to 86_400,
-                "2 days" to 172_800,
-                "3 days" to 259_200,
-                "1 week" to 604_800,
-                "2 weeks" to 1_209_600,
-                "3 weeks" to 1_814_400,
-                "1 month" to 2_592_000,
-                "2 months" to 5_184_000,
-                "3 months" to 7_168_000,
-                "6 months" to 15_552_000,
-                "1 year" to 31_556_952,
-                // up to 4 more entries can be added here
-                "forever" to 0,
-                "unbanned" to -1
-            )
-        )
+        override val length by defaultingNumberChoice {
+            name = "length"
+            description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default 1 month)"
+            defaultValue = 2_592_000
+
+            choices["1 minute"] = 60
+            choices["5 minutes"] = 300
+            choices["10 minutes"] = 600
+            choices["30 minutes"] = 1_800
+            choices["1 hour"] = 3_600
+            choices["2 hours"] = 7_200
+            choices["3 hours"] = 10_800
+            choices["6 hours"] = 21_600
+            choices["1 day"] = 86_400
+            choices["2 days"] = 172_800
+            choices["3 days"] = 259_200
+            choices["1 week"] = 604_800
+            choices["2 weeks"] = 1_209_600
+            choices["3 weeks"] = 1_814_400
+            choices["1 month"] = 2_592_000
+            choices["2 months"] = 5_184_000
+            choices["3 months"] = 7_168_000
+            choices["6 months"] = 15_552_000
+            choices["1 year"] = 31_556_952
+            // up to 4 more entries can be added here
+            choices["forever"] = 0
+            choices["unbanned"] = -1
+        }
     }
 
     abstract class TimeoutArguments : RequiresReason("The user to timeout"), RequiredLong
 
     class ChoiceTimeoutArguments : TimeoutArguments() {
         @Suppress("MagicNumber")
-        override val l by defaultingNumberChoice(
-            "length",
-            "The length of the timeout (default 5 minutes)",
-            300,
-            choices = mapOf(
-                "60 seconds" to 60,
-                "5 minutes" to 300,
-                "10 minutes" to 600,
-                "1 hour" to 3_600,
-                "1 day" to 86_400,
-                "1 week" to 604_800,
-                "stop" to -1
-            )
-        )
+        override val l by defaultingNumberChoice {
+            name = "length"
+            description = "The length of the timeout (default 5 minutes)"
+            defaultValue = 300
+
+            choices["60 seconds"] = 60
+            choices["5 minutes"] = 300
+            choices["10 minutes"] = 600
+            choices["1 hour"] = 3_600
+            choices["1 day"] = 86_400
+            choices["1 week"] = 604_800
+            choices["stop"] = -1
+        }
     }
 
     class CustomTimeoutArguments : TimeoutArguments() {
         @Suppress("MagicNumber")
-        override val l by defaultingLong(
-            "length",
-            "The length of the timeout in seconds (default 5 minutes, max 28 days, -1 to end)",
-            300
-        ) { _, value ->
-            if (value < 0 || value > 28_800) {
-                throw DiscordRelayedException("Length must be between 0 and 28800 seconds")
+        override val l by defaultingLong {
+            name = "length"
+            description = "The length of the timeout in seconds (default 5 minutes, max 28 days, -1 to end)"
+            defaultValue = 300
+
+            validate {
+                failIfNot("length must be between 0 and 28 days") {
+                    value in -1..28_719
+                }
             }
         }
     }
 
     class ActionArguments : Arguments() {
-        val user by snowflake("user", "The user to perform the action on, as their user ID")
-        val action by stringChoice(
-            "action",
-            "The action to take on the user",
-            mapOf(
-                "ban" to "ban",
-                "timeout" to "timeout",
-            )
-        )
-        val reason by string("reason", "The reason for the action")
+        val user by snowflake {
+            name = "user"
+            description = "The user to perform the action on, as their user ID"
+        }
+
+        val action by stringChoice {
+            name = "action"
+            description = "The action to take on the user"
+            choices["ban"] = "ban"
+            choices["unban"] = "unban"
+        }
+
+        val reason by string {
+            name = "reason"
+            description = "The reason for the action"
+        }
 
         @Suppress("MagicNumber")
-        val length by defaultingNumberChoice(
-            "length",
-            "The length of the action (default 1 month)",
-            2_592_000,
-            choices = mapOf(
-                "1 minute" to 60,
-                "5 minutes" to 300,
-                "10 minutes" to 600,
-                "30 minutes" to 1_800,
-                "1 hour" to 3_600,
-                "2 hours" to 7_200,
-                "3 hours" to 10_800,
-                "6 hours" to 21_600,
-                "1 day" to 86_400,
-                "2 days" to 172_800,
-                "3 days" to 259_200,
-                "1 week" to 604_800,
-                "2 weeks" to 1_209_600,
-                "3 weeks" to 1_814_400,
-                "1 month" to 2_592_000,
-                "2 months" to 5_184_000,
-                "3 months" to 7_168_000,
-                "6 months" to 15_552_000,
-                "1 year" to 31_556_952,
-                // up to 4 more entries can be added here
-                "forever" to 0,
-                "unbanned" to -1
-            )
-        )
+        val length by defaultingNumberChoice {
+            name = "length"
+            description = "The length of the action (default 1 month)"
+            defaultValue = 2_592_000
+
+            choices["1 minute"] = 60
+            choices["5 minutes"] = 300
+            choices["10 minutes"] = 600
+            choices["30 minutes"] = 1_800
+            choices["1 hour"] = 3_600
+            choices["2 hours"] = 7_200
+            choices["3 hours"] = 10_800
+            choices["6 hours"] = 21_600
+            choices["1 day"] = 86_400
+            choices["2 days"] = 172_800
+            choices["3 days"] = 259_200
+            choices["1 week"] = 604_800
+            choices["2 weeks"] = 1_209_600
+            choices["3 weeks"] = 1_814_400
+            choices["1 month"] = 2_592_000
+            choices["2 months"] = 5_184_000
+            choices["3 months"] = 7_168_000
+            choices["6 months"] = 15_552_000
+            choices["1 year"] = 31_556_952
+            // up to 4 more entries can be added here
+            choices["forever"] = 0
+            choices["unbanned"] = -1
+        }
 
         val banDeleteDays by banDeleteDaySelector()
     }
 
     class NoteArguments : Arguments() {
-        val note by string("note", "The note to add")
-        val messageId by optionalSnowflake("message-id", "An optional log message to add the note to")
-        val user by optionalUser("user", "An optional user to add the note to, if message-id is not specified")
+        val note by string {
+            name = "note"
+            description = "The note to add"
+        }
+
+        val messageId by optionalSnowflake {
+            name = "message-id"
+            description = "An optional log message to add the note to"
+        }
+
+        val user by optionalUser {
+            name = "user"
+            description = "An optional user to add the note to, if message-id is not specified"
+        }
     }
 
     companion object {
         @Suppress("MagicNumber")
-        internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice(
-            "delete-days",
-            "The amount of days to delete messages from the user's history",
-            0,
+        internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice {
+            name = "delete-days"
+            description = "The amount of days to delete messages from the user's history"
+            defaultValue = 0
             choices = buildMap {
                 for (i in 0..6) {
                     put("$i days", i)
@@ -1180,7 +1233,7 @@ class ModerationExtension(
                 put("1 day", 1)
                 // 7 days
                 put("1 week", 7)
-            }
-        )
+            }.toMutableMap() // kordex requires a mutable map
+        }
     }
 }

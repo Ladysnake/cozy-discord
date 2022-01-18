@@ -328,6 +328,9 @@ class MinecraftExtension : Extension() {
 
     @OptIn(KordPreview::class)
     class CheckArguments : Arguments() {
-        val version by optionalString("version", "Specific version to get patch notes for")
+        val version by optionalString {
+            name = "version"
+            description = "Specific version to get patch notes for"
+        }
     }
 }

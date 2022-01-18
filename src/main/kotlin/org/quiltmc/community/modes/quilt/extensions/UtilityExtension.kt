@@ -12,6 +12,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCom
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.ephemeralButton
+import com.kotlindiscord.kord.extensions.defaultingBoolean
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
@@ -1262,41 +1263,65 @@ class UtilityExtension : Extension() {
     }
 
     inner class PinMessageArguments : Arguments() {
-        val message by message("message", "Message link or ID to pin/unpin")
+        val message by message {
+            name = "message"
+            description = "Message link or ID to pin/unpin"
+        }
     }
 
     inner class RenameArguments : Arguments() {
-        val name by string("name", "Name to give the current thread")
+        val name by string {
+            name = "name"
+            description = "Name to give the current thread"
+        }
     }
 
     inner class ArchiveArguments : Arguments() {
-        val lock by defaultingBoolean(
-            "lock",
-            "Whether to lock the thread, if you're staff - defaults to false",
-            false
-        )
+        val lock by defaultingBoolean {
+            name = "lock"
+            description = "Whether to lock the thread, if you're staff - defaults to false"
+            defaultValue = false
+        }
     }
 
     inner class SetOwnerArguments : Arguments() {
-        val user by user("user", "User to set as the owner of the thread")
+        val user by user {
+            name = "user"
+            description = "User to set as the owner of the thread"
+        }
     }
 
     inner class LockArguments : Arguments() {
-        val channel by optionalChannel(
-            "channel",
-            "Channel to lock/unlock, if not the current one"
-        )
+        val channel by optionalChannel {
+            name = "channel"
+            description = "Channel to lock/unlock, if not the current one"
+        }
     }
 
     inner class MuteRoleArguments : Arguments() {
-        val role by optionalRole("role", "Mute role ID, if the role isn't named Muted")
+        val role by optionalRole {
+            name = "role"
+            description = "Mute role ID, if the role isn't named Muted"
+        }
     }
 
     inner class SayArguments : Arguments() {
-        val message by string("message", "Message to send")
-        val target by optionalChannel("target", "Channel to use, if not this one") { _, value ->
-            if (value != null && value !is GuildMessageChannel) {
-                throw DiscordRelayedException("${value.mention} is not a guild text channel.")
+        val message by string {
+            name = "message"
+            description = "Message to send"
+        }
+
+        val target by optionalChannel {
+            name = "target"
+            description = "Channel to send the message to, if not the current one"
+
+            validate {
+                failIf { value != null && value!!.type !in listOf(
+                    ChannelType.GuildText,
+                    ChannelType.GuildNews,
+                    ChannelType.PublicNewsThread,
+                    ChannelType.PublicGuildThread
+                ) }
             }
         }
     }

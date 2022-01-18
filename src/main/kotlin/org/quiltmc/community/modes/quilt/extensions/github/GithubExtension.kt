@@ -11,10 +11,10 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.core.behavior.channel.createEmbed
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.features.defaultRequest
-import io.ktor.client.request.header
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.features.*
+import io.ktor.client.request.*
 import org.quiltmc.community.*
 import quilt.ghgen.DeleteIssue
 import quilt.ghgen.FindIssueId
@@ -135,11 +135,19 @@ class GithubExtension : Extension() {
     }
 
     inner class DeleteIssueArgs : Arguments() {
-        val repo by string("repository", "The name of the repository")
-        val issue by int("issue", "The number of the issue or pull request to delete")
-        val reason by optionalString(
-            "reason",
-            "A short explanation of why this issue is being deleted"
-        )
+        val repo by string {
+            name = "repository"
+            description = "The name of the repository"
+        }
+
+        val issue by int {
+            name = "issue"
+            description = "The number of the issue or pull request to delete"
+        }
+
+        val reason by optionalString {
+            name = "reason"
+            description = "A short explanation of why this issue is being deleted"
+        }
     }
 }

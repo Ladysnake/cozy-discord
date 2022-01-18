@@ -3,7 +3,6 @@
 package org.quiltmc.community.modes.quilt.extensions.settings
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
-import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
@@ -16,6 +15,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.respond
+import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.core.Kord
 import dev.kord.core.entity.channel.Category
@@ -833,91 +833,150 @@ class SettingsExtension : Extension() {
     }
 
     inner class BooleanFlag(desc: String) : Arguments() {
-        val value by boolean("value", "Whether to $desc")
+        val value by boolean {
+            name = "value"
+            description = "Whether to $desc"
+        }
     }
 
     inner class InviteArg : Arguments() {
-        val inviteCode by optionalString("invite-code", "Invite code to use")
+        val inviteCode by optionalString {
+            name = "invite-code"
+            description = "Invite code to use"
+        }
     }
 
     inner class TokenArg : Arguments() {
-        val loginToken by string("login-token", "Login token to use")
+        val loginToken by string {
+            name = "login-token"
+            description = "Login token to use"
+        }
     }
 
     inner class TopMessageChannelArg : Arguments() {
-        val channel by optionalChannel("channel", "Channel to use") { _, channel ->
-            if (channel != null) {
-                val kord = getKoin().get<Kord>()
+        val channel by optionalChannel {
+            name = "channel"
+            description = "Channel to use"
 
-                if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
-                    throw DiscordRelayedException("${channel.mention} isn't a guild message channel")
+            validate {
+                if (value != null) {
+                    failIf {
+                        val kord = getKoin().get<Kord>()
+                        kord.getChannelOf<TopGuildMessageChannel>(value!!.id) == null
+                    }
                 }
             }
         }
     }
 
     inner class TopMessageChannelGuildArg : Arguments() {
-        val channel by optionalChannel("channel", "Channel to use") { _, channel ->
-            if (channel != null) {
-                val kord = getKoin().get<Kord>()
+        val channel by optionalChannel {
+            name = "channel"
+            description = "Channel to use"
 
-                if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
-                    throw DiscordRelayedException("${channel.mention} isn't a guild message channel")
+            validate {
+                if (value != null) {
+                    failIf {
+                        val kord = getKoin().get<Kord>()
+                        kord.getChannelOf<TopGuildMessageChannel>(value!!.id) == null
+                    }
                 }
             }
         }
 
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class GuildArg : Arguments() {
-        val server by guild("server", "Server ID to use")
+        val server by guild {
+            name = "server"
+            description = "Server ID to use"
+        }
     }
 
     inner class GuildSnowflakeArg : Arguments() {
-        val serverId by snowflake("server", "Server ID to use")
+        val serverId by snowflake {
+            name = "server"
+            description = "Server ID to use"
+        }
     }
 
     inner class OptionalGuildSnowflakeArg : Arguments() {
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class CategoryGuildArg : Arguments() {
-        val category by optionalChannel("category", "Category to use") { _, channel ->
-            if (channel != null) {
-                val kord = getKoin().get<Kord>()
+        val category by optionalChannel {
+            name = "category"
+            description = "Category to use"
 
-                if (kord.getChannelOf<Category>(channel.id) == null) {
-                    throw DiscordRelayedException("${channel.mention} isn't a category")
+            validate {
+                if (value != null) {
+                    failIf {
+                        value!!.type != ChannelType.GuildCategory
+                    }
                 }
             }
         }
 
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class LadysnakeServerTypeArg : Arguments() {
-        val type by optionalEnumChoice<LadysnakeServerType>(
-            "type",
-            "Ladysnake server type",
-            "Server type"
-        )
+        val type by optionalEnumChoice<LadysnakeServerType> {
+            name = "type"
+            description = "Ladysnake server type"
+            typeName = "Server type"
+        }
 
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class ShouldLeaveArg : Arguments() {
-        val shouldLeave by boolean("should-leave", "Whether Cozy should leave the server automatically")
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val shouldLeave by boolean {
+            name = "should-leave"
+            description = "Whether Cozy should leave the server automatically"
+        }
+
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class PrefixServerArg : Arguments() {
-        val prefix by string("prefix", "Command prefix to set")
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val prefix by string {
+            name = "prefix"
+            description = "Command prefix to set"
+        }
+
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 
     inner class RoleServerArg : Arguments() {
-        val role by role("role", "Role to add/remove")
-        val serverId by optionalSnowflake("server", "Server ID, if not the current one")
+        val role by role {
+            name = "role"
+            description = "Role to add/remove"
+        }
+
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
     }
 }

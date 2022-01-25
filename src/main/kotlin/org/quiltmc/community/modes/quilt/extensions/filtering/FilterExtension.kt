@@ -15,7 +15,6 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.i
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.builders.ValidationContext
-import com.kotlindiscord.kord.extensions.commands.converters.impl.boolean
 import com.kotlindiscord.kord.extensions.commands.converters.impl.defaultingBoolean
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
@@ -794,20 +793,24 @@ class FilterExtension : Extension() {
         val matchType by enumChoice<MatchType> {
             name = "match-type"
             description = "Type of match"
-            typeName = "match type"
+
+            typeName = "match type`"
         }
 
         val action by optionalEnumChoice<FilterAction> {
             name = "action"
             description = "Action to take"
+
             typeName = "action"
         }
 
         val ping by defaultingBoolean {
             name = "ping"
             description = "Whether to ping the moderators"
+
             defaultValue = false
         }
+
         val note by optionalString {
             name = "note"
             description = "Note explaining what this filter is for"
@@ -843,7 +846,8 @@ class FilterExtension : Extension() {
         val matchType by enumChoice<MatchType> {
             name = "match-type"
             description = "Type of match"
-            typeName = "match type"
+
+            typeName = "match type`"
         }
     }
 
@@ -860,6 +864,7 @@ class FilterExtension : Extension() {
         val action by optionalEnumChoice<FilterAction> {
             name = "action"
             description = "Action to take"
+
             typeName = "action"
         }
     }
@@ -874,9 +879,11 @@ class FilterExtension : Extension() {
             }
         }
 
-        val ping by boolean {
+        val ping by defaultingBoolean {
             name = "ping"
             description = "Whether to ping the moderators"
+
+            defaultValue = false
         }
     }
 
@@ -890,7 +897,7 @@ class FilterExtension : Extension() {
             }
         }
 
-        val note by string {
+        val note by optionalString {
             name = "note"
             description = "Note explaining what this filter is for"
         }

@@ -135,12 +135,14 @@ class SubteamsExtension : Extension() {
         val role by role {
             name = "team"
             description = "Which team to add"
+
             requiredGuild = { YOUTUBE_GUILD }
         }
 
         val targetUser by member {
             name = "user"
             description = "Who to add to the team"
+
             requiredGuild = { YOUTUBE_GUILD }
         }
     }
@@ -149,12 +151,14 @@ class SubteamsExtension : Extension() {
         val superior by role {
             name = "superior"
             description = "The superior role"
+
             requiredGuild = { YOUTUBE_GUILD }
         }
 
         val inferior by role {
             name = "inferior"
             description = "The inferior role"
+
             requiredGuild = { YOUTUBE_GUILD }
         }
     }
@@ -163,6 +167,7 @@ class SubteamsExtension : Extension() {
         val role by role {
             name = "role"
             description = "Role to disallow managing for"
+
             requiredGuild = { YOUTUBE_GUILD }
         }
     }

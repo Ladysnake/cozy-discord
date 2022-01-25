@@ -47,6 +47,7 @@ object Migrations : KoinComponent {
                     10 -> ::v10
                     11 -> ::v11
                     12 -> ::v12
+                    13 -> ::v13
 
                     else -> break
                 }(db.mongo)

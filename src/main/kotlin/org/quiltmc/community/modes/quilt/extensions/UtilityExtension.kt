@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalTime::class, KordPreview::class, InternalCoroutinesApi::class)
 
-@file:Suppress("MagicNumber")  // Yep. I'm done.
+@file:Suppress("MagicNumber", "NoUnusedImports")  // Apparently Duration.Companion.seconds isn't used enough?
 
 package org.quiltmc.community.modes.quilt.extensions
 
@@ -12,7 +12,6 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCom
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.ephemeralButton
-import com.kotlindiscord.kord.extensions.defaultingBoolean
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
@@ -58,6 +57,7 @@ import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.getSettings
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -82,6 +82,8 @@ val TEXT_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
 
 val DELETE_DELAY = 10.seconds
 val MESSAGE_EDIT_DELAY = 3.seconds
+val PIN_DELETE_DELAY = 10.seconds
+val THREAD_CREATE_DELETE_DELAY = 30.minutes
 
 class UtilityExtension : Extension() {
     override val name: String = "utility"
@@ -121,7 +123,18 @@ class UtilityExtension : Extension() {
 //            check { failIf { event.message.data.authorId != event.kord.selfId } }
 
             action {
-                delay(DELETE_DELAY)
+                delay(PIN_DELETE_DELAY)
+
+                event.message.deleteIgnoringNotFound()
+            }
+        }
+
+        event<MessageCreateEvent> {
+            check { inLadysnakeGuild() }
+            check { failIf { event.message.type != MessageType.ThreadCreated } }
+
+            action {
+                delay(THREAD_CREATE_DELETE_DELAY)
 
                 event.message.deleteIgnoringNotFound()
             }
@@ -1280,6 +1293,7 @@ class UtilityExtension : Extension() {
         val lock by defaultingBoolean {
             name = "lock"
             description = "Whether to lock the thread, if you're staff - defaults to false"
+
             defaultValue = false
         }
     }
@@ -1313,15 +1327,17 @@ class UtilityExtension : Extension() {
 
         val target by optionalChannel {
             name = "target"
-            description = "Channel to send the message to, if not the current one"
+            description = "Channel to use, if not this one"
 
             validate {
-                failIf { value != null && value!!.type !in listOf(
-                    ChannelType.GuildText,
-                    ChannelType.GuildNews,
-                    ChannelType.PublicNewsThread,
-                    ChannelType.PublicGuildThread
-                ) }
+                failIf("${value?.mention} is not a guild text channel.") {
+                    value != null && value!!.type !in listOf(
+                        ChannelType.GuildText,
+                        ChannelType.GuildNews,
+                        ChannelType.PublicNewsThread,
+                        ChannelType.PublicGuildThread
+                    )
+                }
             }
         }
     }

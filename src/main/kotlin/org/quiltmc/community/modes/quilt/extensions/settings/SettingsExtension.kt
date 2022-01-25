@@ -15,7 +15,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.respond
-import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.core.Kord
 import dev.kord.core.entity.channel.Category
@@ -859,10 +858,13 @@ class SettingsExtension : Extension() {
             description = "Channel to use"
 
             validate {
-                if (value != null) {
-                    failIf {
-                        val kord = getKoin().get<Kord>()
-                        kord.getChannelOf<TopGuildMessageChannel>(value!!.id) == null
+                val channel = value
+
+                if (channel != null) {
+                    val kord = getKoin().get<Kord>()
+
+                    if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
+                        fail("${channel.mention} isn't a guild message channel")
                     }
                 }
             }
@@ -875,10 +877,13 @@ class SettingsExtension : Extension() {
             description = "Channel to use"
 
             validate {
-                if (value != null) {
-                    failIf {
-                        val kord = getKoin().get<Kord>()
-                        kord.getChannelOf<TopGuildMessageChannel>(value!!.id) == null
+                val channel = value
+
+                if (channel != null) {
+                    val kord = getKoin().get<Kord>()
+
+                    if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
+                        fail("${channel.mention} isn't a guild message channel")
                     }
                 }
             }
@@ -917,9 +922,13 @@ class SettingsExtension : Extension() {
             description = "Category to use"
 
             validate {
-                if (value != null) {
-                    failIf {
-                        value!!.type != ChannelType.GuildCategory
+                val channel = value
+
+                if (channel != null) {
+                    val kord = getKoin().get<Kord>()
+
+                    if (kord.getChannelOf<Category>(channel.id) == null) {
+                        fail("${channel.mention} isn't a category")
                     }
                 }
             }
@@ -935,6 +944,7 @@ class SettingsExtension : Extension() {
         val type by optionalEnumChoice<LadysnakeServerType> {
             name = "type"
             description = "Ladysnake server type"
+
             typeName = "Server type"
         }
 

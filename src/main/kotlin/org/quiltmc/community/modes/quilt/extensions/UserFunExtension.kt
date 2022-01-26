@@ -196,7 +196,31 @@ class UserFunExtension : Extension() {
 
         event<ButtonInteractionCreateEvent> {
             action {
-                val (id, roleId) = event.interaction.component?.customId?.split(':') ?: return@action
+                val buttonId = event.interaction.component?.customId?.split(':') ?: return@action
+                @Suppress("MagicNumber") // but it is right, 3 is a magic number, yes it is, it's a magic number
+                if (buttonId.size != 3 || buttonId[0] != "assignable") {
+                    // somewhere in the ancient mystic trinity
+                    // you get 3, that's a magic number
+                    // the past and the present and the future
+                    // faith and hope and charity
+                    // the heart and the brain and the body
+                    // give you 3, that's a magic number
+
+                    // it takes 3 legs to make a tripod or to make a table stand
+                    // it takes 3 wheels to make a vehicle called a tricycle
+                    // every triangle has 3 corners, every triangle has 3 sides
+                    // no more, no less
+                    // you don't have to guess
+                    // when it's 3, you can see it's a magic number
+
+                    // a man and a woman had a little baby
+                    // yes they did, they had 3 in the family
+                    // and that's a magic number
+
+                    return@action
+                }
+
+                val (_, id, roleId) = buttonId
 
                 if (id != "assign-role") {
                     return@action

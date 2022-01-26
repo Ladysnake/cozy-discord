@@ -41,7 +41,7 @@ class AssignablesBuilder(val owner: Snowflake) {
 
                         interactionButton(
                             ButtonStyle.Primary,
-                            "assign-role:${role.id}"
+                            "assignables:assign-role:${role.id}"
                         ) {
                             when (emoji) {
                                 is ReactionEmoji.Unicode -> emoji(emoji)

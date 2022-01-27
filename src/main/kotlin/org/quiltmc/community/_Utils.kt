@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("NOTHING_TO_INLINE")
+
 package org.quiltmc.community
 
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
@@ -13,17 +15,18 @@ import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
+import dev.kord.common.Color
 import dev.kord.common.entity.ArchiveDuration
+import dev.kord.common.entity.DiscordEmbed
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.optional.Optional
+import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
-import dev.kord.core.entity.Guild
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.Role
-import dev.kord.core.entity.User
+import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.toInstant
 import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
@@ -266,3 +270,87 @@ suspend inline fun Snowflake.asRole(guild: Snowflake): Role? = guild.asGuild()?.
 suspend inline fun Snowflake.asMember(guild: Snowflake): Member? = guild.asGuild()?.getMemberOrNull(this)
 
 suspend inline fun Snowflake.asUser(): User? = getKoin().get<Kord>().getUser(this)
+
+inline fun EmbedBuilder.copyFrom(embed: Embed) {
+    title = embed.title
+    description = embed.description
+    color = embed.color
+    timestamp = embed.timestamp
+    url = embed.url
+    image = embed.image?.url
+
+    if (embed.footer != null) {
+        footer {
+            text = embed.footer!!.text
+            icon = embed.footer!!.iconUrl
+        }
+    }
+
+    if (embed.thumbnail != null) {
+        thumbnail {
+            if (embed.thumbnail!!.url != null) {
+                url = embed.thumbnail!!.url!!
+            }
+        }
+    }
+
+    if (embed.author != null) {
+        author {
+            name = embed.author!!.name
+            url = embed.author!!.url
+            icon = embed.author!!.iconUrl
+        }
+    }
+
+    embed.fields.forEach {
+        field {
+            name = it.name
+            value = it.value
+            inline = it.inline
+        }
+    }
+}
+
+inline fun EmbedBuilder.copyFrom(embed: DiscordEmbed) {
+    // DiscordEmbed has the same structure as Embed, but it's a direct json implementation rather than a friendly object
+    title = embed.title.value
+    description = embed.description.value
+    color = embed.color.value?.let { Color(it) }
+    timestamp = embed.timestamp.value?.toInstant()
+    url = embed.url.value
+    image = embed.image.value?.url?.value
+
+    if (embed.footer is Optional.Value) {
+        val footer = embed.footer.value!!
+        footer {
+            text = footer.text
+            icon = footer.iconUrl.value
+        }
+    }
+
+    if (embed.thumbnail is Optional.Value) {
+        val thumbnail = embed.thumbnail.value!!
+        thumbnail {
+            if (thumbnail.url.value != null) {
+                url = thumbnail.url.value!!
+            }
+        }
+    }
+
+    if (embed.author is Optional.Value) {
+        val author = embed.author.value!!
+        author {
+            name = author.name.value
+            url = author.url.value
+            icon = author.iconUrl.value
+        }
+    }
+
+    embed.fields.value?.forEach {
+        field {
+            name = it.name
+            value = it.value
+            inline = it.inline.value
+        }
+    }
+}

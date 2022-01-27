@@ -486,13 +486,7 @@ class ModerationExtension(
                                 }
                             } else {
                                 embed {
-                                    for (f in embed.fields) {
-                                        field {
-                                            name = f.name
-                                            value = f.value
-                                            inline = f.inline
-                                        }
-                                    }
+                                    copyFrom(embed)
 
                                     fields.firstOrNull { it.name == "Notes" }?.let {
                                         // field exists, append to it
@@ -733,11 +727,7 @@ class ModerationExtension(
 
         kord.rest.channel.editMessage(channel, msg.id) {
             this.embed {
-                if (text.isNotBlank()) {
-                    description = text
-                } else {
-                    embed(this)
-                }
+                copyFrom(msg.embeds.first())
 
                 field {
                     name = "Message ID"

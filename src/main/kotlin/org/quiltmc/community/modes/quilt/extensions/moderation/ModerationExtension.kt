@@ -718,17 +718,20 @@ class ModerationExtension(
         val msg = kord.rest.channel.createMessage(channel) {
             this.embed {
                 if (text.isNotBlank()) {
-                    this.description = text
+                    title = "Mod log"
+                    description = text
                 } else {
                     embed(this)
                 }
+
+                timestamp = Clock.System.now()
             }
         }
 
         kord.rest.channel.editMessage(channel, msg.id) {
             this.embed {
                 if (text.isNotBlank()) {
-                    this.description = text
+                    description = text
                 } else {
                     embed(this)
                 }

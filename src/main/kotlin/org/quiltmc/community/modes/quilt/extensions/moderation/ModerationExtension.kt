@@ -789,7 +789,7 @@ class ModerationExtension(
             if (length > 0) Clock.System.now() + length.seconds else Instant.DISTANT_FUTURE,
         )
 
-        val returnTime = restriction.returningBanTime!!.toDiscord(TimestampType.ShortDate)
+        val returnTime = restriction.returningBanTime!!.toDiscord(TimestampType.Default)
 
         try {
             user.dm {
@@ -878,7 +878,7 @@ class ModerationExtension(
             this.reason = reason
         }
 
-        val returnTime = endTime.toDiscord(TimestampType.ShortDate)
+        val returnTime = endTime.toDiscord(TimestampType.Default)
 
         try {
             user.dm {

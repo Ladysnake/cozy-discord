@@ -473,7 +473,6 @@ class ModerationExtension(
                     }
 
                     val note = arguments.note
-                    val userMention = user?.mention ?: "Unknown user"
                     val currentTime = Clock.System.now().toDiscord(TimestampType.Default)
 
                     if (message != null) {
@@ -483,7 +482,7 @@ class ModerationExtension(
                                 embed {
                                     title = "Added notes"
 
-                                    note(note, userMention)
+                                    note(note, this@action.user.mention)
                                 }
                             } else {
                                 embed {
@@ -500,10 +499,10 @@ class ModerationExtension(
                                         it.value = """
                                             $it
                                             
-                                            Note added by $userMention at $currentTime:
+                                            Note added by ${this@action.user.mention} at $currentTime:
                                             > $note
                                         """.trimIndent()
-                                    } ?: note(note, userMention)
+                                    } ?: note(note, this@action.user.mention)
                                 }
                             }
                         }
@@ -515,7 +514,7 @@ class ModerationExtension(
                                 Future additions should be added with `/note` and specifying `message-id`
                             """.trimIndent()
 
-                            note(note, userMention)
+                            note(note, this@action.user.mention)
                         }
                     } else {
                         reportToModChannel {
@@ -525,8 +524,12 @@ class ModerationExtension(
                                 Future additions should be added with `/note` and specifying `message-id`
                             """.trimIndent()
 
-                            note(note, userMention)
+                            note(note, this@action.user.mention)
                         }
+                    }
+
+                    respond {
+                        content = "Note added."
                     }
                 }
             }

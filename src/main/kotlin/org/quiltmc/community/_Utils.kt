@@ -22,6 +22,9 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
+import dev.kord.core.entity.Role
+import dev.kord.core.entity.User
+import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
@@ -249,4 +252,17 @@ fun EmbedBuilder.channelField(channel: MessageChannelBehavior, title: String, in
     }
 }
 
-suspend fun UserBehavior.softMention() = asUser().run { "@$tag" }
+suspend inline fun UserBehavior.softMention() = "@${asUser().tag}"
+
+suspend inline fun Snowflake.asGuild(): Guild? = getKoin().get<Kord>().getGuild(this)
+
+suspend inline fun Snowflake.asChannel(guild: Snowflake): GuildChannel? = guild.asGuild()?.getChannelOrNull(this)
+
+suspend inline fun <reified T : GuildChannel> Snowflake.asChannelOf(guild: Snowflake): T? =
+    guild.asGuild()?.getChannelOf(this)
+
+suspend inline fun Snowflake.asRole(guild: Snowflake): Role? = guild.asGuild()?.getRoleOrNull(this)
+
+suspend inline fun Snowflake.asMember(guild: Snowflake): Member? = guild.asGuild()?.getMemberOrNull(this)
+
+suspend inline fun Snowflake.asUser(): User? = getKoin().get<Kord>().getUser(this)

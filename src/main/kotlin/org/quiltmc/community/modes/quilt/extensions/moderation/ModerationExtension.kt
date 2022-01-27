@@ -467,7 +467,9 @@ class ModerationExtension(
                 action {
                     val user = arguments.user
                     val message = arguments.messageId?.let {
-                        guild?.asGuildOrNull()?.getModLogChannel()?.getMessageOrNull(it)
+                        getReportingChannel(guild?.asGuild())
+                            ?.asChannelOf<GuildMessageChannel>(guild!!.id)
+                            ?.getMessageOrNull(it)
                     }
 
                     val note = arguments.note
@@ -701,22 +703,40 @@ class ModerationExtension(
         }
     }
 
+    private suspend fun getReportingChannel(guild: Guild? = null) = modReportChannel
+        ?: guild?.getModLogChannel()?.id
+        ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
+
     private suspend inline fun reportToModChannel(
         guild: Guild? = null,
         text: String = "",
         embed: EmbedBuilder.() -> Unit = {}
     ) {
-        val channel = modReportChannel
-            ?: guild?.getModLogChannel()?.id
-            ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
-            ?: return
+        val channel = getReportingChannel(guild) ?: return
 
         // weird hack to get around kmongo bug
-        kord.rest.channel.createMessage(channel) {
-            if (text.isNotEmpty()) {
-                content = text
-            } else {
-                this.embed(embed)
+        val msg = kord.rest.channel.createMessage(channel) {
+            this.embed {
+                if (text.isNotBlank()) {
+                    this.description = text
+                } else {
+                    embed(this)
+                }
+            }
+        }
+
+        kord.rest.channel.editMessage(channel, msg.id) {
+            this.embed {
+                if (text.isNotBlank()) {
+                    this.description = text
+                } else {
+                    embed(this)
+                }
+
+                field {
+                    name = "Message ID"
+                    value = msg.id.toString()
+                }
             }
         }
     }

@@ -19,10 +19,12 @@ import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.editingPaginator
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.scheduling.Task
 import dev.kord.cache.api.getEntry
 import dev.kord.cache.api.query
 import dev.kord.common.entity.Permission
+import dev.kord.common.entity.optional.optional
 import dev.kord.core.cache.data.MemberData
 import dev.kord.core.cache.data.UserData
 import dev.kord.core.entity.Member
@@ -36,12 +38,13 @@ import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.hasPermissionInMainGuild
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.ExperimentalTime
 
 private const val MAX_PENDING_DAYS = 3
 private const val MEMBER_CHUNK_SIZE = 10
 
-// private val TASK_DELAY = 1.hours
+private val TASK_DELAY = 1.hours
 private val MAX_PENDING_DURATION = MAX_PENDING_DAYS.days
 
 class UserCleanupExtension : Extension() {
@@ -50,11 +53,11 @@ class UserCleanupExtension : Extension() {
     private val logger = KotlinLogging.logger {}
     private val servers: ServerSettingsCollection by inject()
 
-    // private val scheduler = Scheduler()
+    private val scheduler = Scheduler()
     private lateinit var task: Task
 
     override suspend fun setup() {
-//        task = scheduler.schedule(TASK_DELAY, pollingSeconds = 60, callback = ::taskRun)
+        task = scheduler.schedule(TASK_DELAY, pollingSeconds = 60, callback = ::taskRun)
 
         event<MembersChunkEvent> {
             action {
@@ -131,8 +134,8 @@ class UserCleanupExtension : Extension() {
         }
     }
 
-    suspend fun taskRun(dryRun: Boolean = false): MutableList<Member> {
-        val removed: MutableList<Member> = mutableListOf()
+    suspend fun taskRun(dryRun: Boolean = false): MutableSet<Member> {
+        val removed: MutableSet<Member> = mutableSetOf()
         val now = Clock.System.now()
 
         try {
@@ -142,12 +145,15 @@ class UserCleanupExtension : Extension() {
                 .mapNotNull { kord.getGuild(it._id) }
 
             guilds.forEach { guild ->
-                val members = kord.cache.getEntry<MemberData>()!!.query { MemberData::pending eq true }.asFlow()
+                val members = kord.cache.getEntry<MemberData>()!!
+                    .query { MemberData::pending eq true.optional() }
+                    .asFlow()
+
                 val membersInGuild = members.filter { it.guildId == guild.id }.toList()
                 val count = membersInGuild.size
 
                 val users = kord.cache.getEntry<UserData>()!!
-                    .query { }
+                    .query { UserData::bot eq false.optional() }
                     .asFlow()
                     .filter { user -> membersInGuild.any { it.userId == user.id } }
                     .toList()

@@ -10,7 +10,6 @@
 
 package org.quiltmc.community.modes.quilt.extensions.suggestions
 
-import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.checks.topChannelFor
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
@@ -318,7 +317,7 @@ class SuggestionsExtension : Extension() {
             name = "edit-suggestion"
             description = "Edit one of your suggestions"
 
-            guild(LADYSNAKE_GUILD)
+//            guild(LADYSNAKE_GUILD)
 
             action {
                 if (arguments.suggestion.owner != user.id) {
@@ -344,11 +343,11 @@ class SuggestionsExtension : Extension() {
             name = "suggestion"
             description = "Suggestion state change command; \"clear\" to remove comment"
 
-            guild(LADYSNAKE_GUILD)
+//            guild(LADYSNAKE_GUILD)
 
             MODERATOR_ROLES.forEach(::allowRole)
 
-            check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
+            check { hasBaseModeratorRole() }
 
             action {
                 val status = arguments.status

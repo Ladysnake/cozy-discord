@@ -318,6 +318,10 @@ class MessageLogExtension : Extension() {
                 failIf(
                     event.message.asMessageOrNull()?.isEphemeral == true
                 )
+
+                failIf(
+                    event.message.asMessage().author?.id == kord.selfId
+                )
             }
 
             action {

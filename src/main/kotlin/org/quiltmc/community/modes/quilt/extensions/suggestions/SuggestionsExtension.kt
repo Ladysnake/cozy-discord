@@ -13,7 +13,6 @@ package org.quiltmc.community.modes.quilt.extensions.suggestions
 import com.kotlindiscord.kord.extensions.checks.topChannelFor
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
-import com.kotlindiscord.kord.extensions.commands.converters.impl.coalescingString
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
@@ -39,6 +38,7 @@ import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.channel.thread.ThreadChannelCreateEvent
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.rest.builder.message.EmbedBuilder.Companion.ZERO_WIDTH_SPACE
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.create.embed
@@ -69,6 +69,7 @@ private const val THREAD_INTRO = "This message is at the top of the thread.\n\n"
 
 private const val COMMENT_SIZE_LIMIT: Long = 800
 private const val SUGGESTION_SIZE_LIMIT: Long = 1000
+private const val FIELD_SIZE_LIMIT: Long = 1024
 private const val THIRTY_SECONDS: Long = 30_000
 private const val TUPPERBOX_DELAY: Long = 5
 
@@ -328,7 +329,17 @@ class SuggestionsExtension : Extension() {
                     return@action
                 }
 
-                arguments.suggestion.text = arguments.text
+                if (arguments.problem != null) {
+                    arguments.suggestion.problem = arguments.problem!!
+                }
+
+                if (arguments.solution != null) {
+                    arguments.suggestion.solution = arguments.solution!!
+                }
+
+                if (arguments.text != null) {
+                    arguments.suggestion.text = arguments.text!!
+                }
 
                 suggestions.set(arguments.suggestion)
                 sendSuggestion(arguments.suggestion)
@@ -399,6 +410,30 @@ class SuggestionsExtension : Extension() {
 
     suspend fun sendSuggestion(suggestion: Suggestion) {
         val channel = kord.getChannelOf<GuildMessageChannel>(suggestion.channelId)!!
+
+        // interpret the text to see if it has a problem/solution word pair
+        if (suggestion.problem == null && "problem: " in suggestion.text.lowercase()) {
+            val regex = Regex("""(.*?)\nproblem: (.*?)(?:\nsolution: (.*?))?""", setOf(
+                RegexOption.IGNORE_CASE,
+                RegexOption.DOT_MATCHES_ALL
+            ))
+
+            val match = regex.matchEntire(suggestion.text)!!
+
+            suggestion.text = ZERO_WIDTH_SPACE
+
+            if (match.groupValues[1].isNotBlank()) {
+                suggestion.text = match.groupValues[1]
+            }
+
+            suggestion.problem = match.groupValues[2]
+
+            if (match.groups.size > 2) {
+                suggestion.solution = match.groupValues[3]
+            }
+
+            suggestions.set(suggestion) // update db so i don't borked it
+        }
 
         if (suggestion.message == null) {
             val message = channel.createMessage { suggestion(suggestion) }
@@ -563,27 +598,50 @@ class SuggestionsExtension : Extension() {
 
                 description += "${suggestion.text}\n\n"
 
+                if (suggestion.problem != null) {
+                    field {
+                        name = "Problem"
+                        value = suggestion.problem!!
+                    }
+                    if (suggestion.solution != null) {
+                        field {
+                            name = "Solution"
+                            value = suggestion.solution!!
+                        }
+                    }
+                }
+
                 if (suggestion.githubIssue != null) {
                     val issue = suggestion.githubIssue!!
                     val (repoName, issueNumber) = issue.split('/')
-
-                    description += "$GITHUB_EMOJI " +
-                            "[$repoName#$issueNumber]" +
-                            "(https://github.com/QuiltMC/$repoName/issues/$issueNumber)\n\n"
+                    field {
+                        name = "Issue"
+                        value = "$GITHUB_EMOJI " +
+                                "[$repoName#$issueNumber]" +
+                                "(https://github.com/QuiltMC/$repoName/issues/$issueNumber)\n\n"
+                    }
                 }
 
-                if (suggestion.positiveVotes > 0) {
-                    description += "**Upvotes:** ${suggestion.positiveVotes}\n"
-                }
+                field {
+                    name = "Votes"
+                    value = ""
 
-                if (suggestion.negativeVotes > 0) {
-                    description += "**Downvotes:** ${suggestion.negativeVotes}\n"
-                }
+                    if (suggestion.positiveVotes > 0) {
+                        value += "**Upvotes:** ${suggestion.positiveVotes}\n"
+                    }
 
-                description += "**Total:** ${suggestion.voteDifference}"
+                    if (suggestion.negativeVotes > 0) {
+                        value += "**Downvotes:** ${suggestion.negativeVotes}\n"
+                    }
+
+                    value += "**Total:** ${suggestion.voteDifference}"
+                }
 
                 if (suggestion.comment != null) {
-                    description += "\n\n**__Staff response__\n\n** ${suggestion.comment}"
+                    field {
+                        name = "Staff response"
+                        value = suggestion.comment!!
+                    }
                 }
 
                 color = suggestion.status.color
@@ -635,27 +693,50 @@ class SuggestionsExtension : Extension() {
 
                 description += "${suggestion.text}\n\n"
 
+                if (suggestion.problem != null) {
+                    field {
+                        name = "Problem"
+                        value = suggestion.problem!!
+                    }
+                    if (suggestion.solution != null) {
+                        field {
+                            name = "Solution"
+                            value = suggestion.solution!!
+                        }
+                    }
+                }
+
                 if (suggestion.githubIssue != null) {
                     val issue = suggestion.githubIssue!!
                     val (repoName, issueNumber) = issue.split('/')
-
-                    description += "$GITHUB_EMOJI " +
-                            "[$repoName#$issueNumber]" +
-                            "(https://github.com/QuiltMC/$repoName/issues/$issueNumber)\n\n"
+                    field {
+                        name = "Issue"
+                        value = "$GITHUB_EMOJI " +
+                                "[$repoName#$issueNumber]" +
+                                "(https://github.com/QuiltMC/$repoName/issues/$issueNumber)\n\n"
+                    }
                 }
 
-                if (suggestion.positiveVotes > 0) {
-                    description += "**Upvotes:** ${suggestion.positiveVotes}\n"
-                }
+                field {
+                    name = "Votes"
+                    value = ""
 
-                if (suggestion.negativeVotes > 0) {
-                    description += "**Downvotes:** ${suggestion.negativeVotes}\n"
-                }
+                    if (suggestion.positiveVotes > 0) {
+                        value += "**Upvotes:** ${suggestion.positiveVotes}\n"
+                    }
 
-                description += "**Total:** ${suggestion.voteDifference}"
+                    if (suggestion.negativeVotes > 0) {
+                        value += "**Downvotes:** ${suggestion.negativeVotes}\n"
+                    }
+
+                    value += "**Total:** ${suggestion.voteDifference}"
+                }
 
                 if (suggestion.comment != null) {
-                    description += "\n\n**__Staff response__\n\n** ${suggestion.comment}"
+                    field {
+                        name = "Staff response"
+                        value = suggestion.comment!!
+                    }
                 }
 
                 color = suggestion.status.color
@@ -697,13 +778,35 @@ class SuggestionsExtension : Extension() {
             description = "Suggestion ID to act on"
         }
 
-        val text by coalescingString {
+        val text by optionalString {
             name = "text"
             description = "New suggestion text"
 
             validate {
-                if (value.length > SUGGESTION_SIZE_LIMIT) {
+                if (value != null && value!!.length > SUGGESTION_SIZE_LIMIT) {
                     fail("Suggestion text must not be longer than $SUGGESTION_SIZE_LIMIT characters.")
+                }
+            }
+        }
+
+        val problem by optionalString {
+            name = "problem"
+            description = "New problem text"
+
+            validate {
+                if (value != null && value!!.length > FIELD_SIZE_LIMIT) {
+                    fail("Problem text must not be longer than $FIELD_SIZE_LIMIT characters.")
+                }
+            }
+        }
+
+        val solution by optionalString {
+            name = "solution"
+            description = "New solution text"
+
+            validate {
+                if (value != null && value!!.length > FIELD_SIZE_LIMIT) {
+                    fail("Solution text must not be longer than $FIELD_SIZE_LIMIT characters.")
                 }
             }
         }

@@ -27,6 +27,8 @@ data class Suggestion(
     var threadButtons: Snowflake? = null,
 
     var text: String,
+    var problem: String? = null,
+    var solution: String? = null,
 
     val owner: Snowflake,
     val ownerAvatar: String?,

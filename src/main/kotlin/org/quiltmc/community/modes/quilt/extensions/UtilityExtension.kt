@@ -61,10 +61,13 @@ import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.OwnedThreadCollection
+import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.getSettings
+import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
+import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -101,6 +104,9 @@ class UtilityExtension : Extension() {
     private val threads: OwnedThreadCollection by inject()
 
     private val userFlags: UserFlagsCollection by inject()
+
+    private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
+    private val suggestions: SuggestionsCollection? = suggestionsExtension?.suggestions
 
     @OptIn(ExperimentalSerializationApi::class)
     private val json = Json {
@@ -466,6 +472,16 @@ class UtilityExtension : Extension() {
                                 reason = "Renamed by ${member.tag}"
                             }
 
+                            val suggestion = suggestions?.getByThread(channel.id)
+
+                            if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
+                                suggestion.status = SuggestionStatus.Open
+                                // because `suggestion` is non-null, `suggestions` is non-null
+                                suggestions!!.set(suggestion)
+                                // that also means `suggestionsExtension` is non-null
+                                suggestionsExtension!!.sendSuggestion(suggestion)
+                            }
+
                             edit { content = "Thread renamed." }
 
                             return@action
@@ -481,6 +497,14 @@ class UtilityExtension : Extension() {
                             name = arguments.name
 
                             reason = "Renamed by ${member.tag}"
+                        }
+
+                        val suggestion = suggestions?.getByThread(channel.id)
+
+                        if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
+                            suggestion.status = SuggestionStatus.Open
+                            suggestions!!.set(suggestion)
+                            suggestionsExtension!!.sendSuggestion(suggestion)
                         }
 
                         edit { content = "Thread renamed." }

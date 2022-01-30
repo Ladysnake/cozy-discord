@@ -21,7 +21,7 @@ data class Suggestion(
     val channelId: Snowflake,
 
     var comment: String? = null,
-    var status: SuggestionStatus = SuggestionStatus.Open,
+    var status: SuggestionStatus = SuggestionStatus.RequiresName,
     var message: Snowflake? = null,
     var thread: Snowflake? = null,
     var threadButtons: Snowflake? = null,

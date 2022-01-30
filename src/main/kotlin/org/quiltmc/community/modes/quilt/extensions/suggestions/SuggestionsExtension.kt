@@ -86,7 +86,7 @@ class SuggestionsExtension : Extension() {
     override val name: String = "suggestions"
     private val logger = KotlinLogging.logger {}
 
-    private val suggestions: SuggestionsCollection by inject()
+    val suggestions: SuggestionsCollection by inject()
     private val threads: OwnedThreadCollection by inject()
 
     private val pluralKit = PluralKit()

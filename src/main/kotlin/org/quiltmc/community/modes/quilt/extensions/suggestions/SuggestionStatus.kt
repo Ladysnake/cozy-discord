@@ -14,6 +14,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class SuggestionStatus(override val readableName: String, val color: Color) : ChoiceEnum {
     Open("Open", DISCORD_BLURPLE),
+    RequiresName("Requires Name", DISCORD_FUCHSIA),
 
     Approved("Approved", DISCORD_FUCHSIA),
 

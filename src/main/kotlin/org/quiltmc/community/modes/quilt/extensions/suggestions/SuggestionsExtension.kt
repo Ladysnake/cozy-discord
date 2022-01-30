@@ -47,6 +47,7 @@ import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.api.pluralkit.PluralKit
@@ -83,6 +84,7 @@ private val CLEAR_WORDS = arrayOf("clear", "null")
 
 class SuggestionsExtension : Extension() {
     override val name: String = "suggestions"
+    private val logger = KotlinLogging.logger {}
 
     private val suggestions: SuggestionsCollection by inject()
     private val threads: OwnedThreadCollection by inject()
@@ -413,23 +415,26 @@ class SuggestionsExtension : Extension() {
 
         // interpret the text to see if it has a problem/solution word pair
         if (suggestion.problem == null && "problem: " in suggestion.text.lowercase()) {
-            val regex = Regex("""(.*?)\nproblem: (.*?)(?:\nsolution: (.*?))?""", setOf(
+            val regex = Regex("""^(.*?\n?)?problem: (.*?)(?:\nsolution: (.*?))?$""", setOf(
                 RegexOption.IGNORE_CASE,
                 RegexOption.DOT_MATCHES_ALL
             ))
 
-            val match = regex.matchEntire(suggestion.text)!!
+            val match = regex.matchEntire(suggestion.text) ?: run {
+                logger.warn { "Failed to parse problem/solution from suggestion text: ${suggestion.text}" }
+                return
+            }
 
             suggestion.text = ZERO_WIDTH_SPACE
 
             if (match.groupValues[1].isNotBlank()) {
-                suggestion.text = match.groupValues[1]
+                suggestion.text = match.groupValues[1].trim()
             }
 
-            suggestion.problem = match.groupValues[2]
+            suggestion.problem = match.groupValues[2].trim()
 
             if (match.groups.size > 2) {
-                suggestion.solution = match.groupValues[3]
+                suggestion.solution = match.groupValues[3].trim()
             }
 
             suggestions.set(suggestion) // update db so i don't borked it

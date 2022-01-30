@@ -41,7 +41,7 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
     private val guild get() = category.guild
     private val channel get() = channels.last()
 
-    private var channels: List<GuildMessageChannel> = listOf()
+    var channels: List<GuildMessageChannel> = listOf()
     private var checkJob: Job? = null
 
     private val logger = KotlinLogging.logger { }

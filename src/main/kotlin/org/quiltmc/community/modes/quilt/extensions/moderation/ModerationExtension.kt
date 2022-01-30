@@ -12,7 +12,6 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.defaultingNumberChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
-import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
@@ -21,8 +20,7 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.authorId
-import com.kotlindiscord.kord.extensions.utils.dm
+import com.kotlindiscord.kord.extensions.utils.*
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.soywiz.korio.async.toChannel
 import dev.kord.common.entity.MessageFlag
@@ -37,6 +35,8 @@ import dev.kord.core.behavior.edit
 import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.interaction.AutoCompleteInteraction
+import dev.kord.core.entity.interaction.string
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
@@ -58,8 +58,8 @@ import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.entities.InvalidMention.Type.*
 import org.quiltmc.community.database.entities.UserRestrictions
 import org.quiltmc.community.modes.quilt.extensions.converters.defaultingIntChoice
-import org.quiltmc.community.modes.quilt.extensions.converters.intChoice
 import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
+import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -125,46 +125,13 @@ class ModerationExtension(
             }
         }
         if (Module.CHANNEL_SLOWMODE in enabledModules) {
-            ephemeralSlashCommand(::ChannelSlowModeArguments) {
+            ephemeralSlashCommand(::SlowModeArguments) {
                 name = "slowmode"
-                description = "Sets a channel's slowmode."
+                description = "Sets/disables a channel's slowmode."
 
                 MODERATOR_ROLES.forEach(::allowRole)
 
-                ephemeralSubCommand(::ChannelDefaultSlowModeArguments) {
-                    name = "preset"
-                    description = "Sets a channel's slowmode with a preset i."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::slowmode)
-                }
-
-                ephemeralSubCommand(::ChannelSlowModeArguments) {
-                    name = "custom"
-                    description = "Sets a channel's slowmode with a custom i."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::slowmode)
-                }
-
-                ephemeralSubCommand({
-                    object : Arguments(), ChannelTargetArguments, RequiredInt {
-                        override val i = 0
-                        override val channel by optionalChannel {
-                            name = "channel"
-                            description = "The channel to disable slowmode in"
-                        }
-                    }
-                }) {
-                    name = "off"
-                    description = "Disables slowmode in a channel."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::slowmode) // yes i made a custom object for the arguments just to do this
-                }
+                action(::slowmode)
             }
         }
         if (Module.LIMIT_SPAM in enabledModules) {
@@ -362,53 +329,21 @@ class ModerationExtension(
             }
         }
         if (Module.USER_MANAGEMENT in enabledModules) {
-            ephemeralSlashCommand {
+            ephemeralSlashCommand(::BanArguments) {
                 name = "ban"
                 description = "Ban a user from the server for a specified amount of time."
 
                 MODERATOR_ROLES.forEach(::allowRole)
 
-                ephemeralSubCommand(::ChoiceBanArguments) {
-                    name = "preset"
-                    description = "Ban a user from the server for a preset amount of time."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::beanUser)
-                }
-
-                ephemeralSubCommand(::CustomBanArguments) {
-                    name = "custom"
-                    description = "Ban a user from the server for a custom amount of time."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::beanUser)
-                }
+                action(::beanUser)
             }
-            ephemeralSlashCommand {
+            ephemeralSlashCommand(::TimeoutArguments) {
                 name = "timeout"
                 description = "Timeout a user from the server for a specified amount of time."
 
                 MODERATOR_ROLES.forEach(::allowRole)
 
-                ephemeralSubCommand(::ChoiceTimeoutArguments) {
-                    name = "preset"
-                    description = "Timeout a user from the server for a preset amount of time."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::timeout)
-                }
-
-                ephemeralSubCommand(::CustomTimeoutArguments) {
-                    name = "custom"
-                    description = "Timeout a user from the server for a custom amount of time."
-
-                    MODERATOR_ROLES.forEach(::allowRole)
-
-                    action(::timeout)
-                }
+                action(::timeout)
             }
             ephemeralSlashCommand({ RequiresReason("The user to kick") }) {
                 name = "kick"
@@ -470,6 +405,10 @@ class ModerationExtension(
                         getReportingChannel(guild?.asGuild())
                             ?.asChannelOf<GuildMessageChannel>(guild!!.id)
                             ?.getMessageOrNull(it)
+                            ?: bot.findExtension<MessageLogExtension>()
+                                ?.rotators
+                                ?.flatMap { (_, rotator) -> rotator.channels }
+                                ?.firstNotNullOfOrNull { channel -> channel.getMessageOrNull(it) }
                     }
 
                     val note = arguments.note
@@ -683,7 +622,7 @@ class ModerationExtension(
                 }
             }
 
-            var repeatingTask = {}
+            var repeatingTask: suspend () -> Unit = {}
 
             repeatingTask = {
                 scheduler.schedule(1.seconds, callback = unbanUsers)
@@ -737,8 +676,7 @@ class ModerationExtension(
         }
     }
 
-    private suspend inline fun <T> slowmode(context: EphemeralSlashCommandContext<T>)
-    where T : RequiredInt, T : ChannelTargetArguments, T : Arguments {
+    private suspend inline fun slowmode(context: EphemeralSlashCommandContext<SlowModeArguments>) {
         val channel = context.arguments.channel ?: context.channel.asChannel()
         if (channel !is GuildMessageChannel) {
             context.respond {
@@ -747,7 +685,7 @@ class ModerationExtension(
             }
             return
         }
-        val slowmode = context.arguments.i
+        val slowmode = context.arguments.waitTime
         // a bit of a hack to attempt to bypass a bug with kmongo
         kord.rest.channel.patchChannel(channel.id, ChannelModifyPatchRequest(
             rateLimitPerUser = slowmode.optionalInt()
@@ -759,8 +697,7 @@ class ModerationExtension(
         }
     }
 
-    private suspend fun <T> beanUser(context: EphemeralSlashCommandContext<T>)
-    where T : BanArguments {
+    private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments>) {
         if (context.guild == null) {
             throw DiscordRelayedException("This command can only be used in a guild.")
         }
@@ -851,12 +788,12 @@ class ModerationExtension(
         }
     }
 
-    private suspend fun <T : TimeoutArguments> timeout(context: EphemeralSlashCommandContext<T>) {
+    private suspend fun timeout(context: EphemeralSlashCommandContext<TimeoutArguments>) {
         val user = context.arguments.user
         val member = user.asMember(context.guild!!.id)
 
         val reason = context.arguments.reason
-        val length = context.arguments.l
+        val length = context.arguments.length
         val endTime = Clock.System.now() + length.seconds
 
         // using discord's *NEW* built-in timeout functionality
@@ -974,14 +911,6 @@ class ModerationExtension(
         }
     }
 
-    interface RequiredInt {
-        val i: Int
-    }
-
-    interface RequiredLong {
-        val l: Long
-    }
-
     interface ChannelTargetArguments {
         val channel: Channel?
     }
@@ -1015,40 +944,35 @@ class ModerationExtension(
         }
     }
 
-    class ChannelSlowModeArguments : Arguments(), ChannelTargetArguments, RequiredInt {
-        override val i by int {
-            name = "seconds"
+    class SlowModeArguments : Arguments(), ChannelTargetArguments {
+        @Suppress("MagicNumber")
+        val waitTime by int {
+            name = "wait-time"
             description = "The minimum time to wait between messages in seconds"
+
+            autoComplete {
+                suggestIntMap(
+                    mapOf(
+                        "1 second" to 1,
+                        "5 seconds" to 5,
+                        "10 seconds" to 10,
+                        "30 seconds" to 30,
+                        "1 minute" to 60,
+                        "5 minutes" to 300,
+                        "10 minutes" to 600,
+                        "30 minutes" to 1_800,
+                        "1 hour" to 3_600,
+                        "2 hours" to 7_200,
+                        "3 hours" to 10_800,
+                        "6 hours" to 21_600,
+                        "Disable" to 0
+                    )
+                )
+            }
 
             validate {
                 failIf("You must specify a positive length!") { value < 0 }
             }
-        }
-
-        override val channel by optionalChannel {
-            name = "channel"
-            description = "The channel to set slowmode for (current if omitted)"
-        }
-    }
-
-    class ChannelDefaultSlowModeArguments : Arguments(), ChannelTargetArguments, RequiredInt {
-        @Suppress("MagicNumber")
-        override val i by intChoice {
-            name = "seconds"
-            description = "The minimum time to wait between messages in seconds"
-
-            choices["1 second"] = 1
-            choices["5 seconds"] = 5
-            choices["10 seconds"] = 10
-            choices["30 seconds"] = 30
-            choices["1 minute"] = 60
-            choices["5 minutes"] = 300
-            choices["10 minutes"] = 600
-            choices["30 minutes"] = 1_800
-            choices["1 hour"] = 3_600
-            choices["2 hours"] = 7_200
-            choices["3 hours"] = 10_800
-            choices["6 hours"] = 21_600
         }
 
         override val channel by optionalChannel {
@@ -1090,82 +1014,94 @@ class ModerationExtension(
         }
     }
 
-    abstract class BanArguments : RequiresReason("The user to ban") {
-        abstract val length: Long
+    class BanArguments : RequiresReason("The user to ban") {
+        @Suppress("MagicNumber")
+        val length by defaultingLong {
+            name = "length"
+            description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default indefinite)"
+            defaultValue = 0L
+
+            autoComplete {
+                val map = mapFrom(
+                    "second" to 1,
+                    "minute" to 60,
+                    "hour" to 3600,
+                    "day" to 86_400,
+                    "week" to 604_800,
+                    "month" to 2_629_746,
+                    "year" to 31_557_600,
+                    defaultMap = mapOf(
+                        "1 minute" to 60,
+                        "5 minutes" to 300,
+                        "10 minutes" to 600,
+                        "30 minutes" to 1_800,
+                        "1 hour" to 3_600,
+                        "2 hours" to 7_200,
+                        "3 hours" to 10_800,
+                        "6 hours" to 21_600,
+                        "1 day" to 86_400,
+                        "2 days" to 172_800,
+                        "3 days" to 259_200,
+                        "1 week" to 604_800,
+                        "2 weeks" to 1_209_600,
+                        "3 weeks" to 1_814_400,
+                        "1 month" to 2_592_000,
+                        "2 months" to 5_184_000,
+                        "3 months" to 7_168_000,
+                        "6 months" to 15_552_000,
+                        "1 year" to 31_556_952,
+                        "forever" to 0,
+                        "unban" to -1
+                    )
+                )
+
+                suggestLongMap(map)
+            }
+        }
 
         val daysToDelete by banDeleteDaySelector()
     }
 
-    class CustomBanArguments : BanArguments() {
+    class TimeoutArguments : RequiresReason("The user to timeout") {
         @Suppress("MagicNumber")
-        override val length by defaultingLong {
-            name = "length"
-            description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default 1 month)"
-            defaultValue = 2_592_000
-        }
-    }
-
-    class ChoiceBanArguments : BanArguments() {
-        @Suppress("MagicNumber")
-        override val length by defaultingNumberChoice {
-            name = "length"
-            description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default 1 month)"
-            defaultValue = 2_592_000
-
-            choices["1 minute"] = 60
-            choices["5 minutes"] = 300
-            choices["10 minutes"] = 600
-            choices["30 minutes"] = 1_800
-            choices["1 hour"] = 3_600
-            choices["2 hours"] = 7_200
-            choices["3 hours"] = 10_800
-            choices["6 hours"] = 21_600
-            choices["1 day"] = 86_400
-            choices["2 days"] = 172_800
-            choices["3 days"] = 259_200
-            choices["1 week"] = 604_800
-            choices["2 weeks"] = 1_209_600
-            choices["3 weeks"] = 1_814_400
-            choices["1 month"] = 2_592_000
-            choices["2 months"] = 5_184_000
-            choices["3 months"] = 7_168_000
-            choices["6 months"] = 15_552_000
-            choices["1 year"] = 31_556_952
-            // up to 4 more entries can be added here
-            choices["forever"] = 0
-            choices["unbanned"] = -1
-        }
-    }
-
-    abstract class TimeoutArguments : RequiresReason("The user to timeout"), RequiredLong
-
-    class ChoiceTimeoutArguments : TimeoutArguments() {
-        @Suppress("MagicNumber")
-        override val l by defaultingNumberChoice {
+        val length by defaultingLong {
             name = "length"
             description = "The length of the timeout (default 5 minutes)"
             defaultValue = 300
 
-            choices["60 seconds"] = 60
-            choices["5 minutes"] = 300
-            choices["10 minutes"] = 600
-            choices["1 hour"] = 3_600
-            choices["1 day"] = 86_400
-            choices["1 week"] = 604_800
-            choices["stop"] = -1
-        }
-    }
+            autoComplete {
+                val map = mapFrom(
+                    "second" to 1L,
+                    "minute" to 60L,
+                    "hour" to 3600L,
+                    "day" to 86_400L,
+                    "week" to 604_800L,
+                    defaultMap = mapOf(
+                        "1 minute" to 60L,
+                        "5 minutes" to 300L,
+                        "10 minutes" to 600L,
+                        "30 minutes" to 1_800L,
+                        "1 hour" to 3_600L,
+                        "2 hours" to 7_200L,
+                        "3 hours" to 10_800L,
+                        "6 hours" to 21_600L,
+                        "1 day" to 86_400L,
+                        "2 days" to 172_800L,
+                        "3 days" to 259_200L,
+                        "1 week" to 604_800L,
+                        "2 weeks" to 1_209_600L,
+                        "3 weeks" to 1_814_400L,
+                        "1 month" to 2_592_000L,
+                        "Remove timeout" to -1L
+                    )
+                )
 
-    class CustomTimeoutArguments : TimeoutArguments() {
-        @Suppress("MagicNumber")
-        override val l by defaultingLong {
-            name = "length"
-            description = "The length of the timeout in seconds (default 5 minutes, max 28 days, -1 to end)"
-            defaultValue = 300
+                suggestLongMap(map)
+            }
 
             validate {
                 failIfNot("length must be between 0 and 28 days") {
-                    value in -1..28_719
+                    value in -1..86_400 * 28
                 }
             }
         }
@@ -1245,7 +1181,7 @@ class ModerationExtension(
             name = "delete-days"
             description = "The amount of days to delete messages from the user's history"
             defaultValue = 0
-            choices = buildMap {
+            choices = buildMap<String, Int> {
                 for (i in 0..6) {
                     put("$i days", i)
                 }
@@ -1256,6 +1192,23 @@ class ModerationExtension(
                 // 7 days
                 put("1 week", 7)
             }.toMutableMap() // kordex requires a mutable map
+        }
+
+        internal fun AutoCompleteInteraction.mapFrom(
+            vararg conversions: Pair<String, Long>,
+            defaultMap: Map<String, Long> = mapOf(),
+        ): Map<String, Long> {
+            val specifiedLength = focusedOption.string().substringBefore(' ').toLongOrNull()
+            return if (specifiedLength != null) {
+                buildMap {
+                    val pluralModifier = if (specifiedLength == 1L) "" else "s"
+                    for ((str, length) in conversions) {
+                        put("$specifiedLength $str$pluralModifier", length * specifiedLength)
+                    }
+                }
+            } else {
+                defaultMap
+            }
         }
     }
 }

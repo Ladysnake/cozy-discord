@@ -65,7 +65,7 @@ class MessageLogExtension : Extension() {
     private lateinit var messageChannel: Channel<LogMessage>
     private var firstSetup = true
 
-    private val rotators: MutableMap<Snowflake, CategoryRotator> = mutableMapOf()
+    val rotators: MutableMap<Snowflake, CategoryRotator> = mutableMapOf()
     private val bulkDeletedMessages: MutableSet<Snowflake> = mutableSetOf()
 
     private val dateTimeFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)

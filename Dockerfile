@@ -2,6 +2,8 @@ FROM gradle:7.3.3-jdk17-alpine as BUILD
 
 WORKDIR /app
 
+USER gradle
+
 # copy build files
 COPY . .
 

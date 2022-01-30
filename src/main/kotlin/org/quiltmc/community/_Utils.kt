@@ -177,8 +177,6 @@ suspend fun ExtensibleBotBuilder.common() {
     }
 
     extensions {
-        add(::SettingsExtension)
-
         sentry {
             val sentryDsn = envOrNull("SENTRY_DSN")
 

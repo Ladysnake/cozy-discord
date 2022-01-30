@@ -1,7 +1,7 @@
 [versions]
-detekt = "1.17.1"  # Note: Plugin versions must be updated in the settings.gradle.kts too
-kotlin = "1.6.10"  # Note: Plugin versions must be updated in the settings.gradle.kts too
-graphql = "5.2.0"  # Note: Plugin versions must be updated in the settings.gradle.kts too
+detekt = "1.19.0"
+kotlin = "1.6.10"
+graphql = "5.2.0"
 
 commons-text = "1.9"
 kmongo = "4.4.0"

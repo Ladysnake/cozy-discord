@@ -4,25 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import org.cadixdev.gradle.licenser.LicenseExtension
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
+    `cozy-module`
+    `shadow-module`
+
     application
 
-    kotlin("jvm")
-    kotlin("plugin.serialization")
-
-    id("com.google.devtools.ksp")
     id("com.github.jakemarsden.git-hooks")
-    id("com.github.johnrengelman.shadow")
-    id("io.gitlab.arturbosch.detekt")
-    id("com.expediagroup.graphql")
-    id("org.cadixdev.licenser")
 }
-
-group = "org.quiltmc.community"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenLocal()
@@ -77,6 +66,8 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kx.ser)
     implementation(libs.graphql)
+
+    implementation(project(":module-user-cleanup"))
 }
 
 graphql {
@@ -85,12 +76,6 @@ graphql {
         packageName = "quilt.ghgen"
         serializer = com.expediagroup.graphql.plugin.gradle.config.GraphQLSerializer.KOTLINX
     }
-
-}
-
-configurations.all {
-    resolutionStrategy.cacheDynamicVersionsFor(10, "seconds")
-    resolutionStrategy.cacheChangingModulesFor(10, "seconds")
 }
 
 application {
@@ -104,53 +89,12 @@ gitHooks {
     )
 }
 
-tasks.withType<KotlinCompile> {
-    // Current LTS version of Java
-    kotlinOptions.jvmTarget = "17"
-
-    kotlinOptions.freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-}
-
-tasks.jar {
-    manifest {
-        attributes(
-            "Main-Class" to "org.quiltmc.community.AppKt"
-        )
-    }
-}
-
-// add detekt checks when building for testing (in the IDE and such)
-tasks.getByName("classes").dependsOn("detekt")
-
-java {
-    // Current LTS version of Java
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
-}
-
-detekt {
-    buildUponDefaultConfig = true
-    config = rootProject.files("detekt.yml")
-}
-
-// Credit to ZML for this workaround.
-// https://github.com/CadixDev/licenser/issues/6#issuecomment-817048318
-extensions.configure(LicenseExtension::class.java) {
-    exclude {
-        it.file.startsWith(buildDir)
-    }
-}
-
-sourceSets {
-    main {
-        java {
-            srcDir(file("$buildDir/generated/ksp/main/kotlin/"))
-        }
-    }
-
-    test {
-        java {
-            srcDir(file("$buildDir/generated/ksp/test/kotlin/"))
+tasks {
+    jar {
+        manifest {
+            attributes(
+                "Main-Class" to "org.quiltmc.community.AppKt"
+            )
         }
     }
 }

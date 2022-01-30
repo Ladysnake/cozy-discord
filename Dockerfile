@@ -2,6 +2,9 @@ FROM gradle:7.3.3-jdk17-alpine as BUILD
 
 WORKDIR /app
 
+# set /app to be owned by gradle
+RUN chown -R gradle:gradle /app
+
 USER gradle
 
 # copy build files

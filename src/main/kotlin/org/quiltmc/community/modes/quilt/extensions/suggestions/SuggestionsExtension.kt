@@ -135,8 +135,6 @@ class SuggestionsExtension : Extension() {
                                     "${event.message.data.author.avatar}.webp",
                             ownerName = event.message.data.author.username,
 
-                            positiveVoters = mutableListOf(pkMessage.sender),
-
                             isTupper = true
                         )
                     } else {
@@ -154,9 +152,7 @@ class SuggestionsExtension : Extension() {
 
                             owner = event.message.author!!.id,
                             ownerAvatar = event.message.author!!.avatar?.url,
-                            ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName,
-
-                            positiveVoters = mutableListOf(event.message.author!!.id)
+                            ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName
                         )
                     } else {
                         null
@@ -491,7 +487,11 @@ class SuggestionsExtension : Extension() {
 
                 delay(3.seconds)
 
-                pingMessage.delete("Removing temporary moderator ping message.")
+                pingMessage.edit {
+                    content = "Reminder <@!${suggestion.owner}>, please use " +
+                            "`/thread rename <name>` to enable voting on your suggestion. " +
+                            "As soon as you do, your vote will automatically be counted as an upvote."
+                }
             }
 
             suggestion.message = message.id

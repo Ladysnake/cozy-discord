@@ -476,6 +476,7 @@ class UtilityExtension : Extension() {
 
                             if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
                                 suggestion.status = SuggestionStatus.Open
+                                suggestion.positiveVoters.add(member.id)
                                 // because `suggestion` is non-null, `suggestions` is non-null
                                 suggestions!!.set(suggestion)
                                 // that also means `suggestionsExtension` is non-null

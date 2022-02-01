@@ -16,18 +16,24 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.respond
 import com.kotlindiscord.kord.extensions.utils.translate
+import dev.kord.common.entity.AuditLogEvent
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
+import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.withTyping
+import dev.kord.core.behavior.getAuditLogEntries
 import dev.kord.core.entity.Guild
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.rest.builder.message.create.embed
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
 import org.quiltmc.community.GUILDS
+import org.quiltmc.community.asUser
+import org.quiltmc.community.getModLogChannel
 import org.quiltmc.community.inLadysnakeGuild
 
 private val BAN_PERMS: Array<Permission> = arrayOf(Permission.BanMembers, Permission.Administrator)
@@ -129,13 +135,26 @@ class SyncExtension : Extension() {
                         }
 
                         guilds.forEach { guild ->
+                            val newBans = mutableListOf<Pair<Snowflake, String>>()
+
                             allBans.forEach { (userId, reason) ->
                                 if (guild.getBanOrNull(userId) == null) {
                                     syncedBans[guild] = (syncedBans[guild] ?: 0) + 1
 
+                                    val newReason = "Synced: ${reason ?: "No reason given"}"
+
                                     guild.ban(userId) {
-                                        this.reason = "Synced: " + (reason ?: "No reason given")
+                                        this.reason = newReason
                                     }
+
+                                    newBans.add(userId to newReason)
+                                }
+                            }
+
+                            guild.getModLogChannel()?.createEmbed {
+                                title = "Synced bans"
+                                description = "**Added bans:**\n" + newBans.joinToString("\n") { (id, reason) ->
+                                    "`$id` (<@!$id>) - $reason"
                                 }
                             }
                         }
@@ -160,10 +179,51 @@ class SyncExtension : Extension() {
                 val guilds = getGuilds().filter { it.id != event.guildId }
                 val ban = event.getBan()
 
-                guilds.forEach {
-                    if (it.getBanOrNull(ban.userId) == null) {
-                        it.ban(ban.userId) {
+                guilds.forEach { guild ->
+                    if (guild.getBanOrNull(ban.userId) == null) {
+                        guild.ban(ban.userId) {
                             this.reason = "Synced: " + (ban.reason ?: "No reason given")
+                        }
+
+                        guild.getModLogChannel()?.createEmbed {
+                            title = "Synced ban"
+
+                            field {
+                                name = "User"
+                                value = """
+                                    |Snowflake: ${ban.userId}
+                                    |Mention: <@!${ban.userId}>
+                                    |Name + discriminator: ${ban.user.asUserOrNull()?.tag ?: "Unknown"}
+                                """.trimMargin()
+                                inline = true
+                            }
+
+                            field {
+                                name = "Reason"
+                                value = ban.reason ?: "No reason given"
+                            }
+
+                            if (guild.getMember(kord.selfId).hasPermission(Permission.ViewAuditLog)) {
+                                val actingModerator = guild.getAuditLogEntries {
+                                    action = AuditLogEvent.MemberBanAdd
+                                }.first { it.targetId == ban.userId }.userId.asUser()
+
+                                field {
+                                    name = "Responsible moderator"
+                                    value = if (actingModerator != null) {
+                                        "${actingModerator.mention} (${actingModerator.tag})"
+                                    } else {
+                                        "Unknown (see audit log)"
+                                    }
+                                    inline = true
+                                }
+                            } else {
+                                field {
+                                    name = "Responsible moderator"
+                                    value = "*No audit log permission, the moderator cannot be identified*"
+                                    inline = true
+                                }
+                            }
                         }
                     }
                 }
@@ -176,9 +236,45 @@ class SyncExtension : Extension() {
             action {
                 val guilds = getGuilds().filter { it.id != event.guildId }
 
-                guilds.forEach {
-                    if (it.getBanOrNull(event.user.id) != null) {
-                        it.unban(event.user.id)
+                guilds.forEach { guild ->
+                    if (guild.getBanOrNull(event.user.id) != null) {
+                        guild.unban(event.user.id)
+
+                        guild.getModLogChannel()?.createEmbed {
+                            title = "Synced unban"
+
+                            field {
+                                name = "User"
+                                value = """
+                                    |Snowflake: ${event.user.id}
+                                    |Mention: <@!${event.user.id}>
+                                    |Name + discriminator: ${event.user.tag}
+                                """.trimMargin()
+                                inline = true
+                            }
+
+                            if (guild.getMember(kord.selfId).hasPermission(Permission.ViewAuditLog)) {
+                                val actingModerator = guild.getAuditLogEntries {
+                                    action = AuditLogEvent.MemberBanRemove
+                                }.first { it.targetId == event.user.id }.userId.asUser()
+
+                                field {
+                                    name = "Responsible moderator"
+                                    value = if (actingModerator != null) {
+                                        "${actingModerator.mention} (${actingModerator.tag})"
+                                    } else {
+                                        "Unknown (see audit log)"
+                                    }
+                                    inline = true
+                                }
+                            } else {
+                                field {
+                                    name = "Responsible moderator"
+                                    value = "*No audit log permission, the moderator cannot be identified*"
+                                    inline = true
+                                }
+                            }
+                        }
                     }
                 }
             }

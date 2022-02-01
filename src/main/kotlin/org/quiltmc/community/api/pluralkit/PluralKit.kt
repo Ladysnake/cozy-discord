@@ -12,7 +12,6 @@ import io.ktor.client.features.*
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.*
 import io.ktor.client.request.*
-import io.ktor.http.*
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -57,11 +56,12 @@ class PluralKit {
     suspend fun getMessageOrNull(id: Snowflake) =
         getMessageOrNull(id.toString())
 
+    @Suppress("MagicNumber")
     suspend fun getMessageOrNull(id: String): PKMessage? {
         try {
             return getMessage(id)
         } catch (e: ClientRequestException) {
-            if (e.response.status.value != HttpStatusCode.NotFound.value) {
+            if (e.response.status.value !in 400 until 499) {
                 throw e
             }
         }

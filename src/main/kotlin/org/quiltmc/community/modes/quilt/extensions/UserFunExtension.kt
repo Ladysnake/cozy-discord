@@ -213,7 +213,7 @@ class UserFunExtension : Extension() {
             action {
                 val buttonId = event.interaction.component?.customId?.split(':') ?: return@action
                 @Suppress("MagicNumber") // but it is right, 3 is a magic number, yes it is, it's a magic number
-                if (buttonId.size != 3 || buttonId[0] != "assignable") {
+                if (buttonId.size != 3 || buttonId[0] != "assignables") {
                     // somewhere in the ancient mystic trinity
                     // you get 3, that's a magic number
                     // the past and the present and the future

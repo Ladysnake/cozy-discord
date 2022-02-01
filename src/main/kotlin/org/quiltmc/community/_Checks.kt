@@ -11,6 +11,7 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.Permission
+import dev.kord.core.event.Event
 import mu.KotlinLogging
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 
@@ -87,7 +88,7 @@ suspend fun CheckContext<*>.hasPermissionInMainGuild(perm: Permission) {
         return
     }
 
-    if (member.hasPermission(perm)) {
+    if (member.hasPermission(perm) || member.id in OVERRIDING_USERS) {
         logger.passed()
     } else {
         logger.failed("User does not have permission: $perm")
@@ -158,4 +159,20 @@ suspend fun CheckContext<*>.notHasBaseModeratorRole() {
             fail("Must **not** be a Ladysnake moderator")
         }
     }
+}
+
+suspend fun <T : Event> CheckContext<T>.any(vararg checks: suspend CheckContext<T>.() -> Unit) {
+    if (!passed) {
+        return
+    }
+
+    checks.forEach {
+        val context = CheckContext(event, locale)
+        context.it()
+        if (context.passed) {
+            return
+        }
+    }
+
+    fail()
 }

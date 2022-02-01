@@ -44,6 +44,11 @@ internal val MODERATOR_ROLES: List<Snowflake> =
         ?.map { Snowflake(it.trim()) }
         ?: listOf(LADYSNAKE_MODERATOR_ROLE, YOUTUBE_MODERATOR_ROLE)
 
+internal val OVERRIDING_USERS: List<Snowflake> =
+    envOrNull("OVERRIDING_USERS")?.split(',')
+        ?.map { Snowflake(it.trim()) }
+        ?: listOf()
+
 internal val LADYSNAKE_GUILD = Snowflake(
     envOrNull("LADYSNAKE_GUILD_ID")?.toLong() ?: 292744693803122688
 )

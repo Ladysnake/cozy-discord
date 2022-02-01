@@ -31,8 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import mu.KotlinLogging
 import org.koin.core.component.inject
-import org.quiltmc.community.GUILDS
-import org.quiltmc.community.MAIN_GUILD
+import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
@@ -40,8 +39,6 @@ import org.quiltmc.community.database.entities.GlobalSettings
 import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.enums.LadysnakeServerType
-import org.quiltmc.community.hasPermissionInMainGuild
-import org.quiltmc.community.inYoutube
 import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -139,7 +136,10 @@ class SettingsExtension : Extension() {
             name = "global-config"
             description = "Global Cozy configuration commands"
 
-            check { hasPermissionInMainGuild(Permission.Administrator) }
+            check { any(
+                { hasPermissionInMainGuild(Permission.Administrator) },
+                { event.interaction.user.id in OVERRIDING_USERS }
+            ) }
 
             ephemeralSubCommand {
                 name = "get"
@@ -582,7 +582,10 @@ class SettingsExtension : Extension() {
                     name = "ladysnake-server-type"
                     description = "For Ladysnake servers: Set or remove the Ladysnake server type flag for a server"
 
-                    check { hasPermissionInMainGuild(Permission.Administrator) }
+                    check { any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { event.interaction.user.id in OVERRIDING_USERS }
+                    ) }
 
                     action {
                         val settings = if (arguments.serverId == null) {
@@ -632,7 +635,10 @@ class SettingsExtension : Extension() {
                     name = "set-leave-server"
                     description = "For Ladysnake servers: Set whether Cozy should automatically leave a server"
 
-                    check { hasPermissionInMainGuild(Permission.Administrator) }
+                    check { any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { event.interaction.user.id in OVERRIDING_USERS }
+                    ) }
 
                     action {
                         val settings = if (arguments.serverId == null) {
@@ -667,7 +673,10 @@ class SettingsExtension : Extension() {
                     description = "For Ladysnake servers: Add a channel to the list of " +
                             "channels that are only for threads"
 
-                    check { hasPermissionInMainGuild(Permission.Administrator) }
+                    check { any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { event.interaction.user.id in OVERRIDING_USERS }
+                    ) }
 
                     action {
                         val settings = if (arguments.serverId == null) {
@@ -690,7 +699,10 @@ class SettingsExtension : Extension() {
                     description = "For Ladysnake servers: Remove a channel from the list of " +
                             "channels that are only for threads"
 
-                    check { hasPermissionInMainGuild(Permission.Administrator) }
+                    check { any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { event.interaction.user.id in OVERRIDING_USERS }
+                    ) }
 
                     action {
                         val settings = if (arguments.serverId == null) {

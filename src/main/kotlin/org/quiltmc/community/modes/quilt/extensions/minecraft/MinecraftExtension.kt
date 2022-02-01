@@ -152,7 +152,10 @@ class MinecraftExtension : Extension() {
                         YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
                     }
 
-                    check { hasPermission(Permission.Administrator) }
+                    check { any(
+                        { hasPermission(Permission.Administrator) },
+                        { event.interaction.user.id in OVERRIDING_USERS }
+                    ) }
 
                     action {
                         if (!::currentEntries.isInitialized) {

@@ -866,7 +866,10 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { hasPermission(Permission.Administrator) }
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     val role = arguments.role ?: guild?.asGuild()?.roles?.firstOrNull { it.name.lowercase() == "muted" }
@@ -971,7 +974,10 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { hasPermission(Permission.Administrator) }
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     val roleId = when (guild!!.id) {
@@ -1026,7 +1032,10 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { hasPermission(Permission.Administrator) }
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     val roleId = when (guild!!.id) {

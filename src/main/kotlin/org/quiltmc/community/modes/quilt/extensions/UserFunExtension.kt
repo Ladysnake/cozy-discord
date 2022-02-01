@@ -7,6 +7,7 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
+import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
@@ -17,6 +18,7 @@ import com.kotlindiscord.kord.extensions.utils.download
 import com.kotlindiscord.kord.extensions.utils.toReaction
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
+import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
@@ -33,8 +35,9 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.datetime.Clock
 import org.koin.core.component.inject
-import org.quiltmc.community.GUILDS
 import org.quiltmc.community.MODERATOR_ROLES
+import org.quiltmc.community.OVERRIDING_USERS
+import org.quiltmc.community.any
 import org.quiltmc.community.database.collections.LotteryCollection
 import org.quiltmc.community.database.entities.Lottery
 import java.io.ByteArrayInputStream
@@ -63,7 +66,10 @@ class UserFunExtension : Extension() {
                 name = "start"
                 description = "Start creating a new role selector"
 
-                GUILDS.map { kord.getGuild(it) }.mapNotNull { it?.owner }.forEach(::allowUser)
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     if (currentAssignable != null && Clock.System.now() - currentAssignable!!.lastChange < 2.minutes) {
@@ -84,7 +90,10 @@ class UserFunExtension : Extension() {
                 name = "cancel"
                 description = "Cancel the current assignable"
 
-                GUILDS.map { kord.getGuild(it) }.mapNotNull { it?.owner }.forEach(::allowUser)
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     if (currentAssignable == null) {
@@ -115,7 +124,10 @@ class UserFunExtension : Extension() {
                 name = "finish"
                 description = "Finish the assignable and send the message"
 
-                GUILDS.map { kord.getGuild(it) }.mapNotNull { it?.owner }.forEach(::allowUser)
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     val outputChannel = arguments.channel.asChannelOf<GuildMessageChannel>()
@@ -148,7 +160,10 @@ class UserFunExtension : Extension() {
                 name = "add"
                 description = "Add a role to the assignable"
 
-                GUILDS.map { kord.getGuild(it) }.mapNotNull { it?.owner }.forEach(::allowUser)
+                check { any(
+                    { hasPermission(Permission.Administrator) },
+                    { event.interaction.user.id in OVERRIDING_USERS }
+                ) }
 
                 action {
                     if (currentAssignable == null) {

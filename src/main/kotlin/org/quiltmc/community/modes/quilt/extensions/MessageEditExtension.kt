@@ -113,10 +113,10 @@ class MessageEditExtension : Extension() {
                             getKoin().get<Kord>().getGuild(Snowflake(guildId))
                                 ?.getChannelOfOrNull<GuildMessageChannel>(Snowflake(channelId))
                                 ?.getMessageOrNull(Snowflake(messageId))
-                                ?.content
+                                ?.data?.content
                                 ?: "Could not find message"
                         } else {
-                            arguments.content
+                            arguments.content.replace("\\n", "\n")
                         }
 
                         val embedPart = arguments.part

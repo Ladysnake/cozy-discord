@@ -868,7 +868,7 @@ class UtilityExtension : Extension() {
 
                 check { any(
                     { hasPermission(Permission.Administrator) },
-                    { event.interaction.user.id in OVERRIDING_USERS }
+                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                 ) }
 
                 action {
@@ -976,7 +976,7 @@ class UtilityExtension : Extension() {
 
                 check { any(
                     { hasPermission(Permission.Administrator) },
-                    { event.interaction.user.id in OVERRIDING_USERS }
+                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                 ) }
 
                 action {
@@ -1034,7 +1034,7 @@ class UtilityExtension : Extension() {
 
                 check { any(
                     { hasPermission(Permission.Administrator) },
-                    { event.interaction.user.id in OVERRIDING_USERS }
+                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                 ) }
 
                 action {

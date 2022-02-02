@@ -138,7 +138,7 @@ class SettingsExtension : Extension() {
 
             check { any(
                 { hasPermissionInMainGuild(Permission.Administrator) },
-                { event.interaction.user.id in OVERRIDING_USERS }
+                { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
             ) }
 
             ephemeralSubCommand {
@@ -584,7 +584,7 @@ class SettingsExtension : Extension() {
 
                     check { any(
                         { hasPermissionInMainGuild(Permission.Administrator) },
-                        { event.interaction.user.id in OVERRIDING_USERS }
+                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                     ) }
 
                     action {
@@ -637,7 +637,7 @@ class SettingsExtension : Extension() {
 
                     check { any(
                         { hasPermissionInMainGuild(Permission.Administrator) },
-                        { event.interaction.user.id in OVERRIDING_USERS }
+                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                     ) }
 
                     action {
@@ -675,7 +675,7 @@ class SettingsExtension : Extension() {
 
                     check { any(
                         { hasPermissionInMainGuild(Permission.Administrator) },
-                        { event.interaction.user.id in OVERRIDING_USERS }
+                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                     ) }
 
                     action {
@@ -701,7 +701,7 @@ class SettingsExtension : Extension() {
 
                     check { any(
                         { hasPermissionInMainGuild(Permission.Administrator) },
-                        { event.interaction.user.id in OVERRIDING_USERS }
+                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
                     ) }
 
                     action {

@@ -93,8 +93,31 @@ class MessageEditExtension : Extension() {
                     }
 
                     action {
+                        val urlRegex = Regex(
+                            """https?://(?:canary\.|ptb\.)?discord(?:app)?\.com/channels/\d+/\d+/\d+"""
+                        )
+
                         val messageLink = arguments.messageLink
-                        val newContent = arguments.content
+
+                        if (!urlRegex.matches(messageLink)) {
+                            respond {
+                                content = "Invalid message link"
+                            }
+                            return@action
+                        }
+
+                        val newContent = if (arguments.content.matches(urlRegex)) {
+                            val (_, guildId, channelId, messageId) =
+                                messageLink.substringAfter(".com/").split("/")
+
+                            getKoin().get<Kord>().getGuild(Snowflake(guildId))
+                                ?.getChannelOfOrNull<GuildMessageChannel>(Snowflake(channelId))
+                                ?.getMessageOrNull(Snowflake(messageId))
+                                ?.content
+                                ?: "Could not find message"
+                        } else {
+                            arguments.content
+                        }
 
                         val embedPart = arguments.part
 
@@ -138,14 +161,36 @@ class MessageEditExtension : Extension() {
                                     EmbedPart.Field -> {
                                         val index = arguments.index!!
 
-                                        if (index >= embed.fields.size) {
-                                            respond {
-                                                content = "Index out of bounds"
+                                        when {
+                                            index > embed.fields.size -> {
+                                                respond {
+                                                    content = "Index out of bounds"
+                                                }
+                                                return@edit
                                             }
-                                            return@edit
+                                            index == embed.fields.size -> field {
+                                                name = "New field"
+                                                value = newContent
+                                            }
+                                            else -> fields[index].value = newContent
                                         }
+                                    }
+                                    EmbedPart.FieldName -> {
+                                        val index = arguments.index!!
 
-                                        fields[index].value = newContent
+                                        when {
+                                            index > embed.fields.size -> {
+                                                respond {
+                                                    content = "Index out of bounds"
+                                                }
+                                                return@edit
+                                            }
+                                            index == embed.fields.size -> field {
+                                                name = newContent
+                                                value = "New field"
+                                            }
+                                            else -> fields[index].name = newContent
+                                        }
                                     }
                                     EmbedPart.Color -> {
                                         @Suppress("MagicNumber") // hexadecimal base
@@ -233,6 +278,7 @@ class MessageEditExtension : Extension() {
         AuthorUrl("Author URL"),
         EmbedImage("Embed Image"),
         EmbedThumbnail("Embed Thumbnail"),
-        Field("Field", requiresIndex = true),
+        Field("Field Content", requiresIndex = true),
+        FieldName("Field Name", requiresIndex = true),
     }
 }

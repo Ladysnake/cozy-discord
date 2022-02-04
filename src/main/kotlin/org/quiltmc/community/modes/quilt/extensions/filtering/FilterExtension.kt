@@ -1013,17 +1013,18 @@ class FilterExtension : Extension() {
         }
     }
 
-    suspend fun FilterEntry.matches(content: String): Boolean = if (matchTarget != MatchTarget.ATTACHMENT) {
-        when (matchType) {
-            MatchType.CONTAINS -> content.contains(match, ignoreCase = true)
-            MatchType.EXACT -> content.equals(match, ignoreCase = true)
-            MatchType.REGEX -> match.toRegex(RegexOption.IGNORE_CASE).matches(content)
-            MatchType.REGEX_CONTAINS -> content.contains(match.toRegex(RegexOption.IGNORE_CASE))
-            MatchType.INVITE -> content.containsInviteFor(Snowflake(match))
+    suspend fun FilterEntry.matches(content: String): Boolean =
+        if (matchTarget != MatchTarget.ATTACHMENT || ',' !in content) {
+            when (matchType) {
+                MatchType.CONTAINS -> content.contains(match, ignoreCase = true)
+                MatchType.EXACT -> content.equals(match, ignoreCase = true)
+                MatchType.REGEX -> match.toRegex(RegexOption.IGNORE_CASE).matches(content)
+                MatchType.REGEX_CONTAINS -> content.contains(match.toRegex(RegexOption.IGNORE_CASE))
+                MatchType.INVITE -> content.containsInviteFor(Snowflake(match))
+            }
+        } else {
+            content.split(',').any { matches(it) }
         }
-    } else {
-        content.split(',').any { matches(it) }
-    }
 
     suspend fun String.containsInviteFor(guild: Snowflake): Boolean {
         val inviteMatches = INVITE_REGEX.findAll(this)

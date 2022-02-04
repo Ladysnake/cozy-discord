@@ -7,12 +7,30 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.Permission
+import dev.kord.common.entity.Permission.*
 import dev.kord.common.entity.Permissions
 import dev.kord.core.behavior.edit
 import org.koin.core.component.inject
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
+
+val PERMISSIONS = listOf(
+    UseSlashCommands,
+    AddReactions,
+    Stream,
+    ReadMessageHistory,
+    ViewChannel,
+    SendMessages,
+    EmbedLinks,
+    AttachFiles,
+    UseExternalEmojis,
+    Connect,
+    Speak,
+    UseVAD,
+    ChangeNickname,
+    RequestToSpeak,
+    SendMessagesInThreads,
+)
 
 class ForcedPermissionExtension : Extension() {
     override val name = "forced-permissions"
@@ -29,19 +47,13 @@ class ForcedPermissionExtension : Extension() {
             val guild = kord.getGuild(guildId)
 
             guild?.getEveryoneRoleOrNull()?.edit {
-                permissions = if (permissions != null) {
-                    permissions!! + Permission.UseSlashCommands
-                } else {
-                    Permissions(Permission.UseSlashCommands)
-                }
+                permissions = Permissions(PERMISSIONS)
             }
 
             guild?.roles?.collect {
                 it.edit {
-                    permissions = if (permissions != null) {
-                        permissions!! + Permission.UseSlashCommands
-                    } else {
-                        Permissions(Permission.UseSlashCommands)
+                    if (permissions != null) {
+                        permissions = permissions!! + UseSlashCommands
                     }
                 }
             }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package org.quiltmc.community.modes.quilt.extensions.messagelog
+package org.quiltmc.community.modes.quilt.extensions.rotatinglog
 
 import dev.kord.core.entity.Guild
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder

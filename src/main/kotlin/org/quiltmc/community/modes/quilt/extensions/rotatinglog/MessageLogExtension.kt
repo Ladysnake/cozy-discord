@@ -6,7 +6,7 @@
 
 @file:OptIn(ExperimentalTime::class)
 
-package org.quiltmc.community.modes.quilt.extensions.messagelog
+package org.quiltmc.community.modes.quilt.extensions.rotatinglog
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
@@ -480,7 +480,7 @@ class MessageLogExtension : Extension() {
                 continue
             }
 
-            rotator.send(logMessage.messageBuilder)
+            rotator.logMessage(logMessage.messageBuilder)
         }
     }
 

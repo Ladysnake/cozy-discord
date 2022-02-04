@@ -39,7 +39,7 @@ import org.quiltmc.community.database.entities.GlobalSettings
 import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.enums.LadysnakeServerType
-import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 

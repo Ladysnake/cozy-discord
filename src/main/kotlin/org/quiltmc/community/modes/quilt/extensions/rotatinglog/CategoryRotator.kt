@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package org.quiltmc.community.modes.quilt.extensions.messagelog
+package org.quiltmc.community.modes.quilt.extensions.rotatinglog
 
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
@@ -31,15 +31,18 @@ import java.time.temporal.ChronoField
 import java.util.*
 import kotlin.math.abs
 
-private const val WEEK_DIFFERENCE = 5L
+// 5 weeks, times 2 for two logging channels
+private const val WEEK_DIFFERENCE = 10L
 
 private const val CHECK_DELAY = 1000L * 60L * 30L  // 30 minutes
 
-private val NAME_REGEX = Regex("message-log-(\\d{4})-(\\d{2})")
+private val MESSAGE_LOG_NAME_REGEX = Regex("message-log-(\\d{4})-(\\d{2})")
+private val OTHER_LOG_NAME_REGEX = Regex("other-log-(\\d{4})-(\\d{2})")
 
 class CategoryRotator(private val category: Category, private val modLog: GuildMessageChannel) {
     private val guild get() = category.guild
-    private val channel get() = channels.last()
+    private val messageLogChannel get() = channels.last { it.name.startsWith("message-log-") }
+    private val extraLogChannel get() = channels.last { it.name.startsWith("other-log-") }
 
     var channels: List<GuildMessageChannel> = listOf()
     private var checkJob: Job? = null
@@ -68,8 +71,14 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
         }
     }
 
-    suspend fun send(messageBuilder: suspend UserMessageCreateBuilder.() -> Unit) = rotationLock.withLock {
-        channel.createMessage {
+    suspend fun logMessage(messageBuilder: suspend UserMessageCreateBuilder.() -> Unit) = rotationLock.withLock {
+        messageLogChannel.createMessage {
+            messageBuilder()
+        }
+    }
+
+    suspend fun logOther(messageBuilder: suspend UserMessageCreateBuilder.() -> Unit) = rotationLock.withLock {
+        extraLogChannel.createMessage {
             messageBuilder()
         }
     }
@@ -83,13 +92,15 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
                 val thisYear = now.getLong(ChronoField.YEAR)
 
                 var currentChannelExists = false
+                var otherChannelExists = false
                 val allChannels = mutableListOf<TopGuildMessageChannel>()
 
                 category.channels.toList().forEach {
                     if (it is TopGuildMessageChannel) {
                         logger.debug { "Checking existing channel: ${it.name}" }
 
-                        val match = NAME_REGEX.matchEntire(it.name)
+                        val match = MESSAGE_LOG_NAME_REGEX.matchEntire(it.name)
+                        val otherMatch = OTHER_LOG_NAME_REGEX.matchEntire(it.name)
 
                         if (match != null) {
                             val year = match.groups[1]!!.value.toLong()
@@ -134,6 +145,50 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
                                 allChannels.add(it)
                             }
                         }
+
+                        if (otherMatch != null) {
+                            val year = otherMatch.groups[1]!!.value.toLong()
+                            val week = otherMatch.groups[2]!!.value.toLong()
+                            val yearWeeks = getTotalWeeks(year.toInt())
+
+                            val weekDifference = abs(thisWeek - week)
+                            val yearDifference = abs(thisYear - year)
+
+                            if (year == thisYear && week == thisWeek) {
+                                logger.debug { "Passing: This is the latest other channel." }
+
+                                otherChannelExists = true
+                                allChannels.add(it)
+                            } else if (year > thisYear) {
+                                // It's in the future, so this isn't valid!
+                                logger.debug { "Deleting: This is next year's other channel." }
+
+                                it.delete()
+                                logDeletion(it)
+                            } else if (year == thisYear && week > thisWeek) {
+                                // It's in the future, so this isn't valid!
+                                logger.debug { "Deleting: This is a future week's other channel." }
+
+                                it.delete()
+                                logDeletion(it)
+                            } else if (
+                                yearDifference > 1L || yearDifference != 1L && weekDifference > WEEK_DIFFERENCE
+                            ) {
+                                // This one is _definitely_ too old.
+                                logger.debug { "Deleting: This is an old other channel." }
+
+                                it.delete()
+                                logDeletion(it)
+                            } else if (yearDifference == 1L && yearWeeks - week + thisWeek > WEEK_DIFFERENCE) {
+                                // This is from last year, but more than 5 weeks ago.
+                                logger.debug { "Deleting: This is an old other channel from last year." }
+
+                                it.delete()
+                                logDeletion(it)
+                            } else {
+                                allChannels.add(it)
+                            }
+                        }
                     }
                 }
 
@@ -149,6 +204,23 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
                     }
 
                     currentChannelExists = true
+
+                    logCreation(c)
+                    allChannels.add(c)
+                }
+
+                @Suppress("MagicNumber")
+                if (!otherChannelExists) {
+                    logger.debug { "Creating this week's other channel" }
+
+                    val yearPadded = thisYear.toString().padStart(4, '0')
+                    val weekPadded = thisWeek.toString().padStart(2, '0')
+
+                    val c = guild.asGuild().createTextChannel("other-log-$yearPadded-$weekPadded") {
+                        parentId = category.id
+                    }
+
+                    otherChannelExists = true
 
                     logCreation(c)
                     allChannels.add(c)
@@ -177,6 +249,7 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
 
                         (allChannels[i].asChannelOf<TextChannel>()).edit {
                             position = i
+                            reason = "Updating channel position."
                         }
                     }
                 }

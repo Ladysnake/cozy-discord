@@ -59,7 +59,7 @@ import org.quiltmc.community.database.entities.InvalidMention.Type.*
 import org.quiltmc.community.database.entities.UserRestrictions
 import org.quiltmc.community.modes.quilt.extensions.converters.defaultingIntChoice
 import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
-import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds

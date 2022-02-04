@@ -26,9 +26,10 @@ import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
-import org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.minecraft.MinecraftExtension
 import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.ExtraLogExtension
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import kotlin.time.Duration.Companion.days
@@ -69,6 +70,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         add(::UserFunExtension)
         add(::PersistentCacheExtension)
         add(::MessageEditExtension)
+        add(::ExtraLogExtension)
 
         if (GITHUB_TOKEN != null) {
             add(::GithubExtension)

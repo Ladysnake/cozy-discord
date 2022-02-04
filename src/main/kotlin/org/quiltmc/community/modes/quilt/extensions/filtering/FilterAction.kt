@@ -16,6 +16,7 @@ enum class FilterAction(
     val validForUsers: Boolean = false
 ) : ChoiceEnum {
     DELETE(0, "Delete message"),
-    KICK(1, "Kick user", true),
-    BAN(2, "Ban user", true)
+    REMOVE_ATTACHMENTS(0, "Remove attachments"),
+    KICK(1, "Kick user", validForUsers = true),
+    BAN(2, "Ban user", validForUsers = true),
 }

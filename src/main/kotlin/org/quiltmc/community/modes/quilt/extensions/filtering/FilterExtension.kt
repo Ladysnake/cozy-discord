@@ -618,13 +618,29 @@ class FilterExtension : Extension() {
 
     @Suppress("TooGenericExceptionCaught")
     suspend fun handleMessage(message: Message) {
-        val matched = filterCache.values
+        var matched = filterCache.values
             .filter { it.matchTarget == MatchTarget.MESSAGE }
             .sortedByDescending { it.action?.severity ?: -1 }
 
         for (filter in matched) {
             try {
                 if (filter.matches(message.content)) {
+                    filter.action(message)
+
+                    return
+                }
+            } catch (t: Throwable) {
+                logger.error(t) { "Failed to check filter ${filter._id}" }
+            }
+        }
+
+        matched = filterCache.values
+            .filter { it.matchTarget == MatchTarget.ATTACHMENT }
+            .sortedByDescending { it.action?.severity ?: -1 }
+
+        for (filter in matched) {
+            try {
+                if (filter.matches(message.attachments.joinToString(",") { it.filename })) {
                     filter.action(message)
 
                     return
@@ -829,6 +845,31 @@ class FilterExtension : Extension() {
                 message.deleteIgnoringNotFound()
             }
 
+            FilterAction.REMOVE_ATTACHMENTS -> {
+                message.author!!.dm {
+                    content = "The message you just sent on **${guild.name}** " +
+                            "has/have been automatically removed due to your attachments"
+
+                    embed {
+                        description = message.attachments.joinToString("\n") {
+                            "`${it.filename}`"
+                        }
+
+                        field {
+                            name = "Channel"
+                            value = "${message.channel.mention} (`${message.channel.id.value}`)"
+                        }
+
+                        field {
+                            name = "Message ID"
+                            value = "`${message.id}`"
+                        }
+                    }
+                }
+
+                message.deleteIgnoringNotFound()
+            }
+
             FilterAction.KICK -> {
                 message.deleteIgnoringNotFound()
 
@@ -972,12 +1013,16 @@ class FilterExtension : Extension() {
         }
     }
 
-    suspend fun FilterEntry.matches(content: String): Boolean = when (matchType) {
-        MatchType.CONTAINS -> content.contains(match, ignoreCase = true)
-        MatchType.EXACT -> content.equals(match, ignoreCase = true)
-        MatchType.REGEX -> match.toRegex(RegexOption.IGNORE_CASE).matches(content)
-        MatchType.REGEX_CONTAINS -> content.contains(match.toRegex(RegexOption.IGNORE_CASE))
-        MatchType.INVITE -> content.containsInviteFor(Snowflake(match))
+    suspend fun FilterEntry.matches(content: String): Boolean = if (matchTarget != MatchTarget.ATTACHMENT) {
+        when (matchType) {
+            MatchType.CONTAINS -> content.contains(match, ignoreCase = true)
+            MatchType.EXACT -> content.equals(match, ignoreCase = true)
+            MatchType.REGEX -> match.toRegex(RegexOption.IGNORE_CASE).matches(content)
+            MatchType.REGEX_CONTAINS -> content.contains(match.toRegex(RegexOption.IGNORE_CASE))
+            MatchType.INVITE -> content.containsInviteFor(Snowflake(match))
+        }
+    } else {
+        content.split(',').any { matches(it) }
     }
 
     suspend fun String.containsInviteFor(guild: Snowflake): Boolean {

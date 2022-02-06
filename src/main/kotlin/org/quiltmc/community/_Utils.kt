@@ -352,3 +352,19 @@ inline fun EmbedBuilder.copyFrom(embed: DiscordEmbed) {
         }
     }
 }
+
+fun Color.awt() = java.awt.Color(red, green, blue)
+
+fun String.italic() = "*$this*"
+fun String.bold() = "**$this**"
+fun String.underline() = "__${this}__"
+fun String.strikethrough() = "~~$this~~"
+fun String.code() = "`$this`"
+fun String.spoiler() = "||$this||"
+fun String.quote() = ">>> $this"
+
+fun String.codeBlock(language: String = "") = """
+    |```$language
+    |${this.replace("\n", "\n    |")}
+    |```
+""".trimMargin()

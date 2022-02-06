@@ -14,11 +14,16 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.utils.createdAt
+import com.sksamuel.scrimage.ImmutableImage
+import com.sksamuel.scrimage.nio.PngWriter
 import dev.kord.common.entity.optional.Optional
 import dev.kord.core.event.guild.GuildUpdateEvent
 import dev.kord.core.event.guild.MemberJoinEvent
 import dev.kord.core.event.guild.MemberLeaveEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
+import dev.kord.core.event.role.RoleCreateEvent
+import dev.kord.core.event.role.RoleDeleteEvent
+import dev.kord.core.event.role.RoleUpdateEvent
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.embed
 import kotlinx.coroutines.flow.map
@@ -26,9 +31,12 @@ import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
 import org.koin.core.component.inject
-import org.quiltmc.community.asGuild
+import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
-import org.quiltmc.community.inLadysnakeGuild
+import java.util.*
+
+@Suppress("MagicNumber") // the whole point is to make the image size a constant
+private val COLOR_IMAGE_TEMPLATE = ImmutableImage.create(256, 32)
 
 class ExtraLogExtension : Extension() {
     override val name = "extra-logging"
@@ -715,6 +723,400 @@ class ExtraLogExtension : Extension() {
                                 """.trimIndent()
 
                                 inline = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //endregion
+
+        //region: Role changes
+
+        event<RoleCreateEvent> {
+            check { inLadysnakeGuild() }
+
+            action {
+                val role = event.role
+                val guild = event.getGuild()
+
+                val colorAsImage = COLOR_IMAGE_TEMPLATE
+                    .fill(role.color.awt())
+                    .let {
+                        Base64.getUrlEncoder().encodeToString(it.bytes(PngWriter()))
+                    }
+
+                messageLogExtension?.getRotator(guild.id)?.logOther {
+                    embed {
+                        title = "Role Created"
+                        description = "${role.mention} (${role.id.toString().code()})"
+                        color = DISCORD_GREEN
+
+                        field {
+                            name = "Name"
+                            value = role.name
+                            inline = true
+                        }
+
+                        field {
+                            name = "Managed"
+                            value = "This role is ${if (role.managed) "" else "not"}managed."
+                            inline = true
+                        }
+
+                        field {
+                            name = "Mentionable"
+                            value = "This role is ${if (role.mentionable) "" else "not "}mentionable."
+                            inline = true
+                        }
+
+                        field {
+                            name = "Permissions"
+                            value = role.permissions.values.joinToString(", ") { it::class.simpleName!! }
+                            inline = true
+                        }
+
+                        if (role.unicodeEmoji != null) {
+                            field {
+                                name = "Unicode Emoji"
+                                value = role.unicodeEmoji!!
+                                inline = true
+                            }
+                        }
+
+                        if (role.tags != null) {
+                            field {
+                                name = "Tags"
+                                value = buildString {
+                                    if (role.tags!!.isPremiumRole) {
+                                        append("This role is the server's premium role.\n")
+                                    }
+
+                                    if (role.tags!!.botId != null) {
+                                        val bot = role.tags!!.getBot()!!
+                                        append("This role is for ${bot.mention} (`${bot.id}`).\n")
+                                    }
+
+                                    if (role.tags!!.integrationId != null) {
+                                        val integration = role.tags!!.getIntegration()!!
+                                        append("This role is for ${integration.name} (`${integration.id}`).\n")
+                                    }
+                                }
+                                inline = true
+                            }
+                        }
+
+                        if (role.icon != null) {
+                            thumbnail {
+                                url = role.icon!!.url
+                            }
+                        }
+
+                        image = "data:image/png;base64,$colorAsImage"
+                    }
+                }
+            }
+        }
+
+        event<RoleDeleteEvent> {
+            check { inLadysnakeGuild() }
+
+            action {
+                val role = event.role
+                val guild = event.getGuild()
+
+                if (role == null) {
+                    messageLogExtension?.getRotator(guild.id)?.logOther {
+                        embed {
+                            title = "Role Deleted"
+                            description = "*This role was not cached. No extra information can be given.*"
+                            color = DISCORD_RED
+
+                            field {
+                                name = "Role ID"
+                                value = event.roleId.toString().code()
+                            }
+                        }
+                    }
+
+                    return@action
+                }
+
+                messageLogExtension?.getRotator(guild.id)?.logOther {
+                    embed {
+                        title = "Role Deleted"
+                        description = role.mention
+                        color = DISCORD_RED
+
+                        field {
+                            name = "Name"
+                            value = role.name
+                            inline = true
+                        }
+
+                        field {
+                            name = "Managed"
+                            value = "This role is ${if (role.managed) "" else "not"}managed."
+                            inline = true
+                        }
+
+                        field {
+                            name = "Mentionable"
+                            value = "This role is ${if (role.mentionable) "" else "not "}mentionable."
+                            inline = true
+                        }
+
+                        field {
+                            name = "Permissions"
+                            value = role.permissions.values.joinToString(", ") { it::class.simpleName!! }
+                        }
+
+                        if (role.unicodeEmoji != null) {
+                            field {
+                                name = "Unicode Emoji"
+                                value = role.unicodeEmoji!!
+                            }
+                        }
+
+                        if (role.tags != null) {
+                            field {
+                                name = "Tags"
+                                value = buildString {
+                                    if (role.tags!!.isPremiumRole) {
+                                        append("This role is the server's premium role.\n")
+                                    }
+
+                                    if (role.tags!!.botId != null) {
+                                        val bot = role.tags!!.getBot()!!
+                                        append("This role is for ${bot.mention} (`${bot.id}`).\n")
+                                    }
+
+                                    if (role.tags!!.integrationId != null) {
+                                        val integration = role.tags!!.getIntegration()!!
+                                        append("This role is for ${integration.name} (`${integration.id}`).\n")
+                                    }
+                                }
+                            }
+                        }
+
+                        if (role.icon != null) {
+                            thumbnail {
+                                url = role.icon!!.url
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        event<RoleUpdateEvent> {
+            check { inLadysnakeGuild() }
+
+            action {
+                val old = event.old
+                val new = event.role
+                val guild = event.getGuild()
+
+                if (event.old == null) {
+                    val colorAsImage = COLOR_IMAGE_TEMPLATE
+                        .fill(new.color.awt())
+                        .let {
+                            Base64.getUrlEncoder().encodeToString(it.bytes(PngWriter()))
+                        }
+
+                    messageLogExtension?.getRotator(guild.id)?.logOther {
+                        embed {
+                            title = "Role Updated"
+                            description = """
+                                ${new.mention} (${new.id.toString().code()})
+                                *The role was not cached, so the role may not have changed.*
+                                """.trimIndent()
+                            color = DISCORD_GREEN
+
+                            field {
+                                name = "Name"
+                                value = new.name
+                                inline = true
+                            }
+
+                            field {
+                                name = "Managed"
+                                value = "This role is ${if (new.managed) "" else "not"}managed."
+                                inline = true
+                            }
+
+                            field {
+                                name = "Mentionable"
+                                value = "This role is ${if (new.mentionable) "" else "not "}mentionable."
+                                inline = true
+                            }
+
+                            field {
+                                name = "Permissions"
+                                value = new.permissions.values.joinToString(", ") { it::class.simpleName!! }
+                            }
+
+                            if (new.unicodeEmoji != null) {
+                                field {
+                                    name = "Unicode Emoji"
+                                    value = new.unicodeEmoji!!
+                                }
+                            }
+
+                            if (new.tags != null) {
+                                field {
+                                    name = "Tags"
+                                    value = buildString {
+                                        if (new.tags!!.isPremiumRole) {
+                                            append("This role is the server's premium role.\n")
+                                        }
+
+                                        if (new.tags!!.botId != null) {
+                                            val bot = new.tags!!.getBot()!!
+                                            append("This role is for ${bot.mention} (`${bot.id}`).\n")
+                                        }
+
+                                        if (new.tags!!.integrationId != null) {
+                                            val integration = new.tags!!.getIntegration()!!
+                                            append("This role is for ${integration.name} (`${integration.id}`).\n")
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (new.icon != null) {
+                                thumbnail {
+                                    url = new.icon!!.url
+                                }
+                            }
+
+                            image = "data:image/png;base64,$colorAsImage"
+                        }
+                    }
+
+                    return@action
+                }
+
+                val diff = RoleDiff(new, old!!)
+
+                if (!diff.isIdentical) {
+                    messageLogExtension?.getRotator(guild.id)?.logOther {
+                        embed {
+                            title = "Role Updated"
+                            description = "${new.mention} (${new.id.toString().code()})"
+
+                            if (diff.name is Optional.Value) {
+                                field {
+                                    name = "Name"
+                                    value = """
+                                        Old: ${old.name}
+                                        New: ${new.name}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.color is Optional.Value) {
+                                field {
+                                    name = "Color"
+                                    value = """
+                                        Old: ${old.color.toString().code()}
+                                        New: ${new.color.toString().code()}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.hoisted is Optional.Value) {
+                                field {
+                                    name = "Hoisted"
+                                    value = """
+                                        Old: ${if (old.hoisted) "Yes" else "No"}
+                                        New: ${if (new.hoisted) "Yes" else "No"}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.icon is Optional.Value) {
+                                field {
+                                    name = "Icon"
+                                    value = """
+                                        Old: ${if (old.icon == null) "None" else old.icon!!.url}
+                                        New: ${if (new.icon == null) "None" else new.icon!!.url}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.unicodeEmoji is Optional.Value) {
+                                field {
+                                    name = "Unicode Emoji"
+                                    value = """
+                                        Old: ${old.unicodeEmoji}
+                                        New: ${new.unicodeEmoji}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.position is Optional.Value) {
+                                field {
+                                    name = "Position"
+                                    value = """
+                                        Old: ${old.rawPosition}
+                                        New: ${new.rawPosition}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.permissions is Optional.Value) {
+                                val oldPerms = old.permissions.values
+                                val newPerms = new.permissions.values
+
+                                val added = newPerms.filter { it !in oldPerms }
+                                val removed = oldPerms.filter { it !in newPerms }
+
+                                field {
+                                    name = "Permissions"
+                                    value = """
+                                        Added: ${added.joinToString(", ") { it::class.simpleName!! }}
+                                        Removed: ${removed.joinToString(", ") { it::class.simpleName!! }}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.managed is Optional.Value) {
+                                field {
+                                    name = "Managed"
+                                    value = """
+                                        Old: ${if (old.managed) "Yes" else "No"}
+                                        New: ${if (new.managed) "Yes" else "No"}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.mentionable is Optional.Value) {
+                                field {
+                                    name = "Mentionable"
+                                    value = """
+                                        Old: ${if (old.mentionable) "Yes" else "No"}
+                                        New: ${if (new.mentionable) "Yes" else "No"}
+                                    """.trimIndent()
+                                    inline = true
+                                }
+                            }
+
+                            if (diff.tags is Optional.Value) {
+                                field {
+                                    name = "Tags"
+                                    value = "Tags were updated, see audit log".italic().bold()
+                                    inline = true
+                                }
                             }
                         }
                     }

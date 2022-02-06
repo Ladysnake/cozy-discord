@@ -75,6 +75,8 @@ dependencies {
     implementation(libs.kx.ser)
     implementation(libs.graphql)
 
+    implementation(libs.scrimage)
+
     implementation(project(":module-user-cleanup"))
 }
 

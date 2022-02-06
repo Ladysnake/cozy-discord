@@ -7,30 +7,12 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.Permission.*
-import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.Permission.UseSlashCommands
 import dev.kord.core.behavior.edit
+import dev.kord.rest.request.RestRequestException
 import org.koin.core.component.inject
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
-
-val PERMISSIONS = listOf(
-    UseSlashCommands,
-    AddReactions,
-    Stream,
-    ReadMessageHistory,
-    ViewChannel,
-    SendMessages,
-    EmbedLinks,
-    AttachFiles,
-    UseExternalEmojis,
-    Connect,
-    Speak,
-    UseVAD,
-    ChangeNickname,
-    RequestToSpeak,
-    SendMessagesInThreads,
-)
 
 class ForcedPermissionExtension : Extension() {
     override val name = "forced-permissions"
@@ -46,15 +28,23 @@ class ForcedPermissionExtension : Extension() {
         guilds.forEach { guildId ->
             val guild = kord.getGuild(guildId)
 
-            guild?.getEveryoneRoleOrNull()?.edit {
-                permissions = Permissions(PERMISSIONS)
+            val everyone = guild?.getEveryoneRole()
+
+            try {
+                everyone?.edit {
+                    permissions = everyone.permissions + UseSlashCommands
+                }
+            } catch (e: RestRequestException) {
+                // ignore
             }
 
             guild?.roles?.collect {
-                it.edit {
-                    if (permissions != null) {
-                        permissions = permissions!! + UseSlashCommands
+                try {
+                    it.edit {
+                        permissions = it.permissions + UseSlashCommands
                     }
+                } catch (e: RestRequestException) {
+                    // ignore
                 }
             }
         }

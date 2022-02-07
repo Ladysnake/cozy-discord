@@ -33,6 +33,7 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.message.MessageCreateEvent
+import dev.kord.core.firstOrNull
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
@@ -633,7 +634,7 @@ class ModerationExtension(
     }
 
     private suspend fun getReportingChannel(guild: Guild? = null) = modReportChannel
-        ?: guild?.getModLogChannel()?.id
+        ?: guild?.channels?.firstOrNull { it.name == "moderation-log" }?.id
         ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
 
     private suspend inline fun reportToModChannel(

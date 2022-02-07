@@ -24,6 +24,7 @@ import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
+import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.*
@@ -77,7 +78,7 @@ suspend fun Member.timeoutUntil(time: Instant) {
 
 suspend fun Guild.getModLogChannel() =
     channels.firstOrNull { it.name == "moderation-log" }
-        ?.asChannelOrNull() as? GuildMessageChannel
+        ?.asChannelOfOrNull<GuildMessageChannel>()
 
 fun String.chunkByWhitespace(length: Int): List<String> {
     if (length <= 0) {

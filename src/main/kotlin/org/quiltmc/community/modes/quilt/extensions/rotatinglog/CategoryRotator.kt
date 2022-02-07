@@ -11,11 +11,13 @@ import dev.kord.core.behavior.channel.createEmbed
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.edit
 import dev.kord.core.behavior.createTextChannel
+import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.Category
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
+import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
@@ -25,6 +27,8 @@ import kotlinx.coroutines.sync.withLock
 import mu.KotlinLogging
 import org.quiltmc.community.COLOUR_NEGATIVE
 import org.quiltmc.community.COLOUR_POSITIVE
+import org.quiltmc.community.copyFrom
+import org.quiltmc.community.italic
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoField
@@ -72,14 +76,42 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
     }
 
     suspend fun logMessage(messageBuilder: suspend UserMessageCreateBuilder.() -> Unit) = rotationLock.withLock {
-        messageLogChannel.createMessage {
+        val message = messageLogChannel.createMessage {
             messageBuilder()
+        }
+
+        message.edit {
+            if (message.embeds.isNotEmpty()) {
+                embed {
+                    copyFrom(message.embeds.first())
+
+                    field {
+                        name = "Log ID"
+                        value = "This field is used for adding notes to this log message.".italic()
+                        value += "\n" + message.id.toString()
+                    }
+                }
+            }
         }
     }
 
     suspend fun logOther(messageBuilder: suspend UserMessageCreateBuilder.() -> Unit) = rotationLock.withLock {
-        extraLogChannel.createMessage {
+        val message = extraLogChannel.createMessage {
             messageBuilder()
+        }
+
+        message.edit {
+            if (message.embeds.isNotEmpty()) {
+                embed {
+                    copyFrom(message.embeds.first())
+
+                    field {
+                        name = "Log ID"
+                        value = "This field is used for adding notes to this log message.".italic()
+                        value += "\n" + message.id.toString()
+                    }
+                }
+            }
         }
     }
 

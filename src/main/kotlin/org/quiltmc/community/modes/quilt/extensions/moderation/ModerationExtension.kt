@@ -662,8 +662,9 @@ class ModerationExtension(
                 copyFrom(msg.embeds.first())
 
                 field {
-                    name = "Message ID"
-                    value = msg.id.toString()
+                    name = "Log ID"
+                    value = "This field is used for adding notes to this log message.".italic()
+                    value += "\n" + msg.id.toString()
                 }
             }
         }
@@ -809,6 +810,7 @@ class ModerationExtension(
             }
 
             reportToModChannel(context.guild?.asGuild()) {
+                title = "Timeout"
                 description = "Timed out ${user.mention}"
                 field {
                     name = "Reason"
@@ -829,6 +831,7 @@ class ModerationExtension(
             }
         } catch (e: RestRequestException) {
             reportToModChannel(context.guild?.asGuild()) {
+                title = "Timeout"
                 description = "Timed out ${user.mention}"
                 field {
                     name = "Reason"
@@ -837,8 +840,8 @@ class ModerationExtension(
                 field {
                     name = "Length"
                     value = when (length) {
-                        -1L -> "Permanent"
-                        0L -> "Unbanned"
+                        -1L -> "Permanent" // this shouldn't happen with the traditional command but ok
+                        0L -> "Removed timeout"
                         else -> "$length seconds (until $returnTime)"
                     }
                 }

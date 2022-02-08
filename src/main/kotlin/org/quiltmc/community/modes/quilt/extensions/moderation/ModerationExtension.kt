@@ -639,7 +639,7 @@ class ModerationExtension(
         ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
 
     private suspend inline fun reportToModChannel(
-        guild: Guild? = null,
+        guild: Guild?,
         text: String = "",
         embed: EmbedBuilder.() -> Unit = {}
     ) {

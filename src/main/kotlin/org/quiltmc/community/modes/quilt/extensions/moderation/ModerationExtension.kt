@@ -635,6 +635,7 @@ class ModerationExtension(
 
     private suspend fun getReportingChannel(guild: Guild? = null) = modReportChannel
         ?: guild?.channels?.firstOrNull { it.name == "moderation-log" }?.id
+        ?: guild?.id?.let { settings.get(it)?.getConfiguredLogChannel() }?.id
         ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
 
     private suspend inline fun reportToModChannel(

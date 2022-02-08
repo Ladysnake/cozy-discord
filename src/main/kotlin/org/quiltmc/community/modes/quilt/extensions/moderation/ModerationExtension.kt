@@ -574,24 +574,26 @@ class ModerationExtension(
                     .map { it.first to it.second!! }
 
                 timedOutIds.forEach { (restriction, member) ->
-                    member.edit {
-                        // ok so this allows a timeout to be longer than discord's max (28 days)
-                        // which means we need to use our own timeouts
-                        val returnTime = restriction.returningBanTime!!
-                        val currentDisabled = communicationDisabledUntil
+                    if (restriction.returningBanTime!! < Clock.System.now()) {
+                        member.edit {
+                            // ok so this allows a timeout to be longer than discord's max (28 days)
+                            // which means we need to use our own timeouts
+                            val returnTime = restriction.returningBanTime!!
+                            val currentDisabled = communicationDisabledUntil
 
-                        val durationRemaining = returnTime - Clock.System.now()
+                            val durationRemaining = returnTime - Clock.System.now()
 
-                        @Suppress("MagicNumber") // 28 days is funky
-                        if (durationRemaining.toDouble(DurationUnit.DAYS) > 28.0) {
-                            if (currentDisabled == null || currentDisabled <= Clock.System.now()) {
-                                // refresh the timeout
-                                communicationDisabledUntil = Clock.System.now() + 28.days
-                            }
-                        } else {
-                            if (currentDisabled == null || currentDisabled <= returnTime) {
-                                // set the timeout to the remaining time
-                                communicationDisabledUntil = returnTime
+                            @Suppress("MagicNumber") // 28 days is funky
+                            if (durationRemaining.toDouble(DurationUnit.DAYS) > 28.0) {
+                                if (currentDisabled == null || currentDisabled <= Clock.System.now()) {
+                                    // refresh the timeout
+                                    communicationDisabledUntil = Clock.System.now() + 28.days
+                                }
+                            } else {
+                                if (currentDisabled == null || currentDisabled <= returnTime) {
+                                    // set the timeout to the remaining time
+                                    communicationDisabledUntil = returnTime
+                                }
                             }
                         }
                     }

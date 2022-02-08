@@ -444,7 +444,7 @@ class ModerationExtension(
                             note(note, this@action.user.mention)
                         }
                     } else {
-                        reportToModChannel {
+                        reportToModChannel(guild?.asGuild()) {
                             title = "Note"
                             description = """
                                 This is auto-generated as a start for notes with no user or previous action.

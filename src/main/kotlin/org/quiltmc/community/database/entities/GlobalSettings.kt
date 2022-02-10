@@ -18,12 +18,9 @@ import dev.kord.core.Kord
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
-import org.quiltmc.community.GITHUB_LOG_CHANNEL
-import org.quiltmc.community.LADYSNAKE_GUILD
-import org.quiltmc.community.LADYSNAKE_SUGGESTION_CHANNEL
+import org.quiltmc.community.*
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
-import org.quiltmc.community.getGuildIgnoring403
 import java.util.*
 
 @Serializable
@@ -55,7 +52,7 @@ data class GlobalSettings(
         val kord = getKoin().get<Kord>()
         val builder = StringBuilder()
 
-        builder.append("**Appeals Invite:** ")
+        builder.append("Appeals Invite:".bold() + ' ')
 
         if (appealsInvite != null) {
             builder.append("https://discord.gg/$appealsInvite")
@@ -64,7 +61,7 @@ data class GlobalSettings(
         }
 
         builder.append("\n")
-        builder.append("**GitHub Token:** ")
+        builder.append("GitHub Token:".bold() + ' ')
 
         if (githubToken != null) {
             builder.append("Configured")
@@ -73,14 +70,14 @@ data class GlobalSettings(
         }
 
         builder.append("\n\n")
-        builder.append("**Suggestions Channels:** \n")
+        builder.append("Suggestion Channels:".bold() + '\n')
 
         builder.append(
-            suggestionChannels.joinToString("\n") { "• <#$it>" }
+            suggestionChannels.joinToString("\n") { "**»** <#$it>" }
         )
 
         builder.append("\n")
-        builder.append("**/github Log Channel:** ")
+        builder.append("/github Log Channel:".bold() + ' ')
 
         if (githubLogChannel != null) {
             builder.append("<#${githubLogChannel!!.value}>")
@@ -89,16 +86,16 @@ data class GlobalSettings(
         }
 
         builder.append("\n\n")
-        builder.append("__**Ladysnake Servers**__\n")
+        builder.append("Ladysnake Servers".bold().underline() + '\n')
 
         if (ladysnakeGuilds.isNotEmpty()) {
             ladysnakeGuilds.forEach {
                 val guild = kord.getGuildIgnoring403(it)
 
                 if (guild == null) {
-                    builder.append("**»** `${it.value}`\n")
+                    builder.append("**»** ${it.stringCode()}\n")
                 } else {
-                    builder.append("**»** ${guild.name} (`${it.value}`)\n")
+                    builder.append("**»** ${guild.name} (${it.stringCode()})\n")
                 }
             }
         } else {

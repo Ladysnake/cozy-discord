@@ -10,6 +10,7 @@ package org.quiltmc.community.database.entities
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.utils.getKoin
+import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.getChannelOfOrNull
@@ -18,10 +19,10 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import kotlinx.serialization.Serializable
+import org.quiltmc.community.*
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.enums.LadysnakeServerType
-import org.quiltmc.community.getGuildIgnoring403
 
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
@@ -38,6 +39,7 @@ data class ServerSettings(
     var ladysnakeServerType: LadysnakeServerType? = null,
     var leaveServer: Boolean = false,
     val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
+    var defaultThreadLength: ArchiveDuration? = null,
 ) : Entity<Snowflake> {
     suspend fun save() {
         val collection = getKoin().get<ServerSettingsCollection>()
@@ -69,11 +71,16 @@ data class ServerSettings(
         val guild = kord.getGuildIgnoring403(_id)
 
         if (guild != null) {
-            builder.append("**Guild ID:** `${_id.value}`\n")
+            builder.append("Guild ID:".bold() + ' ')
+            builder.append(guild.id.toString().code())
+            builder.append('\n')
         }
 
-        builder.append("**Command Prefix:** `$commandPrefix`\n\n")
-        builder.append("**Cozy Logs:** ")
+        builder.append("Command prefix:".bold() + ' ')
+        builder.append(commandPrefix)
+        builder.append("\n\n")
+
+        builder.append("Cozy Logs:".bold() + ' ')
 
         if (cozyLogChannel != null) {
             builder.append("<#${cozyLogChannel!!.value}>")
@@ -83,7 +90,7 @@ data class ServerSettings(
 
         if (showQuiltSettings) {
             builder.append("\n")
-            builder.append("**Filter Logs:** ")
+            builder.append("Filter Logs:".bold() + ' ')
 
             if (filterLogChannel != null) {
                 builder.append("<#${filterLogChannel!!.value}>")
@@ -93,7 +100,7 @@ data class ServerSettings(
         }
 
         builder.append("\n")
-        builder.append("**Message Logs:** ")
+        builder.append("Message Logs:".bold() + ' ')
 
         if (messageLogCategory != null) {
             builder.append("<#${messageLogCategory!!.value}>")
@@ -104,7 +111,7 @@ data class ServerSettings(
         builder.append("\n\n")
 
         if (showQuiltSettings) {
-            builder.append("**Ladysnake Server Type:** ")
+            builder.append("LadySnake Server Type:".bold() + ' ')
 
             if (ladysnakeServerType != null) {
                 builder.append(ladysnakeServerType!!.readableName)
@@ -115,7 +122,7 @@ data class ServerSettings(
             builder.append("\n")
         }
 
-        builder.append("**Leave Server Automatically:** ")
+        builder.append("Leave Server Automatically:".bold() + ' ')
 
         if (leaveServer) {
             builder.append("Yes")
@@ -124,16 +131,16 @@ data class ServerSettings(
         }
 
         builder.append("\n\n")
-        builder.append("**__Moderator Roles__**\n")
+        builder.append("Moderator Roles:".bold().underline() + '\n')
 
         if (moderatorRoles.isNotEmpty()) {
             moderatorRoles.forEach {
                 val role = guild?.getRoleOrNull(it)
 
                 if (role != null) {
-                    builder.append("**»** **${role.name}** (`${it.value}`)\n")
+                    builder.append("**»** ${role.name.bold()} (${it.stringCode()})\n")
                 } else {
-                    builder.append("**»** `${it.value}`\n")
+                    builder.append("**»** ${it.stringCode()}\n")
                 }
             }
         } else {
@@ -141,20 +148,36 @@ data class ServerSettings(
         }
 
         builder.append("\n\n")
-        builder.append("**__Thread Only Channels__**\n")
+        builder.append("Thread Only Channels:".bold().underline() + '\n')
 
         if (threadOnlyChannels.isNotEmpty()) {
             threadOnlyChannels.forEach {
                 val channel = guild?.getChannelOfOrNull<GuildMessageChannel>(it)
 
                 if (channel != null) {
-                    builder.append("**»** **${channel.name}** (`${it.value}`)\n")
+                    builder.append("**»** ${channel.name.bold()} (`${it.stringCode()}`)\n")
                 } else {
-                    builder.append("**»** `${it.value}`\n")
+                    builder.append("**»** `${it.stringCode()}`\n")
                 }
             }
         } else {
             builder.append(":x: No channels configured")
+        }
+
+        builder.append("\n\n")
+        builder.append("Default Thread Length:".bold() + ' ')
+
+        if (defaultThreadLength != null) {
+            val readableName = when (val length = defaultThreadLength!!) {
+                is ArchiveDuration.Unknown -> "Unknown (${length.duration} minutes)"
+                ArchiveDuration.Hour -> "1 hour"
+                ArchiveDuration.Day -> "1 day"
+                ArchiveDuration.ThreeDays -> "3 days"
+                ArchiveDuration.Week -> "1 week"
+            }
+            builder.append(readableName)
+        } else {
+            builder.append(":x: Not configured (using longest server / channel setting)")
         }
 
         with(embedBuilder) {

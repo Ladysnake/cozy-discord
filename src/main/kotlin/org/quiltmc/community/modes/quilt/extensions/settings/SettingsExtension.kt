@@ -21,6 +21,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.respond
+import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Permission
 import dev.kord.core.Kord
 import dev.kord.core.entity.channel.Category
@@ -39,6 +40,7 @@ import org.quiltmc.community.database.entities.GlobalSettings
 import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.enums.LadysnakeServerType
+import org.quiltmc.community.modes.quilt.extensions.converters.sealedObjectChoice
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -451,69 +453,9 @@ class SettingsExtension : Extension() {
                     }
                 }
 
-            ephemeralSubCommand(::TopMessageChannelGuildArg) {
-                name = "filter-log-channel"
-                description = "Configure the channel Cozy should send filter log messages to"
-
-                action {
-                    val context = CheckContext(event, getLocale())
-
-                    if (arguments.serverId != null) {
-                        context.hasPermissionInMainGuild(Permission.Administrator)
-
-                        if (!context.passed) {
-                            respond {
-                                content = ":x: Only Quilt community managers can modify settings for other servers."
-                            }
-
-                            return@action
-                        }
-                    }
-
-                    val settings = if (arguments.serverId == null) {
-                        serverSettings.get(guild!!.id)
-                    } else {
-                        serverSettings.get(arguments.serverId!!)
-                    }
-
-                    if (settings == null) {
-                        respond {
-                            content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    if (arguments.channel == null) {
-                        respond {
-                            content = "**Current Cozy filter logging channel:** <#${settings.filterLogChannel?.value}>"
-                        }
-
-                        return@action
-                    }
-
-                    val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-                    if (channel.guildId != settings._id) {
-                        respond {
-                            content = ":x: That channel doesn't belong to the guild with ID: `${settings._id.value}`"
-                        }
-
-                        return@action
-                    }
-
-                    settings.filterLogChannel = channel.id
-                    settings.save()
-
-                    respond {
-                        content = "**Cozy filter logging channel set:** ${channel.mention}"
-                    }
-                }
-            }
-
-            ephemeralSubCommand(::CategoryGuildArg) {
-                name = "message-log-category"
-                description = "Configure the category Cozy should use for message logs"
+                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+                    name = "filter-log-channel"
+                    description = "Configure the channel Cozy should send filter log messages to"
 
                     action {
                         val context = CheckContext(event, getLocale())
@@ -523,8 +465,7 @@ class SettingsExtension : Extension() {
 
                             if (!context.passed) {
                                 respond {
-                                    content =
-                                        ":x: Only Ladysnake community managers can modify settings for other servers."
+                                    content = ":x: Only Quilt community managers can modify settings for other servers."
                                 }
 
                                 return@action
@@ -545,38 +486,102 @@ class SettingsExtension : Extension() {
                             return@action
                         }
 
-                        if (arguments.category == null) {
+                        if (arguments.channel == null) {
                             respond {
-                                content = "**Current message log category:** <#${settings.messageLogCategory?.value}>"
+                                content = "**Current Cozy filter logging channel:** " +
+                                        "<#${settings.filterLogChannel?.value}>"
                             }
 
                             return@action
                         }
 
-                        val category = event.kord.getChannelOf<Category>(arguments.category!!.id)!!
+                        val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
 
-                        if (category.guildId != settings._id) {
+                        if (channel.guildId != settings._id) {
                             respond {
-                                content =
-                                    ":x: That category doesn't belong to the guild with ID: `${settings._id.value}`"
+                                content = ":x: That channel doesn't belong to the guild with ID: " +
+                                        "`${settings._id.value}`"
                             }
 
                             return@action
                         }
 
-                        settings.messageLogCategory = category.id
+                        settings.filterLogChannel = channel.id
                         settings.save()
 
                         respond {
-                            content = "**Message log category set:** ${category.mention}"
-                        }
-
-                        event.kord.launch {
-                            // Trigger a rotation, to be safe.
-                            messageLogExtension?.getRotator(settings._id)?.populate()
+                            content = "**Cozy filter logging channel set:** ${channel.mention}"
                         }
                     }
                 }
+
+                ephemeralSubCommand(::CategoryGuildArg) {
+                    name = "message-log-category"
+                    description = "Configure the category Cozy should use for message logs"
+
+                        action {
+                            val context = CheckContext(event, getLocale())
+
+                            if (arguments.serverId != null) {
+                                context.hasPermissionInMainGuild(Permission.Administrator)
+
+                                if (!context.passed) {
+                                    respond {
+                                        content = ":x: Only Ladysnake community managers " +
+                                                "can modify settings for other servers."
+                                    }
+
+                                    return@action
+                                }
+                            }
+
+                            val settings = if (arguments.serverId == null) {
+                                serverSettings.get(guild!!.id)
+                            } else {
+                                serverSettings.get(arguments.serverId!!)
+                            }
+
+                            if (settings == null) {
+                                respond {
+                                    content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                                }
+
+                                return@action
+                            }
+
+                            if (arguments.category == null) {
+                                respond {
+                                    content = "**Current message log category:** " +
+                                            "<#${settings.messageLogCategory?.value}>"
+                                }
+
+                                return@action
+                            }
+
+                            val category = event.kord.getChannelOf<Category>(arguments.category!!.id)!!
+
+                            if (category.guildId != settings._id) {
+                                respond {
+                                    content =
+                                        ":x: That category doesn't belong to the guild with ID: `${settings._id.value}`"
+                                }
+
+                                return@action
+                            }
+
+                            settings.messageLogCategory = category.id
+                            settings.save()
+
+                            respond {
+                                content = "**Message log category set:** ${category.mention}"
+                            }
+
+                            event.kord.launch {
+                                // Trigger a rotation, to be safe.
+                                messageLogExtension?.getRotator(settings._id)?.populate()
+                            }
+                        }
+                    }
 
                 ephemeralSubCommand(::LadysnakeServerTypeArg) {
                     name = "ladysnake-server-type"
@@ -660,6 +665,31 @@ class SettingsExtension : Extension() {
 
                         if (settings.leaveServer) {
                             event.kord.getGuild(settings._id)?.leave()
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::ArchiveDurationArg) {
+                    name = "set-default-archive-duration"
+                    description = "Set the default duration for thread archive lengths"
+
+                    check { any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
+                    ) }
+
+                    action {
+                        val settings = if (arguments.serverId == null) {
+                            serverSettings.get(guild!!.id)
+                        } else {
+                            serverSettings.get(arguments.serverId!!)
+                        } ?: ServerSettings(guild!!.id)
+
+                        settings.defaultThreadLength = arguments.duration
+                        settings.save()
+
+                        respond {
+                            content = "**Default archive duration set to:** `${settings.defaultThreadLength}`"
                         }
                     }
                 }
@@ -1000,6 +1030,18 @@ class SettingsExtension : Extension() {
         val role by role {
             name = "role"
             description = "Role to add/remove"
+        }
+
+        val serverId by optionalSnowflake {
+            name = "server"
+            description = "Server ID, if not the current one"
+        }
+    }
+
+    inner class ArchiveDurationArg : Arguments() {
+        val duration by sealedObjectChoice<ArchiveDuration> {
+            name = "duration"
+            description = "Length of time before threads automatically archive"
         }
 
         val serverId by optionalSnowflake {

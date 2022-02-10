@@ -1228,7 +1228,7 @@ class UtilityExtension : Extension() {
                         val thread = channel.startPublicThreadWithMessage(
                             event.message.id,
                             threadName,
-                            event.getGuild()!!.getMaxArchiveDuration(),
+                            channel.getArchiveDuration(guildFor(event)?.getSettings()),
                             "Automatic thread for thread-only channel"
                         )
 

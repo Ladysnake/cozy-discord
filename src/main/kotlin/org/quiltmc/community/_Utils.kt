@@ -5,6 +5,7 @@
  */
 
 @file:Suppress("NOTHING_TO_INLINE")
+@file:OptIn(ExperimentalTime::class)
 
 package org.quiltmc.community
 
@@ -40,9 +41,11 @@ import kotlinx.datetime.toInstant
 import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
+import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 
 @Suppress("MagicNumber")  // It's the status code...
 suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
@@ -210,6 +213,12 @@ fun Guild.getMaxArchiveDuration(): ArchiveDuration {
     }
 }
 
+suspend fun GuildMessageChannel.getArchiveDuration(settings: ServerSettings?): ArchiveDuration {
+    return data.defaultAutoArchiveDuration.value
+        ?: settings?.defaultThreadLength
+        ?: getGuild().getMaxArchiveDuration()
+}
+
 // Logging-related extensions
 
 suspend fun <C : SlashCommandContext<C, A>, A : Arguments>
@@ -369,3 +378,5 @@ fun String.codeBlock(language: String = "") = """
     |${this.replace("\n", "\n    |")}
     |```
 """.trimMargin()
+
+fun Snowflake.stringCode() = toString().code()

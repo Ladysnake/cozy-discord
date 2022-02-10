@@ -36,6 +36,7 @@ import kotlinx.datetime.Clock
 import mu.KotlinLogging
 import org.apache.commons.text.StringEscapeUtils
 import org.quiltmc.community.*
+import org.quiltmc.community.database.getSettings
 
 private const val PAGINATOR_TIMEOUT = 60_000L  // One minute
 private const val CHUNK_SIZE = 10
@@ -326,14 +327,14 @@ class MinecraftExtension : Extension() {
                 is TextChannel -> startPublicThreadWithMessage(
                     message.id,
                     title,
-                    guild.asGuild().getMaxArchiveDuration()
+                    getArchiveDuration(getGuild().getSettings())
                 )
 
                 is NewsChannel -> {
                     startPublicThreadWithMessage(
                         message.id,
                         title,
-                        guild.asGuild().getMaxArchiveDuration()
+                        getArchiveDuration(getGuild().getSettings())
                     )
 
                     message.publish()

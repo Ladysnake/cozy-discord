@@ -55,6 +55,7 @@ import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.Suggestion
+import org.quiltmc.community.database.getSettings
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -442,7 +443,7 @@ class SuggestionsExtension : Extension() {
             val thread = (channel as? TextChannel)?.startPublicThreadWithMessage(
                 message.id,
                 name = suggestion._id.toString(),
-                archiveDuration = channel.guild.asGuild().getMaxArchiveDuration()
+                archiveDuration = channel.getArchiveDuration(channel.getGuild().getSettings())
             )
 
             if (thread != null) {

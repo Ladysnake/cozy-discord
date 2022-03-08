@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.scrimage)
 
     implementation(project(":module-user-cleanup"))
+    implementation(project(":module-moderation"))
 }
 
 graphql {

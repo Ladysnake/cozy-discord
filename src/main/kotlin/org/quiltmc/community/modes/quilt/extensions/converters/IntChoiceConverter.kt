@@ -13,6 +13,7 @@ import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.Converter
 import com.kotlindiscord.kord.extensions.modules.annotations.converters.ConverterType
 import com.kotlindiscord.kord.extensions.parser.StringParser
+import dev.kord.core.entity.interaction.IntegerOptionValue
 import dev.kord.core.entity.interaction.OptionValue
 import dev.kord.rest.builder.interaction.IntChoiceBuilder
 import dev.kord.rest.builder.interaction.OptionsBuilder
@@ -43,7 +44,7 @@ class IntChoiceConverter(
         }
 
     override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? OptionValue.IntOptionValue)?.value ?: return false
+        val optionValue = (option as? IntegerOptionValue)?.value ?: return false
         parsed = optionValue.toInt()
         return true
     }

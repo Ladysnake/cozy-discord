@@ -20,6 +20,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
+import dev.kord.core.entity.interaction.MentionableOptionValue
 import dev.kord.core.entity.interaction.OptionValue
 import dev.kord.rest.builder.interaction.MentionableBuilder
 import dev.kord.rest.builder.interaction.OptionsBuilder
@@ -113,7 +114,7 @@ class MentionableConverter(
     }
 
     override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
-        val optionValue = (option as? OptionValue.MentionableOptionValue)?.value ?: return false
+        val optionValue = (option as? MentionableOptionValue)?.value ?: return false
         parsed = optionValue as KordEntity // in theory this should never fail
 
         return true

@@ -23,7 +23,6 @@ import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.optionalInt
-import dev.kord.core.any
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -33,7 +32,6 @@ import dev.kord.core.entity.Role
 import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.core.firstOrNull
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
@@ -42,6 +40,7 @@ import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import mu.KotlinLogging
@@ -136,7 +135,7 @@ class ModerationExtension(
                 check { notHasBaseModeratorRole() } // mods can spam :pineapple:
 
                 action {
-                    if (event.member?.roles?.any { it.id in MODERATOR_ROLES } == true) {
+                    if (event.member?.roles?.firstOrNull { it.id in MODERATOR_ROLES } != null) {
                         return@action
                     }
                     val user = event.message.author?.id ?: return@action
@@ -204,7 +203,7 @@ class ModerationExtension(
                 check { failIf(event.message.data.authorId == kord.selfId) }
                 check { failIf(event.message.author?.isBot == true) }
                 check { failIf(event.guildId == null) }
-                check { failIf(event.member?.roles?.any { it.id in MODERATOR_ROLES } == true) }
+                check { failIf(event.member?.roles?.firstOrNull { it.id in MODERATOR_ROLES } != null) }
 
                 action {
                     val guild = event.guildId!!
@@ -224,7 +223,9 @@ class ModerationExtension(
 
                         if (
                             !mention.allowsReplyMentions && referencedAuthor != null && when (mention.type) {
-                                ROLE -> referencedAuthor.asMember(guild).roles.any { it.id == snowflake }
+                                ROLE -> referencedAuthor.asMember(guild).roles
+                                    .firstOrNull { it.id in MODERATOR_ROLES } != null
+
                                 USER -> referencedAuthor.id == snowflake
                                 EVERYONE -> false // you can't reply to @everyone
                             } && referencedAuthor.id != event.message.author?.id // let the author mention themselves

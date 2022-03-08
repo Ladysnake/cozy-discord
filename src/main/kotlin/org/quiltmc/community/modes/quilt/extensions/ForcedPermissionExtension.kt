@@ -7,7 +7,7 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
-import dev.kord.common.entity.Permission.UseSlashCommands
+import dev.kord.common.entity.Permission.UseApplicationCommands
 import dev.kord.core.behavior.edit
 import dev.kord.rest.request.RestRequestException
 import org.koin.core.component.inject
@@ -32,7 +32,7 @@ class ForcedPermissionExtension : Extension() {
 
             try {
                 everyone?.edit {
-                    permissions = everyone.permissions + UseSlashCommands
+                    permissions = everyone.permissions + UseApplicationCommands
                 }
             } catch (e: RestRequestException) {
                 // ignore
@@ -41,7 +41,7 @@ class ForcedPermissionExtension : Extension() {
             guild?.roles?.collect {
                 try {
                     it.edit {
-                        permissions = it.permissions + UseSlashCommands
+                        permissions = it.permissions + UseApplicationCommands
                     }
                 } catch (e: RestRequestException) {
                     // ignore

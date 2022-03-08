@@ -10,14 +10,12 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
-import com.kotlindiscord.kord.extensions.utils.focusedOption
 import com.kotlindiscord.kord.extensions.utils.suggestIntMap
 import com.kotlindiscord.kord.extensions.utils.suggestLongMap
 import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.interaction.AutoCompleteInteraction
-import dev.kord.core.entity.interaction.string
 import org.quiltmc.community.modes.quilt.extensions.converters.defaultingIntChoice
 import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
 
@@ -325,7 +323,7 @@ internal fun AutoCompleteInteraction.mapFrom(
     vararg conversions: Pair<String, Long>,
     defaultMap: Map<String, Long> = mapOf(),
 ): Map<String, Long> {
-    val specifiedLength = focusedOption.string().substringBefore(' ').toLongOrNull()
+    val specifiedLength = focusedOption.value.substringBefore(' ').toLongOrNull()
     return if (specifiedLength != null) {
         buildMap {
             val pluralModifier = if (specifiedLength == 1L) "" else "s"

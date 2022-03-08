@@ -258,7 +258,18 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
                     allChannels.add(c)
                 }
 
-                allChannels.sortBy { it.name }
+                @Suppress("MagicNumber", "TooGenericExceptionCaught")
+                allChannels.sortByDescending {
+                    try {
+                        val (logTypes, _, year, week) = it.name.split("-")
+                        year.toLong() * 1000 + week.toLong() * 10 + if (logTypes == "message") 0 else 1
+                    } catch (e: Exception) {
+                        // if it doesn't match the format, it's probably a channel we don't care about.
+                        // in that case, return a low number to put it at the bottom.
+                        // no need to worry about the order of these, because the sort is said to be stable.
+                        -1
+                    }
+                }
 
                 while (allChannels.size > WEEK_DIFFERENCE) {
                     val c = allChannels.removeFirst()

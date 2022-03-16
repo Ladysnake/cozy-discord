@@ -49,6 +49,7 @@ import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
@@ -1279,6 +1280,79 @@ class UtilityExtension : Extension() {
                 }
             }
         }
+
+        ephemeralSlashCommand {
+            name = "guilds"
+            description = "Manage guilds that the bot is in"
+
+            check {
+                any(
+                    { hasPermissionInMainGuild(Permission.Administrator) },
+                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                )
+            }
+
+            ephemeralSubCommand {
+                name = "list"
+                description = "List all guilds that the bot is in"
+
+                check {
+                    any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                    )
+                }
+
+                action {
+                    val guilds = this@UtilityExtension.kord.guilds
+                        .map { with(it) { "$name ($id)" } }
+                        .toList()
+                        .joinToString("\n") { "**»** $it" }
+
+                    respond {
+                        embed {
+                            title = "Guilds"
+                            description = guilds
+                        }
+                    }
+                }
+            }
+
+            ephemeralSubCommand(::LeaveGuildArguments) {
+                name = "leave"
+                description = "Leave a guild"
+
+                check {
+                    any(
+                        { hasPermissionInMainGuild(Permission.Administrator) },
+                        { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                    )
+                }
+
+                action {
+                    val guild = arguments.guild
+
+                    guild.leave()
+
+                    if (channel.id !in guild.channelIds) {
+                        respond {
+                            embed {
+                                title = "Left guild"
+                                description = "Left guild **${guild.name}** (${guild.id})"
+                            }
+                        }
+                    } else {
+                        // we just left the guild, so we can't send a message
+                        user.asUser().dm {
+                            embed {
+                                title = "Left guild"
+                                description = "Left guild **${guild.name}** (${guild.id})"
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     inner class PinMessageArguments : Arguments() {
@@ -1345,6 +1419,13 @@ class UtilityExtension : Extension() {
                     )
                 }
             }
+        }
+    }
+
+    inner class LeaveGuildArguments : Arguments() {
+        val guild by guild {
+            name = "guild"
+            description = "Guild to use. To specify this guild, use its ID."
         }
     }
 }

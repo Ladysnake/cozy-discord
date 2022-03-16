@@ -10,7 +10,6 @@ package org.quiltmc.community.modes.quilt.extensions.settings
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.checks.anyGuild
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
@@ -286,12 +285,10 @@ class SettingsExtension : Extension() {
 
             check { anyGuild() }
             check {
-                hasPermissionInMainGuild(Permission.Administrator)
-
-                if (!passed) {
-                    passed = true
-                    hasPermission(Permission.Administrator)
-                }
+                any(
+                    { hasPermissionInMainGuild(Permission.Administrator) },
+                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                )
             }
 
             group("general") {
@@ -309,7 +306,12 @@ class SettingsExtension : Extension() {
                         val context = CheckContext(event, getLocale())
 
                         if (arguments.serverId != null) {
-                            context.hasPermissionInMainGuild(Permission.Administrator)
+                            with(context) {
+                                any(
+                                    { hasPermissionInMainGuild(Permission.Administrator) },
+                                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                                )
+                            }
 
                             if (!context.passed) {
                                 respond {
@@ -356,7 +358,12 @@ class SettingsExtension : Extension() {
                         val context = CheckContext(event, getLocale())
 
                         if (arguments.serverId != null) {
-                            context.hasPermissionInMainGuild(Permission.Administrator)
+                            with(context) {
+                                any(
+                                    { hasPermissionInMainGuild(Permission.Administrator) },
+                                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                                )
+                            }
 
                             if (!context.passed) {
                                 respond {
@@ -399,7 +406,12 @@ class SettingsExtension : Extension() {
                         val context = CheckContext(event, getLocale())
 
                         if (arguments.serverId != null) {
-                            context.hasPermissionInMainGuild(Permission.Administrator)
+                            with(context) {
+                                any(
+                                    { hasPermissionInMainGuild(Permission.Administrator) },
+                                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                                )
+                            }
 
                             if (!context.passed) {
                                 respond {
@@ -461,7 +473,12 @@ class SettingsExtension : Extension() {
                         val context = CheckContext(event, getLocale())
 
                         if (arguments.serverId != null) {
-                            context.hasPermissionInMainGuild(Permission.Administrator)
+                            with(context) {
+                                any(
+                                    { hasPermissionInMainGuild(Permission.Administrator) },
+                                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                                )
+                            }
 
                             if (!context.passed) {
                                 respond {
@@ -523,7 +540,12 @@ class SettingsExtension : Extension() {
                             val context = CheckContext(event, getLocale())
 
                             if (arguments.serverId != null) {
-                                context.hasPermissionInMainGuild(Permission.Administrator)
+                                with(context) {
+                                    any(
+                                        { hasPermissionInMainGuild(Permission.Administrator) },
+                                        { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+                                    )
+                                }
 
                                 if (!context.passed) {
                                     respond {

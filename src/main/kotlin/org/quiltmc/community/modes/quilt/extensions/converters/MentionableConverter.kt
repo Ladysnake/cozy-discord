@@ -115,7 +115,13 @@ class MentionableConverter(
 
     override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
         val optionValue = (option as? MentionableOptionValue)?.value ?: return false
-        parsed = optionValue as KordEntity // in theory this should never fail
+
+        // optionValue has become a snowflake at some point in recent versions of kord,
+        // so we need to try to get a user, role, @everyone or @here from it
+        parsed = kord.getUser(optionValue)
+            ?.let { it.asMemberOrNull(context.getGuild()?.id ?: return@let it) }
+            ?: context.getGuild()?.getRole(optionValue)
+            ?: return false
 
         return true
     }

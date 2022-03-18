@@ -567,7 +567,8 @@ class ModerationExtension(
                 }
             }
 
-            val unbanUsers: suspend () -> Unit = {
+            @Suppress("MagicNumber")
+            scheduler.schedule(5, repeat = true) {
                 val timedOutIds = userRestrictions.getAll()
                     .filter { !it.isBanned && it.returningBanTime != null }
                     .map { it to kord.getGuild(it.guildId)?.getMemberOrNull(it._id) }
@@ -575,28 +576,33 @@ class ModerationExtension(
                     .map { it.first to it.second!! }
 
                 timedOutIds.forEach { (restriction, member) ->
-                    if (restriction.returningBanTime!! < Clock.System.now()) {
-                        member.edit {
-                            // ok so this allows a timeout to be longer than discord's max (28 days)
-                            // which means we need to use our own timeouts
-                            val returnTime = restriction.returningBanTime!!
-                            val currentDisabled = communicationDisabledUntil
+                    @Suppress("TooGenericExceptionCaught") // because idk what's failing
+                    try {
+                        if (restriction.returningBanTime!! < Clock.System.now()) {
+                            member.edit {
+                                // ok so this allows a timeout to be longer than discord's max (28 days)
+                                // which means we need to use our own timeouts
+                                val returnTime = restriction.returningBanTime!!
+                                val currentDisabled = communicationDisabledUntil
 
-                            val durationRemaining = returnTime - Clock.System.now()
+                                val durationRemaining = returnTime - Clock.System.now()
 
-                            @Suppress("MagicNumber") // 28 days is funky
-                            if (durationRemaining.toDouble(DurationUnit.DAYS) > 28.0) {
-                                if (currentDisabled == null || currentDisabled <= Clock.System.now()) {
-                                    // refresh the timeout
-                                    communicationDisabledUntil = Clock.System.now() + 28.days
-                                }
-                            } else {
-                                if (currentDisabled == null || currentDisabled <= returnTime) {
-                                    // set the timeout to the remaining time
-                                    communicationDisabledUntil = returnTime
+                                @Suppress("MagicNumber") // 28 days is funky
+                                if (durationRemaining.toDouble(DurationUnit.DAYS) > 28.0) {
+                                    if (currentDisabled == null || currentDisabled <= Clock.System.now()) {
+                                        // refresh the timeout
+                                        communicationDisabledUntil = Clock.System.now() + 28.days
+                                    }
+                                } else {
+                                    if (currentDisabled == null || currentDisabled <= returnTime) {
+                                        // set the timeout to the remaining time
+                                        communicationDisabledUntil = returnTime
+                                    }
                                 }
                             }
                         }
+                    } catch (e: Exception) {
+                        logger.error("Failed to unban user ${restriction._id}", e)
                     }
                 }
 
@@ -618,16 +624,6 @@ class ModerationExtension(
                     userRestrictions.remove(userId) // remove the restriction
                 }
             }
-
-            var repeatingTask: suspend () -> Unit = {}
-
-            repeatingTask = {
-                scheduler.schedule(1.seconds, callback = unbanUsers)
-                @Suppress("MagicNumber")
-                scheduler.schedule(5.seconds, callback = repeatingTask)
-            }
-
-            repeatingTask()
         }
 
         logger.info {

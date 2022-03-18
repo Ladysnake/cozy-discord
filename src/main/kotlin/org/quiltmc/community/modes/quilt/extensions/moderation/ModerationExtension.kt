@@ -602,7 +602,12 @@ class ModerationExtension(
                             }
                         }
                     } catch (e: Exception) {
-                        logger.error("Failed to unban user ${restriction._id}", e)
+                        val guild = member.getGuild()
+                        logger.error(e) {
+                            "Failed to remove timeout for user ${restriction._id}" +
+                                    "in guild ${guild.name} (${guild.id}). Removing restriction."
+                        }
+                        userRestrictions.remove(restriction._id)
                     }
                 }
 

@@ -42,6 +42,7 @@ import org.quiltmc.community.GUILDS
 import org.quiltmc.community.asUser
 import org.quiltmc.community.getModLogChannel
 import org.quiltmc.community.inLadysnakeGuild
+import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
 
 private val BAN_PERMS: Array<Permission> = arrayOf(Permission.BanMembers, Permission.Administrator)
 private val TIMEOUT_PERMS: Array<Permission> = arrayOf(Permission.ModerateMembers, Permission.Administrator)
@@ -308,13 +309,24 @@ class SyncExtension : Extension() {
                                     action = AuditLogEvent.MemberBanAdd
                                 }.first { it.targetId == ban.userId }.userId.asUser()
 
+                                val text = when (actingModerator) {
+                                    kord.getSelf() -> {
+                                        // ModerationExtension banned the user
+                                        val recent = bot.findExtension<ModerationExtension>()!!.recentlyBannedUsers
+                                        val mod = recent.remove(event.user.id)
+                                        if (mod != null) {
+                                            "${mod.mention} (${mod.tag}, via Rtuuy)"
+                                        } else {
+                                            "Unknown moderator (via Rtuuy)"
+                                        }
+                                    }
+                                    null -> "Unknown (see audit log)"
+                                    else -> "${actingModerator.mention} (${actingModerator.tag})"
+                                }
+
                                 field {
                                     name = "Responsible moderator"
-                                    value = if (actingModerator != null) {
-                                        "${actingModerator.mention} (${actingModerator.tag})"
-                                    } else {
-                                        "Unknown (see audit log)"
-                                    }
+                                    value = text
                                     inline = true
                                 }
                             } else {
@@ -353,7 +365,10 @@ class SyncExtension : Extension() {
                                 inline = true
                             }
 
-                            if (guild.getMember(kord.selfId).hasPermission(Permission.ViewAuditLog)) {
+                            val canSeeAuditLog = guild.selfMember().hasPermission(Permission.ViewAuditLog) ||
+                                    guild.selfMember().hasPermission(Permission.Administrator)
+
+                            if (canSeeAuditLog) {
                                 val actingModerator = guild.getAuditLogEntries {
                                     action = AuditLogEvent.MemberBanRemove
                                 }.first { it.targetId == event.user.id }.userId.asUser()

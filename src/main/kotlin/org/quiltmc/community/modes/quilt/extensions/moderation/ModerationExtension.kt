@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:OptIn(ExperimentalTime::class)
+
 package org.quiltmc.community.modes.quilt.extensions.moderation
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
@@ -39,7 +41,6 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.RestRequestException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -59,7 +60,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalTime::class)
 class ModerationExtension(
     private val enabledModules: List<Module> = Module.allSupported,
     private val modReportChannel: Snowflake? = null,
@@ -75,6 +75,8 @@ class ModerationExtension(
     private val settings: ServerSettingsCollection by inject()
 
     private val userRestrictions: UserRestrictionsCollection by inject()
+
+    internal val recentlyBannedUsers: MutableMap<Snowflake, User> = mutableMapOf()
 
     override suspend fun setup() {
         if (Module.PURGE in enabledModules) {
@@ -773,6 +775,8 @@ class ModerationExtension(
         }
 
         if (restriction.isBanned) {
+            recentlyBannedUsers[restriction._id] = context.user.asUser()
+
             // ban the user (the restriction just was created)
             member.ban {
                 this.reason = reason

@@ -211,7 +211,7 @@ class UserFunExtension : Extension() {
 
         event<ButtonInteractionCreateEvent> {
             action {
-                val buttonId = event.interaction.component?.customId?.split(':') ?: return@action
+                val buttonId = event.interaction.component.customId?.split(':') ?: return@action
                 @Suppress("MagicNumber") // but it is right, 3 is a magic number, yes it is, it's a magic number
                 if (buttonId.size != 3 || buttonId[0] != "assignables") {
                     // somewhere in the ancient mystic trinity
@@ -364,9 +364,9 @@ class UserFunExtension : Extension() {
                         lottery.participants.add(interaction.user.id)
                         lotteryCollection.save(lottery)
 
-                        val msgEmbed = interaction.message?.embeds?.firstOrNull()
+                        val msgEmbed = interaction.message.embeds.firstOrNull()
 
-                        interaction.message?.edit {
+                        interaction.message.edit {
                             embed {
                                 title = msgEmbed?.title
                                 description = msgEmbed?.description
@@ -394,15 +394,15 @@ class UserFunExtension : Extension() {
 
                         if (!wasInLottery) {
                             // ignore this user's strange request
-                            interaction.acknowledgeEphemeral()
+                            interaction.deferEphemeralResponse()
                             return@action
                         }
 
                         lotteryCollection.save(lottery)
 
-                        val msgEmbed = interaction.message?.embeds?.firstOrNull()
+                        val msgEmbed = interaction.message.embeds.firstOrNull()
 
-                        interaction.message?.edit {
+                        interaction.message.edit {
                             embed {
                                 title = msgEmbed?.title
                                 description = msgEmbed?.description
@@ -426,7 +426,7 @@ class UserFunExtension : Extension() {
                         }
                     }
                     "close" -> {
-                        val authorEmbedField = interaction.message?.embeds?.firstOrNull()
+                        val authorEmbedField = interaction.message.embeds.firstOrNull()
                             ?.fields?.firstOrNull { it.name == "Host" } ?: run {
                                 interaction.respondEphemeral {
                                     content = "There may be an issue with this drawing..."
@@ -447,7 +447,7 @@ class UserFunExtension : Extension() {
                                 .mapNotNull { channel.guild.getMemberOrNull(it) }
                                 .take(lottery.winners)
 
-                            interaction.message?.edit {
+                            interaction.message.edit {
                                 components = mutableListOf()
                             }
 
@@ -455,7 +455,7 @@ class UserFunExtension : Extension() {
                                 content = "Chosen ${winners.size} winners and creating the message..."
                             }
 
-                            interaction.message!!.reply {
+                            interaction.message.reply {
                                 embed {
                                     title = "Event ended"
                                     description = "The event has ended! Here are the winners:\n\n" +

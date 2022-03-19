@@ -705,10 +705,32 @@ class ModerationExtension(
         }
 
         val user = context.arguments.user
-        val member = user.asMember(context.guild!!.id)
+        val member = user.asMemberOrNull(context.guild!!.id)
 
         val reason = context.arguments.reason
         val length = context.arguments.length
+
+        if (member == null) {
+            if (length == -1L) {
+                // Unban
+                val restriction = userRestrictions.get(user.id)
+                if (restriction == null) {
+                    // try unbanning anyway
+                    context.guild!!.unban(user.id)
+                } else {
+                    // set restriction end time to now so they'll be unbanned at next check
+                    restriction.returningBanTime = Clock.System.now()
+                    restriction.save()
+                }
+            }
+
+            reportToModChannel(context.guild?.asGuild()) {
+                title = "User unbanned"
+                description = "User ${user.mention} was unbanned by ${context.user.softMention()}."
+            }
+
+            return
+        }
 
         val restriction = UserRestrictions(
             member.id,

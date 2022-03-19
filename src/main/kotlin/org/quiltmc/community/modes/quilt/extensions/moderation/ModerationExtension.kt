@@ -735,8 +735,8 @@ class ModerationExtension(
                 field {
                     name = "Length"
                     value = when (length) {
-                        -1L -> "Permanent"
-                        0L -> "Unbanned"
+                        0L -> "Permanent"
+                        -1L -> "Unbanned"
                         else -> "$length seconds (until $returnTime)"
                     }
                 }
@@ -755,8 +755,8 @@ class ModerationExtension(
                 field {
                     name = "Length"
                     value = when (length) {
-                        -1L -> "Permanent"
-                        0L -> "Unbanned"
+                        0L -> "Permanent"
+                        -1L -> "Unbanned"
                         else -> "$length seconds (until $returnTime)"
                     }
                 }

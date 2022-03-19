@@ -42,7 +42,6 @@ import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.ServerSettings
-import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
@@ -166,18 +165,9 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
 }
 
 suspend fun ExtensibleBotBuilder.common() {
-    chatCommands {
-        defaultPrefix = "?"
-
-        prefix { default ->
-            getGuild()?.getSettings()?.commandPrefix ?: default
-        }
-
-        check {
-            if (event.message.author == null) {
-                fail()
-            }
-        }
+    applicationCommands {
+        // Need to disable this due to the slash command perms experiment
+        syncPermissions = false
     }
 
     extensions {
@@ -189,6 +179,10 @@ suspend fun ExtensibleBotBuilder.common() {
 
                 dsn = sentryDsn
             }
+        }
+
+        help {
+            enableBundledExtension = false  // We have no chat commands
         }
     }
 }

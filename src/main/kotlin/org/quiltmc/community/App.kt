@@ -33,7 +33,6 @@ import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtens
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import kotlin.time.Duration.Companion.days
-import kotlin.time.Duration.Companion.hours
 
 val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
 
@@ -41,10 +40,6 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
     common()
     database(true)
     settings()
-
-    chatCommands {
-        enabled = true
-    }
 
     intents {
         +Intents.all
@@ -64,7 +59,6 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         add(::SettingsExtension)
         add(::SuggestionsExtension)
         add(::SyncExtension)
-//        add(::UserCleanupExtension)
         add(::UtilityExtension)
         add(::ModerationExtension)
         add(::UserFunExtension)
@@ -91,10 +85,10 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
         userCleanup {
             maxPendingDuration = 3.days
-            taskDelay = 1.hours
+            taskDelay = 1.days
             loggingChannelName = "cozy-logs"
 
-            runAutomatically = false
+            runAutomatically = true
 
             guildPredicate {
                 val servers = getKoin().get<ServerSettingsCollection>()

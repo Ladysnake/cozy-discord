@@ -1040,7 +1040,7 @@ class FilterExtension : Extension() {
                 }
             }
 
-            val invite = kord.getInvite(code, false)
+            val invite = kord.getInviteOrNull(code, false)
             val inviteGuild = invite?.partialGuild?.id ?: continue
 
             inviteCache[code] = inviteGuild

@@ -729,6 +729,10 @@ class ModerationExtension(
                 description = "User ${user.mention} was unbanned by ${context.user.softMention()}."
             }
 
+            context.respond {
+                content = "User ${user.mention} was unbanned."
+            }
+
             return
         }
 

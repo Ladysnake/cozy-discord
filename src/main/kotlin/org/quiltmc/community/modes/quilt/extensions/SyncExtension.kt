@@ -17,6 +17,7 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.sentry.BreadcrumbType
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.hasPermission
+import com.kotlindiscord.kord.extensions.utils.selfMember
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.AuditLogEvent
@@ -299,7 +300,10 @@ class SyncExtension : Extension() {
                                 value = ban.reason ?: "No reason given"
                             }
 
-                            if (guild.getMember(kord.selfId).hasPermission(Permission.ViewAuditLog)) {
+                            val canSeeAuditLog = guild.selfMember().hasPermission(Permission.ViewAuditLog) ||
+                                    guild.selfMember().hasPermission(Permission.Administrator)
+
+                            if (canSeeAuditLog) {
                                 val actingModerator = guild.getAuditLogEntries {
                                     action = AuditLogEvent.MemberBanAdd
                                 }.first { it.targetId == ban.userId }.userId.asUser()

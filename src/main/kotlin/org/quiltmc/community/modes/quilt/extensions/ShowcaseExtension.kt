@@ -22,9 +22,10 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.delay
 import org.koin.core.component.inject
-import org.quiltmc.community.*
+import org.quiltmc.community.GALLERY_CHANNEL
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.entities.OwnedThread
+import org.quiltmc.community.database.getSettings
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -58,12 +59,7 @@ class ShowcaseExtension : Extension() {
 
                 val guild = event.message.getGuild()
 
-                val role = when (guild.id) {
-                    COMMUNITY_GUILD -> guild.getRole(COMMUNITY_MODERATOR_ROLE)
-                    TOOLCHAIN_GUILD -> guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
-
-                    else -> return@action
-                }
+                val roles = guild.getSettings()!!.moderatorRoles
 
                 val author = event.message.author!!
                 val channel = event.message.channel.asChannelOf<TextChannel>()
@@ -97,8 +93,10 @@ class ShowcaseExtension : Extension() {
                     delay(THREAD_DELAY)
                 }
 
+                val rolesText = roles.joinToString(", ") { "<@&$it>" }
+
                 message.edit {
-                    content = "Hey, ${role.mention}, you've gotta check this showcase out!"
+                    content = "Hey, $rolesText, you've gotta check this showcase out!"
                 }
 
                 thread.withTyping {

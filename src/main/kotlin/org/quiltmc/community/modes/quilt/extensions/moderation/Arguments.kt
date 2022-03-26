@@ -300,6 +300,8 @@ class NoteArguments : Arguments() {
     }
 }
 
+class AdvanceTimeoutArguments : RequiresReason("The user to advance timeout on") // no extra arguments
+
 @Suppress("MagicNumber")
 internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice {
     name = "delete-days"

@@ -10,11 +10,14 @@ package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
-import com.soywiz.korio.compression.deflate.GZIP
+import com.soywiz.korio.async.useIt
+import com.soywiz.korio.compression.lzma.Lzma
+import com.soywiz.korio.compression.uncompressStream
 import com.soywiz.korio.compression.util.BitReader
 import com.soywiz.korio.experimental.KorioExperimentalApi
+import com.soywiz.korio.file.VfsOpenMode
 import com.soywiz.korio.file.std.localCurrentDirVfs
-import com.soywiz.korio.stream.AsyncStreamBase
+import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.stream.toAsync
 import com.soywiz.korio.stream.toAsyncStream
 import dev.kord.cache.api.putAll
@@ -23,9 +26,7 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ConnectEvent
 import dev.kord.core.event.gateway.DisconnectEvent
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.*
-import me.shedaniel.linkie.utils.readBytes
 
 val JSON = Json {
     encodeDefaults = false
@@ -86,32 +87,24 @@ class PersistentCacheExtension : Extension() {
     }
 
     private suspend fun saveJsonToFile(json: JsonElement, path: String) {
-        val stream = AsyncStreamBase().toAsyncStream()
-        val bytes = JSON.encodeToString(json).toByteArray()
-        stream.write(bytes)
-
         val vfsFile = localCurrentDirVfs[path]
 
-        val gzipped = AsyncStreamBase().toAsyncStream()
-        GZIP.compress(BitReader(stream), gzipped)
-
-        vfsFile.writeStream(gzipped)
-
-        stream.close()
-        gzipped.close()
+        json.toString().byteInputStream(Charsets.UTF_8).toAsync().toAsyncStream().useIt { input ->
+            vfsFile.open(VfsOpenMode.CREATE_OR_TRUNCATE).useIt { output ->
+                Lzma.compress(BitReader(input), output)
+            }
+        }
     }
 
     private suspend fun loadJsonFromFile(path: String): JsonElement {
         val vfsFile = localCurrentDirVfs[path]
-        val stream = vfsFile.readAsSyncStream().toAsync()
-        val unzipped = AsyncStreamBase().toAsyncStream()
-        GZIP.uncompress(BitReader(stream), unzipped)
 
-        val json = JSON.parseToJsonElement(unzipped.readBytes().toString(Charsets.UTF_8))
+        val jsonString = vfsFile.open(VfsOpenMode.READ).useIt { input ->
+            Lzma.uncompressStream(input).useIt { output ->
+                output.readAll().toString(Charsets.UTF_8)
+            }
+        }
 
-        stream.close()
-        unzipped.close()
-
-        return json
+        return JSON.parseToJsonElement(jsonString)
     }
 }

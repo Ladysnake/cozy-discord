@@ -22,6 +22,8 @@ data class UserRestrictions(
 
     var isBanned: Boolean = false,
     var returningBanTime: Instant? = null,
+
+    var lastProgressiveTimeoutLength: Int = 0,
 ) : Entity<Snowflake> {
     suspend fun save() {
         val collection = getKoin().get<UserRestrictionsCollection>()

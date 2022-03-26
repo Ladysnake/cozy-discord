@@ -36,7 +36,6 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
-import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
@@ -51,10 +50,12 @@ import org.quiltmc.community.database.collections.InvalidMentionsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.UserRestrictionsCollection
 import org.quiltmc.community.database.entities.InvalidMention
-import org.quiltmc.community.database.entities.InvalidMention.Type.*
+import org.quiltmc.community.database.entities.InvalidMention.Type.ROLE
+import org.quiltmc.community.database.entities.InvalidMention.Type.USER
 import org.quiltmc.community.database.entities.UserRestrictions
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
@@ -201,11 +202,11 @@ class ModerationExtension(
         }
         if (Module.LIMIT_MENTIONING in enabledModules) {
             event<MessageCreateEvent> {
-                check { failIfNot(event.message.type == MessageType.Default) }
+                check { failIfNot(event.message.type in listOf(MessageType.Default, MessageType.Reply)) }
                 check { failIf(event.message.data.authorId == kord.selfId) }
                 check { failIf(event.message.author?.isBot == true) }
                 check { failIf(event.guildId == null) }
-                check { failIf(event.member?.roles?.firstOrNull { it.id in MODERATOR_ROLES } != null) }
+                check { failIf(event.member?.roleIds?.any { it in MODERATOR_ROLES } ?: false) }
 
                 action {
                     val guild = event.guildId!!
@@ -217,32 +218,28 @@ class ModerationExtension(
                             content = "You have exceeded the maximum amount of mentions per message. " +
                                     "Please do not mention more than $MAX_MENTIONS_PER_MESSAGE users."
                         }
+                        advanceTimeout(event.member!!, "mention spam")
                     }
 
-                    for (snowflake in mentions) {
-                        val mention = invalidMentions.get(snowflake) ?: continue
-                        val referencedAuthor = event.message.messageReference?.message?.asMessageOrNull()?.author
-
-                        if (
-                            !mention.allowsReplyMentions && referencedAuthor != null && when (mention.type) {
-                                ROLE -> referencedAuthor.asMember(guild).roles
-                                    .firstOrNull { it.id in MODERATOR_ROLES } != null
-
-                                USER -> referencedAuthor.id == snowflake
-                                EVERYONE -> false // you can't reply to @everyone
-                            } && referencedAuthor.id != event.message.author?.id // let the author mention themselves
-                        ) {
-                            val mentionName = when (mention.type) {
-                                ROLE -> event.getGuild()?.getRole(snowflake)?.name ?: "Unknown role"
-                                USER -> kord.getUser(snowflake)?.softMention()?.substring(1) ?: "Unknown user"
-                                EVERYONE -> error("Somehow someone replied to @everyone???????????????????????????????")
+                    // Other mentions check
+                    for (snowflake in event.message.mentionedRoleIds) {
+                        val mention = invalidMentions.get(snowflake)
+                        if (mention != null && !mention.allowsDirectMentions && mention.type == ROLE) {
+                            event.message.author.tryDM(event.getGuild()) {
+                                content = "You have mentioned a role that is not allowed to be mentioned. " +
+                                        "Please do not mention roles that are not allowed to be mentioned."
                             }
-                            event.message.channel.createMessage {
-                                content = "Please do not reply to $mentionName with the mention option enabled."
-                                allowedMentions {
-                                    // leaving this empty will force the bot to not mention anyone
-                                }
+                            advanceTimeout(event.member!!, "mentioning a role that is not allowed to be mentioned")
+                        }
+                    }
+                    for (snowflake in event.message.mentionedUserIds) {
+                        val mention = invalidMentions.get(snowflake)
+                        if (mention != null && !mention.allowsDirectMentions && mention.type == USER) {
+                            event.message.author.tryDM(event.getGuild()) {
+                                content = "You have mentioned a user that is not allowed to be mentioned. " +
+                                        "Please do not mention users that are not allowed to be mentioned."
                             }
+                            advanceTimeout(event.member!!, "mentioning a user that is not allowed to be mentioned")
                         }
                     }
                 }
@@ -254,7 +251,7 @@ class ModerationExtension(
                 MODERATOR_ROLES.forEach(::allowRole)
 
                 action {
-                    val guild = getGuild()?.asGuild() ?: return@action
+//                    val guild = getGuild()?.asGuild() ?: return@action
                     if (arguments.mentionable is Role && arguments.allowReplyMentions == true) {
                         throw DiscordRelayedException("You cannot allow reply mentions for a role.")
                     }
@@ -923,6 +920,60 @@ class ModerationExtension(
                 Note added by $modMention at ${Clock.System.now().toDiscord(TimestampType.Default)}:
                 > $noteText
             """.trimIndent()
+        }
+    }
+
+    @Suppress("MagicNumber")
+    private suspend fun advanceTimeout(member: Member, reason: String?) {
+        val restrictions = userRestrictions.get(member.id) ?: UserRestrictions(member.id, member.guildId)
+        restrictions.lastProgressiveTimeoutLength++
+        userRestrictions.set(restrictions)
+        if (restrictions.lastProgressiveTimeoutLength <= 15) {
+            member.edit {
+                this.reason = reason
+
+                communicationDisabledUntil = Clock.System.now() + when (restrictions.lastProgressiveTimeoutLength) {
+                    1 -> 1.minutes
+                    2 -> 2.minutes
+                    3 -> 5.minutes
+                    4 -> 10.minutes
+                    5 -> 30.minutes
+                    6 -> 1.hours
+                    7 -> 2.hours
+                    8 -> 4.hours
+                    9 -> 8.hours
+                    10 -> 24.hours
+                    11 -> 2.days
+                    12 -> 3.days
+                    13 -> 7.days
+                    14 -> 14.days
+                    15 -> 28.days // max timeout length
+                    else -> error("Invalid timeout length")
+                }
+            }
+            restrictions.returningBanTime = member.communicationDisabledUntil
+        } else {
+            // tempbans begin
+            restrictions.isBanned = true
+            restrictions.returningBanTime = Clock.System.now() + when (restrictions.lastProgressiveTimeoutLength) {
+                in 0..15 -> error("Timeout should have covered this case")
+                16 -> 1.days
+                17 -> 2.days
+                18 -> 3.days
+                19 -> 7.days
+                20 -> 14.days
+                21 -> 28.days
+                22 -> 30.days * 2 // 2 months
+                23 -> 30.days * 3 // 3 months
+                24 -> 30.days * 6 // 6 months
+                25 -> 365.days    // 1 year
+                else -> 365.days * 3 // 3 years, should be enough
+            }
+
+            member.ban {
+                this.reason = reason
+                deleteMessagesDays = 0
+            }
         }
     }
 

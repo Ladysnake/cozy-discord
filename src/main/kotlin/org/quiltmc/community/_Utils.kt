@@ -23,11 +23,10 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
-import dev.kord.core.behavior.UserBehavior
+import dev.kord.core.behavior.*
+import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
@@ -374,3 +373,11 @@ fun String.codeBlock(language: String = "") = """
 """.trimMargin()
 
 fun Snowflake.stringCode() = toString().code()
+
+val KordEntity.mention get() = when (this) {
+    is UserBehavior -> mention
+    is MemberBehavior -> mention
+    is ChannelBehavior -> "<#$id>"
+    is RoleBehavior -> mention
+    else -> error("Cannot mention $this")
+}

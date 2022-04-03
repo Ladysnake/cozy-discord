@@ -11,7 +11,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.MetaCollection
 import org.quiltmc.community.database.entities.Meta
-import org.quiltmc.community.database.migrations.*
+import kotlin.reflect.KParameter
+import kotlin.reflect.full.callSuspend
+import kotlin.reflect.full.declaredFunctions
+import kotlin.reflect.full.findParameterByName
 
 const val FILE_TEMPLATE = "migrations/v{VERSION}.bson"
 
@@ -34,41 +37,28 @@ object Migrations : KoinComponent {
 
         logger.info { "Current database version: v$currentVersion" }
 
-        while (true) {
-            val nextVersion = currentVersion + 1
+        val migrations = Migrations::class.declaredFunctions
+            .filter { it.name.startsWith("v") } // make sure it's a migration
+            .filter { it.name.substring(1).toInt() > currentVersion } // newer than current version
+            .filter { it.findParameterByName("db") != null } // with a db parameter
+            .sortedBy { it.name.substring(1).toInt() } // and sorted by version number
 
+        for (function in migrations) {
             @Suppress("TooGenericExceptionCaught")
             try {
-                @Suppress("MagicNumber")
-                when (nextVersion) {  // TODO: This should REALLY be annotation-based
-                    1 -> ::v1
-                    2 -> ::v2
-                    3 -> ::v3
-                    4 -> ::v4
-                    5 -> ::v5
-                    6 -> ::v6
-                    7 -> ::v7
-                    8 -> ::v8
-                    9 -> ::v9
-                    10 -> ::v10
-                    11 -> ::v11
-                    12 -> ::v12
-                    13 -> ::v13
-                    14 -> ::v14
-                    15 -> ::v15
-                    16 -> ::v16
+                if (function.parameters[0].kind == KParameter.Kind.INSTANCE) {
+                    function.callSuspend(Migrations, db.mongo)
+                } else {
+                    function.callSuspend(db.mongo)
+                }
 
-                    else -> break
-                }(db.mongo)
-
-                logger.info { "Migrated database to v$nextVersion" }
+                logger.info { "Migrated to ${function.name}" }
             } catch (t: Throwable) {
-                logger.error(t) { "Failed to migrate database to v$nextVersion" }
+                logger.error(t) { "Failed to migrate database to ${function.name}" }
 
                 throw t
             }
-
-            currentVersion = nextVersion
+            currentVersion = function.name.substring(1).toInt() // remove 'v' prefix
         }
 
         if (currentVersion != meta.version) {

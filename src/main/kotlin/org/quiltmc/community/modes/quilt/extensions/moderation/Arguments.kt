@@ -7,6 +7,8 @@
 package org.quiltmc.community.modes.quilt.extensions.moderation
 
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
@@ -111,6 +113,49 @@ class MentionArguments : Arguments() {
     val allowReplyMentions by optionalBoolean {
         name = "allow-reply-mentions"
         description = "Whether to allow the user (role not supported) to be mentioned in a reply to a message"
+    }
+}
+
+class RemoveMentionsArguments : Arguments() {
+    val mentionable by mentionable {
+        name = "entity"
+        description = "The role or user to remove restrictions on when mentioning them"
+
+        validate {
+            failIf("@everyone should be configured in server settings!") {
+                value is RoleBehavior && (value as RoleBehavior).guildId == value.id
+            }
+        }
+    }
+}
+
+enum class MentionResult(override val readableName: String) : ChoiceEnum {
+    ADD("Add user to exception list"),
+    REMOVE("Remove user from exception list"),
+}
+
+class MentionExceptionArguments : Arguments() {
+    val mentionable by mentionable {
+        name = "entity"
+        description = "The role or user to change exceptions of"
+
+        validate {
+            failIf("@everyone should be configured in server settings!") {
+                value is RoleBehavior && (value as RoleBehavior).guildId == value.id
+            }
+        }
+    }
+
+    val action by enumChoice<MentionResult> {
+        name = "action"
+        description = "The action to perform on the role or user"
+
+        typeName = "idk why this is still required, this only is ever used in slash commands, not chat commands"
+    }
+
+    val user by user {
+        name = "user"
+        description = "The user to update the exception for"
     }
 }
 

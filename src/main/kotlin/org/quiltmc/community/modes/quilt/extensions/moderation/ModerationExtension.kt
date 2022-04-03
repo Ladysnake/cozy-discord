@@ -11,6 +11,7 @@ package org.quiltmc.community.modes.quilt.extensions.moderation
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
+import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
@@ -206,7 +207,7 @@ class ModerationExtension(
                 check { failIf(event.message.data.authorId == kord.selfId) }
                 check { failIf(event.message.author?.isBot == true) }
                 check { failIf(event.guildId == null) }
-                check { failIf(event.member?.roleIds?.any { it in MODERATOR_ROLES } ?: false) }
+                check { notHasBaseModeratorRole() }
 
                 action {
                     val guild = event.guildId!!
@@ -224,7 +225,9 @@ class ModerationExtension(
                     // Other mentions check
                     for (snowflake in event.message.mentionedRoleIds) {
                         val mention = invalidMentions.get(snowflake)
-                        if (mention != null && !mention.allowsDirectMentions && mention.type == ROLE) {
+                        if (mention != null && !mention.allowsDirectMentions &&
+                            mention.type == ROLE && event.member?.id !in mention.exceptions
+                        ) {
                             event.message.author.tryDM(event.getGuild()) {
                                 content = "You have mentioned a role that is not allowed to be mentioned. " +
                                         "Please do not mention roles that are not allowed to be mentioned."
@@ -234,7 +237,9 @@ class ModerationExtension(
                     }
                     for (snowflake in event.message.mentionedUserIds) {
                         val mention = invalidMentions.get(snowflake)
-                        if (mention != null && !mention.allowsDirectMentions && mention.type == USER) {
+                        if (mention != null && !mention.allowsDirectMentions &&
+                            mention.type == USER && event.member?.id !in mention.exceptions
+                        ) {
                             event.message.author.tryDM(event.getGuild()) {
                                 content = "You have mentioned a user that is not allowed to be mentioned. " +
                                         "Please do not mention users that are not allowed to be mentioned."
@@ -244,81 +249,124 @@ class ModerationExtension(
                     }
                 }
             }
-            ephemeralSlashCommand(::MentionArguments) {
-                name = "change-mention-restriction"
+            ephemeralSlashCommand {
+                name = "mention-restriction"
                 description = "Change the mention settings for a user or role."
 
                 MODERATOR_ROLES.forEach(::allowRole)
 
-                action {
+                ephemeralSubCommand(::MentionArguments) {
+                    name = "edit"
+                    description = "Add or edit mention restrictions."
+
+                    MODERATOR_ROLES.forEach(::allowRole)
+
+                    action {
 //                    val guild = getGuild()?.asGuild() ?: return@action
-                    if (arguments.mentionable is Role && arguments.allowReplyMentions == true) {
-                        throw DiscordRelayedException("You cannot allow reply mentions for a role.")
-                    }
-
-                    val mentionable = arguments.mentionable
-                    val id = mentionable.id
-                    val type = when (mentionable) {
-                        is Role -> ROLE
-                        is User -> USER
-                        else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
-                    }
-
-                    fun b2s(b: Boolean?) = when (b) {
-                        true -> "Enabled"
-                        false -> "Disabled"
-                        else -> "Unchanged"
-                    }
-
-                    val mention = when (mentionable) {
-                        is Role -> mentionable.mention
-                        is User -> mentionable.mention
-                        else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
-                    }
-
-                    val invalidMention = invalidMentions.get(id)
-                        ?: run {
-                            val newMention = InvalidMention(id, type)
-                            if (arguments.allowDirectMentions != null) {
-                                newMention.allowsDirectMentions = arguments.allowDirectMentions!!
-                            }
-                            if (arguments.allowReplyMentions != null) {
-                                newMention.allowsReplyMentions = arguments.allowReplyMentions!!
-                            }
-
-                            invalidMentions.set(newMention)
-
-                            respond {
-                                content = "Mention settings for $mention have been created: " +
-                                    "Direct mentions: ${b2s(newMention.allowsDirectMentions)}, " +
-                                    "Reply mentions: ${b2s(newMention.allowsReplyMentions)}"
-                            }
-                            return@action
+                        if (arguments.mentionable is Role && arguments.allowReplyMentions == true) {
+                            throw DiscordRelayedException("You cannot allow reply mentions for a role.")
                         }
 
-                    invalidMention.allowsDirectMentions =
-                        arguments.allowDirectMentions ?: invalidMention.allowsDirectMentions
+                        val mentionable = arguments.mentionable
+                        val id = mentionable.id
+                        val type = when (mentionable) {
+                            is Role -> ROLE
+                            is User -> USER
+                            else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
+                        }
 
-                    invalidMention.allowsReplyMentions =
-                        arguments.allowReplyMentions ?: invalidMention.allowsReplyMentions
+                        fun b2s(b: Boolean?) = when (b) {
+                            true -> "Enabled"
+                            false -> "Disabled"
+                            else -> "Unchanged"
+                        }
 
-                    invalidMentions.set(invalidMention)
+                        val mention = when (mentionable) {
+                            is Role -> mentionable.mention
+                            is User -> mentionable.mention
+                            else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
+                        }
 
-                    respond {
-                        content = "Mention settings for $mention have been updated: " +
-                            "Direct mentions: ${b2s(arguments.allowDirectMentions)}, " +
-                            "Reply mentions: ${b2s(arguments.allowReplyMentions)}"
+                        val invalidMention = invalidMentions.get(id)
+                            ?: run {
+                                val newMention = InvalidMention(id, type)
+                                if (arguments.allowDirectMentions != null) {
+                                    newMention.allowsDirectMentions = arguments.allowDirectMentions!!
+                                }
+                                if (arguments.allowReplyMentions != null) {
+                                    newMention.allowsReplyMentions = arguments.allowReplyMentions!!
+                                }
+
+                                invalidMentions.set(newMention)
+
+                                respond {
+                                    content = "Mention settings for $mention have been created: " +
+                                            "Direct mentions: ${b2s(newMention.allowsDirectMentions)}, " +
+                                            "Reply mentions: ${b2s(newMention.allowsReplyMentions)}"
+                                }
+                                return@action
+                            }
+
+                        invalidMention.allowsDirectMentions =
+                            arguments.allowDirectMentions ?: invalidMention.allowsDirectMentions
+
+                        invalidMention.allowsReplyMentions =
+                            arguments.allowReplyMentions ?: invalidMention.allowsReplyMentions
+
+                        invalidMentions.set(invalidMention)
+
+                        respond {
+                            content = "Mention settings for $mention have been updated: " +
+                                    "Direct mentions: ${b2s(arguments.allowDirectMentions)}, " +
+                                    "Reply mentions: ${b2s(arguments.allowReplyMentions)}"
+                        }
                     }
                 }
-            }
-            ephemeralSlashCommand(::MentionArguments) {
-                name = "remove-mention-restriction"
-                description = "Remove mention restrictions for a user or role."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                ephemeralSubCommand(::RemoveMentionsArguments) {
+                    name = "remove"
+                    description = "Remove mention restrictions."
 
-                action {
-                    invalidMentions.delete(arguments.mentionable.id)
+                    MODERATOR_ROLES.forEach(::allowRole)
+
+                    action {
+                        invalidMentions.delete(arguments.mentionable.id)
+
+                        respond {
+                            content = "Mention settings for ${arguments.mentionable.mention} have been removed."
+                        }
+                    }
+                }
+
+                ephemeralSubCommand(::MentionExceptionArguments) {
+                    name = "change-exception"
+                    description = "Add/remove a user from a mention exception list."
+
+                    MODERATOR_ROLES.forEach(::allowRole)
+
+                    action {
+                        val invalidMention = invalidMentions.get(arguments.mentionable.id) ?: InvalidMention(
+                            arguments.mentionable.id,
+                                when (arguments.mentionable) {
+                                is Role -> ROLE
+                                is User -> USER
+                                else -> error("Unknown mentionable type (or somehow \"@everyone\" was selected?)")
+                            },
+                            allowsDirectMentions = true,
+                            allowsReplyMentions = true
+                        )
+
+                        when (arguments.action) {
+                            MentionResult.ADD -> invalidMention.addException(arguments.user.id)
+                            MentionResult.REMOVE -> invalidMention.removeException(arguments.user.id)
+                        }
+
+                        invalidMentions.set(invalidMention)
+
+                        respond {
+                            content = "Mention exception list for ${arguments.mentionable.mention} has been updated."
+                        }
+                    }
                 }
             }
         }
@@ -457,6 +505,31 @@ class ModerationExtension(
 
                     respond {
                         content = "Note added."
+                    }
+                }
+            }
+            ephemeralSlashCommand(::AdvanceTimeoutArguments) {
+                name = "advance-timeout"
+                description = "Advance the timeout / tempban of a user."
+
+                MODERATOR_ROLES.forEach(::allowRole)
+
+                check { inLadysnakeGuild() }
+
+                action {
+                    val member = arguments.user.asMemberOrNull(guild!!.id) ?: run {
+                        respond {
+                            content = "**Error:** User must be in the guild."
+                        }
+                        return@action
+                    }
+
+                    val reason = "Manual advancement by ${user.mention}: ${arguments.reason}"
+
+                    advanceTimeout(member, arguments.reason)
+
+                    respond {
+                        content = "Timeout / tempban advanced."
                     }
                 }
             }
@@ -927,7 +1000,6 @@ class ModerationExtension(
     private suspend fun advanceTimeout(member: Member, reason: String?) {
         val restrictions = userRestrictions.get(member.id) ?: UserRestrictions(member.id, member.guildId)
         restrictions.lastProgressiveTimeoutLength++
-        userRestrictions.set(restrictions)
         if (restrictions.lastProgressiveTimeoutLength <= 15) {
             member.edit {
                 this.reason = reason
@@ -973,6 +1045,30 @@ class ModerationExtension(
             member.ban {
                 this.reason = reason
                 deleteMessagesDays = 0
+            }
+        }
+
+        userRestrictions.set(restrictions)
+
+        reportToModChannel(member.getGuild()) {
+            title = if (restrictions.lastProgressiveTimeoutLength <= 15) "Timeout" else "Tempban"
+            description = if (restrictions.lastProgressiveTimeoutLength <= 15)  {
+                "Timed out ${member.mention} (${member.id})."
+            } else {
+                "Temporarily Banned ${member.mention} (${member.id})."
+            }
+            if (reason != null) {
+                field {
+                    name = "Reason"
+                    value = reason
+                    inline = true
+                }
+            }
+            field {
+                name = "Return"
+                value = member.communicationDisabledUntil?.toDiscord(TimestampType.Default) + " / " +
+                        member.communicationDisabledUntil?.toDiscord(TimestampType.RelativeTime)
+                inline = true
             }
         }
     }

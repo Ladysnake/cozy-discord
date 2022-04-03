@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:Suppress("DataClassShouldBeImmutable")
+@file:Suppress("DataClassShouldBeImmutable", "DataClassContainsFunctions")
 
 package org.quiltmc.community.database.entities
 
@@ -19,7 +19,17 @@ data class InvalidMention(
 
     var allowsDirectMentions: Boolean = false,
     var allowsReplyMentions: Boolean = false,
+
+    val exceptions: List<Snowflake> = mutableListOf()
 ) : Entity<Snowflake> {
+    fun addException(id: Snowflake) {
+        (exceptions as MutableList<Snowflake>).add(id)
+    }
+
+    fun removeException(id: Snowflake) {
+        (exceptions as MutableList<Snowflake>).remove(id)
+    }
+
     enum class Type {
         USER,
         ROLE,

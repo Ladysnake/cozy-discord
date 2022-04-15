@@ -836,7 +836,25 @@ class UtilityExtension : Extension() {
                 check { hasBaseModeratorRole() }
 
                 action {
+                    val flags = arguments.flags?.split(",")?.map { it.trim().lowercase() } ?: emptyList()
                     val targetChannel = (arguments.target ?: channel.asChannel()).asChannelOf<GuildMessageChannel>()
+
+                    val message = arguments.message
+                    when {
+                        ("@everyone" in message || "@here" in message) &&
+                        "dangerous-mentioning-i-understand-the-consequences" !in flags -> {
+                            // don't allow the message to be sent without the flag specified
+                            respond {
+                                embed {
+                                    color = DISCORD_RED
+                                    description = "You tried to mention everyone or here without the appropriate " +
+                                            "flag. Please add the `dangerous-mentioning-i-understand-the-" +
+                                            "consequences` flag in the flags list to bypass this check."
+                                }
+                            }
+                            return@action
+                        }
+                    }
 
                     targetChannel.createMessage(arguments.message)
 
@@ -854,6 +872,20 @@ class UtilityExtension : Extension() {
                             inline = true
                             name = "User"
                             value = user.mention
+                        }
+
+                        if (flags.isNotEmpty()) {
+                            field {
+                                inline = true
+                                name = "Flags"
+                                value = flags.joinToString(", ") {
+                                    @Suppress("UseIfInsteadOfWhen")
+                                    when (it) {
+                                        "dangerous-mentioning-i-understand-the-consequences" -> "Mention Override"
+                                        else -> "Unknown Flag ($it)"
+                                    }
+                                }
+                            }
                         }
                     }
 
@@ -1418,6 +1450,15 @@ class UtilityExtension : Extension() {
                         ChannelType.PublicGuildThread
                     )
                 }
+            }
+        }
+
+        val flags by optionalString {
+            name = "flags"
+            description = "A comma-separated list of flags to use"
+
+            mutate {
+                it?.split(",")?.joinToString(",") { s -> s.trim() }
             }
         }
     }

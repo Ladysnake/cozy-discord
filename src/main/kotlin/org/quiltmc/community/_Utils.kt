@@ -187,10 +187,10 @@ suspend fun ExtensibleBotBuilder.common() {
     }
 
     plugins {
-        if (ENVIRONMENT != "production") {
-            // Add plugin build folders here for testing in dev
-            // pluginPath("module-tags/build/libs")
-        }
+//        if (ENVIRONMENT != "production") {
+//            // Add plugin build folders here for testing in dev
+//            // pluginPath("module-tags/build/libs")
+//        }
     }
 }
 

@@ -11,6 +11,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.MetaCollection
 import org.quiltmc.community.database.entities.Meta
+import org.quiltmc.community.database.migrations.AllMigrations
 import kotlin.reflect.KParameter
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.declaredFunctions
@@ -37,7 +38,7 @@ object Migrations : KoinComponent {
 
         logger.info { "Current database version: v$currentVersion" }
 
-        val migrations = Migrations::class.declaredFunctions
+        val migrations = AllMigrations::class.declaredFunctions
             .filter { it.name.startsWith("v") } // make sure it's a migration
             .filter { it.name.substring(1).toInt() > currentVersion } // newer than current version
             .filter { it.findParameterByName("db") != null } // with a db parameter
@@ -47,7 +48,7 @@ object Migrations : KoinComponent {
             @Suppress("TooGenericExceptionCaught")
             try {
                 if (function.parameters[0].kind == KParameter.Kind.INSTANCE) {
-                    function.callSuspend(Migrations, db.mongo)
+                    function.callSuspend(AllMigrations, db.mongo)
                 } else {
                     function.callSuspend(db.mongo)
                 }

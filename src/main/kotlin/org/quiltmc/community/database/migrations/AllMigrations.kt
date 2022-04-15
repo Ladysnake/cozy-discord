@@ -16,7 +16,8 @@ import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.MatchTarget
 
-object Migrations {
+@Suppress("unused")
+object AllMigrations {
     suspend fun v1(db: CoroutineDatabase) {
         db.createCollection(ServerSettingsCollection.name)
         db.createCollection(SuggestionsCollection.name)

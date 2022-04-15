@@ -79,11 +79,11 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
             loggingChannelName = "cozy-logs"
 
             userCommandCheck {
-                inQuiltGuild()
+                inLadysnakeGuild()
             }
 
             staffCommandCheck {
-                hasBaseModeratorRole()
+                notHasBaseModeratorRole()
             }
         }
 

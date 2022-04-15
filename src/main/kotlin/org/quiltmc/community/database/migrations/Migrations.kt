@@ -200,4 +200,18 @@ object Migrations {
             )
         }
     }
+
+    /**
+     * Targets upstream's v13 and v14 migrations.
+     */
+    suspend fun v18(db: CoroutineDatabase) {
+        db.createCollection(TagsCollection.name)
+
+        with(db.getCollection<TagEntity>(TagsCollection.name)) {
+            updateMany(
+                TagEntity::image exists false,
+                setValue(TagEntity::image, null),
+            )
+        }
+    }
 }

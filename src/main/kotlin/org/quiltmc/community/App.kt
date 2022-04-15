@@ -22,7 +22,9 @@ import dev.kord.common.entity.Permission
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import org.quiltmc.community.cozy.modules.cleanup.userCleanup
+import org.quiltmc.community.cozy.modules.tags.tags
 import org.quiltmc.community.database.collections.ServerSettingsCollection
+import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
@@ -72,6 +74,18 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         }
 
         extMappings { }
+
+        tags(getKoin().get<TagsCollection>()) {
+            loggingChannelName = "cozy-logs"
+
+            userCommandCheck {
+                inQuiltGuild()
+            }
+
+            staffCommandCheck {
+                hasBaseModeratorRole()
+            }
+        }
 
         extPhishing {
             appName = "Ladysnake's Modification of Quilt's Cozy Bot"

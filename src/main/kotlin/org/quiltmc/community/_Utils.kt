@@ -152,6 +152,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
                 single { InvalidMentionsCollection() } bind InvalidMentionsCollection::class
                 single { UserRestrictionsCollection() } bind UserRestrictionsCollection::class
                 single { LotteryCollection() } bind LotteryCollection::class
+                single { TagsCollection() } bind TagsCollection::class
             }
 
             if (migrate) {
@@ -182,6 +183,13 @@ suspend fun ExtensibleBotBuilder.common() {
 
         help {
             enableBundledExtension = false  // We have no chat commands
+        }
+    }
+
+    plugins {
+        if (ENVIRONMENT != "production") {
+            // Add plugin build folders here for testing in dev
+            // pluginPath("module-tags/build/libs")
         }
     }
 }

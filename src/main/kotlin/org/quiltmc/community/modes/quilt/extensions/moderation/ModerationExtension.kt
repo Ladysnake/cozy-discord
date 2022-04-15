@@ -232,7 +232,7 @@ class ModerationExtension(
                                 content = "You have mentioned a role that is not allowed to be mentioned. " +
                                         "Please do not mention roles that are not allowed to be mentioned."
                             }
-                            advanceTimeout(event.member!!, "mentioning a role that is not allowed to be mentioned")
+                            advanceTimeout(event.member!!, "mentioning <@&$snowflake>")
                         }
                     }
                     for (snowflake in event.message.mentionedUserIds) {
@@ -244,7 +244,7 @@ class ModerationExtension(
                                 content = "You have mentioned a user that is not allowed to be mentioned. " +
                                         "Please do not mention users that are not allowed to be mentioned."
                             }
-                            advanceTimeout(event.member!!, "mentioning a user that is not allowed to be mentioned")
+                            advanceTimeout(event.member!!, "mentioning <@!$snowflake>")
                         }
                     }
                 }
@@ -999,48 +999,47 @@ class ModerationExtension(
     @Suppress("MagicNumber")
     private suspend fun advanceTimeout(member: Member, reason: String?) {
         val restrictions = userRestrictions.get(member.id) ?: UserRestrictions(member.id, member.guildId)
-        restrictions.lastProgressiveTimeoutLength++
+        val lengthOfRestriction = when (++restrictions.lastProgressiveTimeoutLength) {
+            1 -> 1.minutes
+            2 -> 2.minutes
+            3 -> 5.minutes
+            4 -> 10.minutes
+            5 -> 30.minutes
+            6 -> 1.hours
+            7 -> 2.hours
+            8 -> 4.hours
+            9 -> 8.hours
+            10 -> 24.hours
+            11 -> 2.days
+            12 -> 3.days
+            13 -> 7.days
+            14 -> 14.days
+            15 -> 28.days // max timeout length
+            16 -> 1.days // beginning of tempbans
+            17 -> 2.days
+            18 -> 3.days
+            19 -> 7.days
+            20 -> 14.days
+            21 -> 28.days
+            22 -> 30.days * 2 // 2 months
+            23 -> 30.days * 3 // 3 months
+            24 -> 30.days * 6 // 6 months
+            25 -> 365.days    // 1 year
+            else -> 365.days * 3 // 3 years, max tempban length because people shouldn't be banned forever usually
+                                 // plus they already got bans for 5 years so i think that's enough
+        }
+        val returnTime = Clock.System.now() + lengthOfRestriction
         if (restrictions.lastProgressiveTimeoutLength <= 15) {
             member.edit {
                 this.reason = reason
 
-                communicationDisabledUntil = Clock.System.now() + when (restrictions.lastProgressiveTimeoutLength) {
-                    1 -> 1.minutes
-                    2 -> 2.minutes
-                    3 -> 5.minutes
-                    4 -> 10.minutes
-                    5 -> 30.minutes
-                    6 -> 1.hours
-                    7 -> 2.hours
-                    8 -> 4.hours
-                    9 -> 8.hours
-                    10 -> 24.hours
-                    11 -> 2.days
-                    12 -> 3.days
-                    13 -> 7.days
-                    14 -> 14.days
-                    15 -> 28.days // max timeout length
-                    else -> error("Invalid timeout length")
-                }
+                communicationDisabledUntil = returnTime
             }
-            restrictions.returningBanTime = member.communicationDisabledUntil
+            restrictions.returningBanTime = returnTime
         } else {
             // tempbans begin
             restrictions.isBanned = true
-            restrictions.returningBanTime = Clock.System.now() + when (restrictions.lastProgressiveTimeoutLength) {
-                in 0..15 -> error("Timeout should have covered this case")
-                16 -> 1.days
-                17 -> 2.days
-                18 -> 3.days
-                19 -> 7.days
-                20 -> 14.days
-                21 -> 28.days
-                22 -> 30.days * 2 // 2 months
-                23 -> 30.days * 3 // 3 months
-                24 -> 30.days * 6 // 6 months
-                25 -> 365.days    // 1 year
-                else -> 365.days * 3 // 3 years, should be enough
-            }
+            restrictions.returningBanTime = returnTime
 
             member.ban {
                 this.reason = reason
@@ -1066,8 +1065,8 @@ class ModerationExtension(
             }
             field {
                 name = "Return"
-                value = member.communicationDisabledUntil?.toDiscord(TimestampType.Default) + " / " +
-                        member.communicationDisabledUntil?.toDiscord(TimestampType.RelativeTime)
+                value = returnTime.toDiscord(TimestampType.Default) + " / " +
+                        returnTime.toDiscord(TimestampType.RelativeTime)
                 inline = true
             }
         }

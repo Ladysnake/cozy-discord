@@ -25,7 +25,7 @@ import com.soywiz.korio.async.toChannel
 import dev.kord.common.entity.MessageFlag
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.optional.optionalInt
+import dev.kord.common.entity.optional.optional
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
@@ -760,7 +760,7 @@ class ModerationExtension(
         val slowmode = context.arguments.waitTime
         // a bit of a hack to attempt to bypass a bug with kmongo
         kord.rest.channel.patchChannel(channel.id, ChannelModifyPatchRequest(
-            rateLimitPerUser = slowmode.optionalInt()
+            rateLimitPerUser = slowmode.seconds.optional()
         ), reason = "Slowmode set by ${context.user}")
         reportToModChannel(context.guild?.asGuild()) {
             title = "Slowmode set"

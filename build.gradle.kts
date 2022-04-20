@@ -80,6 +80,7 @@ dependencies {
 
     implementation(libs.scrimage)
 
+    implementation(project(":module-welcome"))
     implementation(project(":module-user-cleanup"))
     implementation(project(":module-tags"))
     implementation(project(":module-moderation"))

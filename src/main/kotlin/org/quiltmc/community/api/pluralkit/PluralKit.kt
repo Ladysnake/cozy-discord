@@ -7,11 +7,14 @@
 package org.quiltmc.community.api.pluralkit
 
 import dev.kord.common.entity.Snowflake
-import io.ktor.client.*
-import io.ktor.client.features.*
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.json.serializer.*
-import io.ktor.client.request.*
+import io.ktor.client.HttpClient
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.get
+import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -22,13 +25,14 @@ class PluralKit {
     private val logger = KotlinLogging.logger { }
 
     private val client = HttpClient {
-        install(JsonFeature) {
-            this.serializer = KotlinxSerializer(
-                Json {
-                    ignoreUnknownKeys = true
-                }
+        install(ContentNegotiation) {
+            json(
+                Json { ignoreUnknownKeys = true },
+                ContentType.Any
             )
         }
+
+        expectSuccess = true
     }
 
     suspend fun getMessage(id: Snowflake) =
@@ -39,14 +43,18 @@ class PluralKit {
         val url = MESSAGE_URL.replace("id" to id)
 
         try {
-            val result: PKMessage = client.get(url)
+            val result: PKMessage = client.get(url).body()
 
             logger.debug { "/messages/$id -> 200" }
 
             return result
         } catch (e: ClientRequestException) {
-            if (e.response.status.value in 400 until 499) {
-                logger.error(e) { "/messages/$id -> ${e.response.status}" }
+            if (e.response.status.value in 400 until 600) {
+                if (e.response.status.value != HttpStatusCode.NotFound.value) {
+                    logger.debug { "/messages/$id -> ${e.response.status}" }
+                } else {
+                    logger.error(e) { "/messages/$id -> ${e.response.status}" }
+                }
             }
 
             throw e

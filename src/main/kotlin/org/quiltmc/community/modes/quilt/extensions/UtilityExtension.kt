@@ -114,6 +114,7 @@ class UtilityExtension : Extension() {
         prettyPrint = true
         prettyPrintIndent = "    "
 
+        classDiscriminator = "_type"
         encodeDefaults = false
     }
 

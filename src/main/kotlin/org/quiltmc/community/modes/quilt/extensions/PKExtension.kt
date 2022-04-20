@@ -13,6 +13,7 @@ import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.delay
 import org.koin.core.component.inject
 import org.quiltmc.community.api.pluralkit.PluralKit
@@ -39,7 +40,12 @@ class PKExtension : Extension() {
             action {
                 delay(PK_DELAY_MILLIS)  // To allow the PK API to catch up
 
-                val pkMessage = pluralKit.getMessageOrNull(event.message.id) ?: return@action
+                val pkMessage = try {
+                    pluralKit.getMessage(event.message.id)
+                } catch (e: ClientRequestException) {
+                    return@action
+                }
+
                 val flags = userFlags.get(pkMessage.sender) ?: UserFlags(pkMessage.sender, false)
 
                 if (!flags.hasUsedPK) {

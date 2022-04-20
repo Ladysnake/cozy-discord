@@ -45,6 +45,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
+import io.ktor.client.plugins.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
@@ -142,7 +143,11 @@ class SuggestionsExtension : Extension() {
                         null
                     }
                 } else {
-                    val pkMessage = pluralKit.getMessageOrNull(event.message.id)
+                    val pkMessage = try {
+                        pluralKit.getMessageOrNull(event.message.id)
+                    } catch (e: ClientRequestException) {
+                        null // funky stuff is happening
+                    }
 
                     if (pkMessage == null) {
                         Suggestion(

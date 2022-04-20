@@ -31,9 +31,7 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
-import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -396,27 +394,27 @@ class SyncExtension : Extension() {
             }
         }
 
-        event<MemberUpdateEvent> {
-            check { inLadysnakeGuild() }
-
-            action {
-                try {
-                    val guilds = getGuilds().filter { it.id != event.guildId }
-
-                    for (guild in guilds) {
-                        val guildMember = guild.getMemberOrNull(event.member.id) ?: continue
-
-                        if (guildMember.timeoutUntil != event.member.timeoutUntil) {
-                            guildMember.edit {
-                                timeoutUntil = event.member.timeoutUntil
-                            }
-                        }
-                    }
-                } catch (e: RestRequestException) {
-                    logger.error(e) { "Failed to sync member timeout ${event.member.id} (JSON error ${e.error?.code})" }
-                }
-            }
-        }
+//        event<MemberUpdateEvent> {
+//            check { inLadysnakeGuild() }
+//
+//            action {
+//                try {
+//                    val guilds = getGuilds().filter { it.id != event.guildId }
+//
+//                    for (guild in guilds) {
+//                        val guildMember = guild.getMemberOrNull(event.member.id) ?: continue
+//
+//                        if (guildMember.timeoutUntil != event.member.timeoutUntil) {
+//                            guildMember.edit {
+//                                timeoutUntil = event.member.timeoutUntil
+//                            }
+//                        }
+//                    }
+//                } catch (e: RestRequestException) {
+//                  logger.error(e) { "Failed to sync member timeout ${event.member.id} (JSON error ${e.error?.code})" }
+//                }
+//            }
+//        }
     }
 
     private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuild(it) }

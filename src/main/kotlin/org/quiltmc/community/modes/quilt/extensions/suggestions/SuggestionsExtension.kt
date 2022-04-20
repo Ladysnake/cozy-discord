@@ -121,49 +121,39 @@ class SuggestionsExtension : Extension() {
 
                 val id = event.message.id
 
-                val suggestion = if (event.message.webhookId != null) {
-                    val pkMessage = pluralKit.getMessageOrNull(event.message.id)
+                val pkMessage = try {
+                    pluralKit.getMessageOrNull(event.message.id)
+                } catch (e: ClientRequestException) {
+                    null // funky stuff is happening
+                }
 
-                    if (pkMessage != null) {
-                        Suggestion(
-                            _id = id,
-                            guildId = event.guildId!!,
-                            channelId = event.message.channelId,
-                            text = event.message.content,
+                val suggestion = if (pkMessage != null) {
+                    Suggestion(
+                        _id = id,
+                        guildId = event.guildId!!,
+                        channelId = event.message.channelId,
+                        text = event.message.content,
 
-                            owner = pkMessage.sender,
-                            ownerAvatar = "https://cdn.discordapp.com/avatars/" +
-                                    "${event.message.data.author.id.value}/" +
-                                    "${event.message.data.author.avatar}.webp",
-                            ownerName = event.message.data.author.username,
+                        owner = pkMessage.sender,
+                        ownerAvatar = "https://cdn.discordapp.com/avatars/" +
+                                "${event.message.data.author.id.value}/" +
+                                "${event.message.data.author.avatar}.webp",
+                        ownerName = event.message.data.author.username,
 
-                            isTupper = true
-                        )
-                    } else {
-                        null
-                    }
+                        isTupper = true
+                    )
                 } else {
-                    val pkMessage = try {
-                        pluralKit.getMessageOrNull(event.message.id)
-                    } catch (e: ClientRequestException) {
-                        null // funky stuff is happening
-                    }
+                    Suggestion(
+                        _id = id,
+                        guildId = event.guildId!!,
+                        channelId = event.message.channelId,
+                        text = event.message.content,
 
-                    if (pkMessage == null) {
-                        Suggestion(
-                            _id = id,
-                            guildId = event.guildId!!,
-                            channelId = event.message.channelId,
-                            text = event.message.content,
-
-                            owner = event.message.author!!.id,
-                            ownerAvatar = event.message.author!!.avatar?.url,
-                            ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName
-                        )
-                    } else {
-                        null
-                    }
-                } ?: return@action
+                        owner = event.message.author!!.id,
+                        ownerAvatar = event.message.author!!.avatar?.url,
+                        ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName
+                    )
+                }
 
                 if (suggestion.text.length > SUGGESTION_SIZE_LIMIT) {
                     val user = kord.getUser(suggestion.owner)

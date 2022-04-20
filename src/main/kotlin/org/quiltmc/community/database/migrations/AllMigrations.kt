@@ -215,4 +215,11 @@ object AllMigrations {
             )
         }
     }
+
+    /**
+     * Targets upstream's v15 migration.
+     */
+    suspend fun v19(db: CoroutineDatabase) {
+        db.createCollection(WelcomeChannelCollection.name)
+    }
 }

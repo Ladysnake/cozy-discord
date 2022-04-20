@@ -26,6 +26,7 @@ import dev.kord.core.event.role.RoleDeleteEvent
 import dev.kord.core.event.role.RoleUpdateEvent
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.toList
@@ -157,216 +158,220 @@ class ExtraLogExtension : Extension() {
             check { inLadysnakeGuild() }
 
             action {
-                val member = event.member
-                val old = event.old
+                try {
+                    val member = event.member
+                    val old = event.old
 
-                if (old == null) {
-                    messageLogExtension?.getRotator(event.guildId)
-                        ?.logOther {
-                            embed {
-                                title = "Member Updated"
-                                description = "*This member's data was not cached, so limited information is " +
-                                        "available.*"
-                                color = DISCORD_YELLOW
+                    if (old == null) {
+                        messageLogExtension?.getRotator(event.guildId)
+                            ?.logOther {
+                                embed {
+                                    title = "Member Updated"
+                                    description = "*This member's data was not cached, so limited information is " +
+                                            "available.*"
+                                    color = DISCORD_YELLOW
 
-                                field {
-                                    name = "Identification"
-                                    value = """
+                                    field {
+                                        name = "Identification"
+                                        value = """
                                         Snowflake: ${member.id}
                                         Tag: ${member.tag}
                                         Mention: ${member.mention}
                                     """.trimIndent()
-                                    inline = true
-                                }
+                                        inline = true
+                                    }
 
-                                field {
-                                    name = "Information"
-                                    value = """
+                                    field {
+                                        name = "Information"
+                                        value = """
                                         User created at: ${member.createdAt.toDiscord(TimestampType.Default)}
                                     """.trimIndent()
-                                }
+                                    }
 
-                                thumbnail {
-                                    url = member.avatar?.url ?: member.defaultAvatar.url
+                                    thumbnail {
+                                        url = member.avatar?.url ?: member.defaultAvatar.url
+                                    }
                                 }
                             }
-                        }
-                } else {
-                    val diff = MemberDiff(member, old)
-                    if (diff.isIdentical) return@action
+                    } else {
+                        val diff = MemberDiff(member, old)
+                        if (diff.isIdentical) return@action
 
-                    messageLogExtension?.getRotator(event.guildId)
-                        ?.logOther {
-                            embed {
-                                title = "Member Updated"
-                                description = member.mention
-                                color = DISCORD_YELLOW
+                        messageLogExtension?.getRotator(event.guildId)
+                            ?.logOther {
+                                embed {
+                                    title = "Member Updated"
+                                    description = member.mention
+                                    color = DISCORD_YELLOW
 
-                                //region: User data (not member data)
+                                    //region: User data (not member data)
 
-                                if (diff.username is Optional.Value) {
-                                    field {
-                                        name = "Username"
-                                        value = """
+                                    if (diff.username is Optional.Value) {
+                                        field {
+                                            name = "Username"
+                                            value = """
                                             Old: ${old.username}
                                             New: ${member.username}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.discriminator is Optional.Value) {
-                                    field {
-                                        name = "Discriminator"
-                                        value = """
+                                    if (diff.discriminator is Optional.Value) {
+                                        field {
+                                            name = "Discriminator"
+                                            value = """
                                             Old: ${old.discriminator}
                                             New: ${member.discriminator}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.avatar is Optional.Value) {
-                                    field {
-                                        name = "Avatar"
-                                        value = """
+                                    if (diff.avatar is Optional.Value) {
+                                        field {
+                                            name = "Avatar"
+                                            value = """
                                             Old: ${old.avatar?.url ?: old.defaultAvatar.url}
                                             New: ${member.avatar?.url ?: member.defaultAvatar.url}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.publicFlags is Optional.Value) {
-                                    field {
-                                        name = "Public Flags"
-                                        value = """
+                                    if (diff.publicFlags is Optional.Value) {
+                                        field {
+                                            name = "Public Flags"
+                                            value = """
                                             Old: ${old.publicFlags}
                                             New: ${member.publicFlags}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.banner is Optional.Value) {
-                                    field {
-                                        name = "Banner"
-                                        value = """
+                                    if (diff.banner is Optional.Value) {
+                                        field {
+                                            name = "Banner"
+                                            value = """
                                             Old: ${old.data.banner ?: "None"}
                                             New: ${member.data.banner ?: "None"}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.accentColor is Optional.Value) {
-                                    field {
-                                        name = "Accent Color"
-                                        value = """
+                                    if (diff.accentColor is Optional.Value) {
+                                        field {
+                                            name = "Accent Color"
+                                            value = """
                                             Old: ${old.data.accentColor}
                                             New: ${member.data.accentColor}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                //endregion: User data (not member data)
+                                    //endregion: User data (not member data)
 
-                                //region: Member data
+                                    //region: Member data
 
-                                if (diff.nickname is Optional.Value) {
-                                    field {
-                                        name = "Nickname"
-                                        value = """
+                                    if (diff.nickname is Optional.Value) {
+                                        field {
+                                            name = "Nickname"
+                                            value = """
                                             Old: ${old.nickname ?: "None"}
                                             New: ${member.nickname ?: "None"}
                                         """.trimIndent()
 
-                                        inline = true
-                                    }
-                                }
-
-                                if (diff.roles is Optional.Value) {
-                                    val oldRoles = old.memberData.roles
-                                    val newRoles = member.memberData.roles
-
-                                    val addedRoles = newRoles.filter { it !in oldRoles }
-                                    val removedRoles = oldRoles.filter { it !in newRoles }
-
-                                    if (addedRoles.isNotEmpty()) {
-                                        field {
-                                            name = "Added Roles"
-                                            value = addedRoles.joinToString(", ") { "<@&$it>" }
-
                                             inline = true
                                         }
                                     }
 
-                                    if (removedRoles.isNotEmpty()) {
-                                        field {
-                                            name = "Removed Roles"
-                                            value = removedRoles.joinToString(", ") { "<@&$it>" }
+                                    if (diff.roles is Optional.Value) {
+                                        val oldRoles = old.memberData.roles
+                                        val newRoles = member.memberData.roles
 
-                                            inline = true
+                                        val addedRoles = newRoles.filter { it !in oldRoles }
+                                        val removedRoles = oldRoles.filter { it !in newRoles }
+
+                                        if (addedRoles.isNotEmpty()) {
+                                            field {
+                                                name = "Added Roles"
+                                                value = addedRoles.joinToString(", ") { "<@&$it>" }
+
+                                                inline = true
+                                            }
+                                        }
+
+                                        if (removedRoles.isNotEmpty()) {
+                                            field {
+                                                name = "Removed Roles"
+                                                value = removedRoles.joinToString(", ") { "<@&$it>" }
+
+                                                inline = true
+                                            }
                                         }
                                     }
-                                }
 
-                                if (diff.premiumSince is Optional.Value) {
-                                    field {
-                                        name = "Premium Since"
-                                        value = """
+                                    if (diff.premiumSince is Optional.Value) {
+                                        field {
+                                            name = "Premium Since"
+                                            value = """
                                             Old: ${old.memberData.premiumSince.value ?: "None"}
                                             New: ${member.memberData.premiumSince.value ?: "None"}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.pending is Optional.Value) {
-                                    // you can't go from pending to not pending
-                                    field {
-                                        name = "Pending"
-                                        value = "This user is no longer pending."
+                                    if (diff.pending is Optional.Value) {
+                                        // you can't go from pending to not pending
+                                        field {
+                                            name = "Pending"
+                                            value = "This user is no longer pending."
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.serverAvatar is Optional.Value) {
-                                    field {
-                                        name = "Server Avatar"
-                                        value = """
+                                    if (diff.serverAvatar is Optional.Value) {
+                                        field {
+                                            name = "Server Avatar"
+                                            value = """
                                             Old: ${old.memberData.avatar.value ?: "None"}
                                             New: ${member.memberData.avatar.value ?: "None"}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                if (diff.timeoutTime is Optional.Value) {
-                                    field {
-                                        name = "Timeout Time"
-                                        value = """
+                                    if (diff.timeoutTime is Optional.Value) {
+                                        field {
+                                            name = "Timeout Time"
+                                            value = """
                                             Old: ${old.memberData.communicationDisabledUntil.value ?: "None"}
                                             New: ${member.memberData.communicationDisabledUntil.value ?: "None"}
                                         """.trimIndent()
 
-                                        inline = true
+                                            inline = true
+                                        }
                                     }
-                                }
 
-                                //endregion: Member Data
+                                    //endregion: Member Data
+                                }
                             }
-                        }
+                    }
+                } catch (e: RestRequestException) {
+                    logger.error(e) { "Failed to send member update embed (JSON error ${e.error?.code})" }
                 }
             }
         }

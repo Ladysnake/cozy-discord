@@ -33,6 +33,7 @@ import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -399,16 +400,20 @@ class SyncExtension : Extension() {
             check { inLadysnakeGuild() }
 
             action {
-                val guilds = getGuilds().filter { it.id != event.guildId }
+                try {
+                    val guilds = getGuilds().filter { it.id != event.guildId }
 
-                for (guild in guilds) {
-                    val guildMember = guild.getMemberOrNull(event.member.id) ?: continue
+                    for (guild in guilds) {
+                        val guildMember = guild.getMemberOrNull(event.member.id) ?: continue
 
-                    if (guildMember.timeoutUntil != event.member.timeoutUntil) {
-                        guildMember.edit {
-                            timeoutUntil = event.member.timeoutUntil
+                        if (guildMember.timeoutUntil != event.member.timeoutUntil) {
+                            guildMember.edit {
+                                timeoutUntil = event.member.timeoutUntil
+                            }
                         }
                     }
+                } catch (e: RestRequestException) {
+                    logger.error(e) { "Failed to sync member timeout ${event.member.id} (JSON error ${e.error?.code})" }
                 }
             }
         }

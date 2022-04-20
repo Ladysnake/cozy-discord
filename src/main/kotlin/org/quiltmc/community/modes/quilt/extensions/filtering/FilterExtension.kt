@@ -45,6 +45,7 @@ import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.event.user.UserUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.request.RestRequestException
 import mu.KotlinLogging
 import net.codebox.homoglyph.HomoglyphBuilder
 import org.koin.core.component.inject
@@ -137,7 +138,11 @@ class FilterExtension : Extension() {
             check { notHasBaseModeratorRole() }
 
             action {
-                handleMember(event.member)
+                try {
+                    handleMember(event.member)
+                } catch (e: RestRequestException) {
+                    logger.error(e) { "Failed to check member ${event.member.id} (JSON error ${e.error?.code})" }
+                }
             }
         }
 

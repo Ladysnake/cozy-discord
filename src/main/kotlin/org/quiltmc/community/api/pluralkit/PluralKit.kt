@@ -7,14 +7,13 @@
 package org.quiltmc.community.api.pluralkit
 
 import dev.kord.common.entity.Snowflake
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.http.ContentType
-import io.ktor.http.HttpStatusCode
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.http.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 
@@ -50,7 +49,7 @@ class PluralKit {
             return result
         } catch (e: ClientRequestException) {
             if (e.response.status.value in 400 until 600) {
-                if (e.response.status.value != HttpStatusCode.NotFound.value) {
+                if (e.response.status.value == HttpStatusCode.NotFound.value) {
                     logger.debug { "/messages/$id -> ${e.response.status}" }
                 } else {
                     logger.error(e) { "/messages/$id -> ${e.response.status}" }

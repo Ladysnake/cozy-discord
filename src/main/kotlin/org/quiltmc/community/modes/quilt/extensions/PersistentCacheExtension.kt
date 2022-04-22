@@ -17,6 +17,7 @@ import com.soywiz.korio.compression.util.BitReader
 import com.soywiz.korio.experimental.KorioExperimentalApi
 import com.soywiz.korio.file.VfsOpenMode
 import com.soywiz.korio.file.std.localCurrentDirVfs
+import com.soywiz.korio.lang.FileNotFoundException
 import com.soywiz.korio.stream.readAll
 import com.soywiz.korio.stream.toAsync
 import com.soywiz.korio.stream.toAsyncStream
@@ -68,19 +69,23 @@ class PersistentCacheExtension : Extension() {
         event<ConnectEvent> {
             action {
                 extension.bot.withLock {
-                    val cache = event.kord.cache
+                    try {
+                        val cache = event.kord.cache
 
-                    val messageSerializer = MessageData.serializer()
-                    val messagesList = mutableListOf<MessageData>()
+                        val messageSerializer = MessageData.serializer()
+                        val messagesList = mutableListOf<MessageData>()
 
-                    val jsonArray = loadJsonFromFile("cache/messages.json.gz")
+                        val jsonArray = loadJsonFromFile("cache/messages.json.gz")
 
-                    jsonArray.jsonArray.forEach {
-                        val deserialized = Json.decodeFromJsonElement(messageSerializer, it)
-                        messagesList.add(deserialized)
+                        jsonArray.jsonArray.forEach {
+                            val deserialized = Json.decodeFromJsonElement(messageSerializer, it)
+                            messagesList.add(deserialized)
+                        }
+
+                        cache.putAll(messagesList)
+                    } catch (e: FileNotFoundException) {
+                        // No cache file found, do nothing
                     }
-
-                    cache.putAll(messagesList)
                 }
             }
         }
@@ -88,6 +93,8 @@ class PersistentCacheExtension : Extension() {
 
     private suspend fun saveJsonToFile(json: JsonElement, path: String) {
         val vfsFile = localCurrentDirVfs[path]
+
+        vfsFile.parent.mkdirs()
 
         json.toString().byteInputStream(Charsets.UTF_8).toAsync().toAsyncStream().useIt { input ->
             vfsFile.open(VfsOpenMode.CREATE_OR_TRUNCATE).useIt { output ->

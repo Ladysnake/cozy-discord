@@ -10,16 +10,20 @@ import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
+import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.download
+import com.kotlindiscord.kord.extensions.utils.getKoin
+import com.kotlindiscord.kord.extensions.utils.suggestIntMap
 import com.kotlindiscord.kord.extensions.utils.toReaction
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.withTyping
@@ -33,13 +37,15 @@ import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import org.koin.core.component.inject
-import org.quiltmc.community.MODERATOR_ROLES
-import org.quiltmc.community.OVERRIDING_USERS
-import org.quiltmc.community.any
+import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.LotteryCollection
+import org.quiltmc.community.database.collections.QuoteCollection
 import org.quiltmc.community.database.entities.Lottery
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import java.io.ByteArrayInputStream
 import kotlin.time.Duration.Companion.minutes
 
@@ -54,6 +60,8 @@ class UserFunExtension : Extension() {
     private var currentAssignable: AssignablesBuilder? = null
 
     private val lotteryCollection: LotteryCollection by inject()
+
+    private val quoteCollection: QuoteCollection by inject()
 
     override suspend fun setup() {
         // region: User role assignment
@@ -495,6 +503,126 @@ class UserFunExtension : Extension() {
         }
 
         // endregion
+
+        // region: Quotes
+
+        publicSlashCommand {
+            name = "quote"
+            description = "Get or add a quote"
+
+            publicSubCommand(::QuoteArguments) {
+                name = "get"
+                description = "Get a quote by its ID"
+
+                action {
+                    val id = arguments.quote
+                    val quote = quoteCollection.get(id)
+
+                    if (quote == null) {
+                        respond {
+                            content = "Quote $id not found!"
+                        }
+                    } else {
+                        respond {
+                            content = """
+                                |#$id:
+                                |> ${quote.quote.replace("\n", "\n> ")}
+                                |*- ${quote.author}*
+                            """.trimMargin()
+                        }
+                    }
+                }
+            }
+
+            publicSubCommand(::QuoteAddArguments) {
+                name = "add"
+                description = "Add a quote"
+
+                check { inLadysnakeGuild() }
+
+                action {
+                    val quoteId = addQuote(arguments.quote, arguments.author, guild!!.id, user.asUser())
+
+                    respond {
+                        content = "Quote #$quoteId added!"
+                    }
+                }
+            }
+
+            ephemeralSubCommand(::QuoteArguments) {
+                name = "delete"
+                description = "Delete a quote, if you have permission"
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val id = arguments.quote
+                    val quote = quoteCollection.get(id)
+
+                    if (quote == null) {
+                        respond {
+                            content = "Quote $id not found!"
+                        }
+                    } else {
+                        quoteCollection.delete(id)
+
+                        respond {
+                            content = "Quote #$id deleted!"
+                        }
+                    }
+                }
+            }
+        }
+
+        publicMessageCommand {
+            name = "Add to quotes"
+
+            check { inLadysnakeGuild() }
+
+            action {
+                val message = event.interaction.getTarget().content
+                val author = event.interaction.getTarget().getAuthorAsMember()?.displayName
+                    ?: event.interaction.getTarget().data.author.username
+                val guild = event.interaction.target.getChannel().data.guildId.value!!
+                val initiator = event.interaction.user
+
+                val id = addQuote(message, author, guild, initiator)
+
+                respond {
+                    content = "Quote #$id added!"
+                }
+            }
+        }
+
+        // endregion
+    }
+
+    private suspend fun addQuote(message: String, author: String?, guildId: Snowflake, user: UserBehavior): Int {
+        val id = quoteCollection.new(message, author ?: "Anonymous")
+
+        bot.findExtension<MessageLogExtension>()?.getRotator(guildId)?.logOther {
+            embed {
+                title = "Quote Added"
+                description = message
+                field {
+                    name = "Author"
+                    value = author ?: "Anonymous"
+                    inline = true
+                }
+                field {
+                    name = "ID"
+                    value = "$id"
+                    inline = true
+                }
+                field {
+                    name = "User who added"
+                    value = "${user.mention} (${user.id})"
+                    inline = true
+                }
+            }
+        }
+
+        return id
     }
 
     class AssignableComplete : Arguments() {
@@ -530,6 +658,37 @@ class UserFunExtension : Extension() {
         val reason by string {
             name = "reason"
             description = "The reason for the bean"
+        }
+    }
+
+    class QuoteArguments : Arguments() {
+        val quote by int {
+            name = "id"
+            description = "The ID of the quote"
+
+            autoComplete {
+                val currentValue = focusedOption.value
+
+                @Suppress("MagicNumber")
+                val quotes = getKoin().get<QuoteCollection>().searchByAuthor(currentValue)
+                    .map { "${it.author} - ${it.quote}" to it._id }
+                    .map { (s, i) -> (if (s.length > 256) s.substring(1 until 254) + "..." else s) to i }
+                    .toList().toMap()
+
+                suggestIntMap(quotes)
+            }
+        }
+    }
+
+    class QuoteAddArguments : Arguments() {
+        val quote by string {
+            name = "quote"
+            description = "The quote to add"
+        }
+
+        val author by optionalString {
+            name = "author"
+            description = "The author of the quote, or Anonymous if not specified"
         }
     }
 }

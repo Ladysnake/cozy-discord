@@ -222,4 +222,8 @@ object AllMigrations {
     suspend fun v19(db: CoroutineDatabase) {
         db.createCollection(WelcomeChannelCollection.name)
     }
+
+    suspend fun v20(db: CoroutineDatabase) {
+        db.createCollection(QuoteCollection.name)
+    }
 }

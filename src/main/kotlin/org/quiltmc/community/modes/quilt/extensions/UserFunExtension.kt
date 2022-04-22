@@ -672,7 +672,7 @@ class UserFunExtension : Extension() {
                 @Suppress("MagicNumber")
                 val quotes = getKoin().get<QuoteCollection>().searchByAuthor(currentValue)
                     .map { "${it.author} - ${it.quote}" to it._id }
-                    .map { (s, i) -> (if (s.length > 256) s.substring(1 until 254) + "..." else s) to i }
+                    .map { (s, i) -> (if (s.length > 100) s.substring(0..96) + "..." else s) to i }
                     .toList().toMap()
 
                 suggestIntMap(quotes)

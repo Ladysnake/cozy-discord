@@ -37,6 +37,7 @@ import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.create.actionRow
+import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.map
@@ -533,6 +534,9 @@ class UserFunExtension : Extension() {
                                 |> ${quote.quote.replace("\n", "\n> ")}
                                 |*- ${quote.author}*
                             """.trimMargin()
+                            allowedMentions {
+                                // By defining this, all mentions are prohibited, so nobody gets pinged from the quote
+                            }
                         }
                     }
                 }

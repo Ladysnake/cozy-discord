@@ -13,6 +13,8 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSub
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.*
+import com.kotlindiscord.kord.extensions.pagination.MessageButtonPaginator
+import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.download
@@ -48,6 +50,8 @@ import org.quiltmc.community.database.entities.Lottery
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import java.io.ByteArrayInputStream
 import kotlin.time.Duration.Companion.minutes
+
+private const val QUOTES_PER_PAGE = 5
 
 /**
  * What is this, you might ask? Well, this is
@@ -572,6 +576,53 @@ class UserFunExtension : Extension() {
                     }
                 }
             }
+
+            ephemeralSubCommand {
+                name = "list"
+                description = "List all quotes"
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val quotes = quoteCollection.getAll()
+                    val user = user.asUser()
+
+                    val paginator = PaginatorBuilder()
+
+                    val pageTitle = "List of quotes"
+
+                    quotes.map {
+                        val author = it.author
+                        val quote = it.quote
+                        val id = it._id
+
+                        """
+                                |#$id:
+                                |> $quote
+                                |*- $author*
+                            """.trimMargin()
+                    }.toList().chunked(QUOTES_PER_PAGE).forEach { quotesInPage ->
+                        paginator.page {
+                            title = pageTitle
+                            description = quotesInPage.joinToString("\n\n")
+                        }
+                    }
+
+                    val channel = user.getDmChannelOrNull()
+                    if (channel == null) {
+                        respond {
+                            content = "**Error:** You must allow DMs from the but to list quotes."
+                        }
+                    } else {
+                        val messagePaginator = MessageButtonPaginator(targetChannel = channel, builder = paginator)
+                        messagePaginator.send()
+
+                        respond {
+                            content = "Sent! Check your DMs!"
+                        }
+                    }
+                }
+            }
         }
 
         publicMessageCommand {
@@ -664,13 +715,13 @@ class UserFunExtension : Extension() {
     class QuoteArguments : Arguments() {
         val quote by int {
             name = "id"
-            description = "The ID of the quote"
+            description = "The ID of the quote (text will search for the quote)"
 
             autoComplete {
                 val currentValue = focusedOption.value
 
                 @Suppress("MagicNumber")
-                val quotes = getKoin().get<QuoteCollection>().searchByAuthor(currentValue)
+                val quotes = getKoin().get<QuoteCollection>().searchByContent(currentValue)
                     .map { "${it.author} - ${it.quote}" to it._id }
                     .map { (s, i) -> (if (s.length > 100) s.substring(0..96) + "..." else s) to i }
                     .toList().toMap()

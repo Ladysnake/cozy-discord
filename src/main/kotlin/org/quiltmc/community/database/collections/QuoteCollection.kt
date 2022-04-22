@@ -20,7 +20,9 @@ class QuoteCollection : KoinComponent {
 
     suspend fun get(id: Int) = col.findOne(Quote::_id eq id)
 
-    suspend fun searchByAuthor(author: String) = col.find().toFlow().filter { author in it.author }
+    suspend fun searchByContent(content: String) = col.find().toFlow().filter { content in it.quote }
+
+    suspend fun getAll() = col.find().toFlow()
 
     suspend fun add(quote: Quote) = col.save(quote)
 

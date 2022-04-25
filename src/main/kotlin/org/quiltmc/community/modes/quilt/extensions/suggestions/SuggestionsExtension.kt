@@ -50,13 +50,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import mu.KotlinLogging
 import org.koin.core.component.inject
-import org.quiltmc.community.*
+import org.quiltmc.community.MODERATOR_ROLES
+import org.quiltmc.community.SUGGESTION_CHANNELS
 import org.quiltmc.community.api.pluralkit.PluralKit
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.Suggestion
 import org.quiltmc.community.database.getSettings
+import org.quiltmc.community.getArchiveDuration
+import org.quiltmc.community.hasBaseModeratorRole
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -442,51 +445,55 @@ class SuggestionsExtension : Extension() {
             )
 
             if (thread != null) {
-                val threadMessage = thread.createMessage {
-                    suggestion(suggestion, sendEmbed = false)
+                @Suppress("TooGenericExceptionCaught") // debugging go brrr
+                try {
+                    val threadMessage = thread.createMessage {
+                        suggestion(suggestion, sendEmbed = false)
 
-                    content = THREAD_INTRO
-                }
+                        content = THREAD_INTRO
+                    }
 
-                threadMessage.pin()
+                    threadMessage.pin()
 
-                thread.addUser(suggestion.owner)
+                    thread.addUser(suggestion.owner)
 
-                threads.set(
-                    OwnedThread(
-                        thread.id,
-                        suggestion.owner,
-                        thread.guildId
+                    threads.set(
+                        OwnedThread(
+                            thread.id,
+                            suggestion.owner,
+                            thread.guildId
+                        )
                     )
-                )
 
-                suggestion.thread = thread.id
-                suggestion.threadButtons = threadMessage.id
+                    suggestion.thread = thread.id
+                    suggestion.threadButtons = threadMessage.id
 
-                val modRole = when (thread.guildId) {
-                    LADYSNAKE_GUILD -> thread.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
-                    YOUTUBE_GUILD -> thread.guild.getRole(YOUTUBE_MODERATOR_ROLE)
+                    val guild = thread.guild.asGuild()
 
-                    else -> return
-                }
+                    val modRoles = (guild.getSettings()?.moderatorRoles ?: MODERATOR_ROLES)
+                        .toMutableList().filter { it in guild.roleIds }
+                        .joinToString(", ") { "<@&$it>" }
 
-                val pingMessage = thread.createMessage {
-                    content = "Oh right, better get the mods in..."
-                }
+                    val pingMessage = thread.createMessage {
+                        content = "Oh right, better get the mods in..."
+                    }
 
-                delay(3.seconds)
+                    delay(3.seconds)
 
-                pingMessage.edit {
-                    content = "Oh right, better get the mods in...\n" +
-                            "Hey, ${modRole.mention}! Squirrel!"
-                }
+                    pingMessage.edit {
+                        content = "Oh right, better get the mods in...\n" +
+                                "Hey, $modRoles! Squirrel!"
+                    }
 
-                delay(3.seconds)
+                    delay(3.seconds)
 
-                pingMessage.edit {
-                    content = "Reminder <@!${suggestion.owner}>, please use " +
-                            "`/thread rename <name>` to enable voting on your suggestion. " +
-                            "As soon as you do, your vote will automatically be counted as an upvote."
+                    pingMessage.edit {
+                        content = "Reminder <@!${suggestion.owner}>, please use " +
+                                "`/thread rename <name>` to enable voting on your suggestion. " +
+                                "As soon as you do, your vote will automatically be counted as an upvote."
+                    }
+                } catch (e: Exception) {
+                    logger.error(e) { "Failed to create thread for suggestion" }
                 }
             }
 

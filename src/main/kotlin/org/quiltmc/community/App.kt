@@ -30,6 +30,7 @@ import org.quiltmc.community.database.collections.WelcomeChannelCollection
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
+import org.quiltmc.community.modes.quilt.extensions.logs.LogParsingExtension
 import org.quiltmc.community.modes.quilt.extensions.minecraft.MinecraftExtension
 import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.ExtraLogExtension
@@ -58,6 +59,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
     extensions {
         add(::FilterExtension)
+        add(::LogParsingExtension)
         add(::MessageLogExtension)
         add(::MinecraftExtension)
         add(::PKExtension)

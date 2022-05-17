@@ -38,6 +38,12 @@ internal val LADYSNAKE_MODERATOR_ROLE = envOrNull("LADYSNAKE_MODERATOR_ROLE")?.l
 internal val YOUTUBE_MODERATOR_ROLE = envOrNull("YOUTUBE_MODERATOR_ROLE")?.let { Snowflake(it) }
     ?: Snowflake(863767485609541632)
 
+internal val COMMUNITY_DEVELOPER_ROLE = envOrNull("COMMUNITY_DEVELOPER_ROLE")?.let { Snowflake(it) }
+    ?: Snowflake(972868531844710412)
+
+internal val TOOLCHAIN_DEVELOPER_ROLE = envOrNull("TOOLCHAIN_DEVELOPER_ROLE")?.let { Snowflake(it) }
+    ?: Snowflake(849305976951537725)
+
 internal val MODERATOR_ROLES: List<Snowflake> =
     (envOrNull("MODERATOR_ROLES") ?: envOrNull("COMMUNITY_MANAGEMENT_ROLES")) // For now, back compat
         ?.split(',')

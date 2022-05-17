@@ -17,8 +17,8 @@ plugins {
 
 allprojects {
     repositories {
-        mavenCentral()
         mavenLocal()
+        mavenCentral()
         google()
 
         maven {
@@ -70,6 +70,7 @@ dependencies {
     implementation(libs.homoglyph)
     implementation(libs.jansi)
     implementation(libs.jsoup)
+    implementation(libs.semver)
 
     implementation(libs.logback)
     implementation(libs.logging)

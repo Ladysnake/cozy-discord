@@ -10,6 +10,7 @@ import com.charleskorn.kaml.PolymorphismStyle
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import com.charleskorn.kaml.YamlException
+import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.hasNotStatus
@@ -25,13 +26,14 @@ import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.supplier.EntitySupplyStrategy
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
+import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.allowedMentions
 import dev.kord.rest.request.RestRequestException
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.ClientRequestException
-import io.ktor.client.request.get
-import io.ktor.http.HttpStatusCode
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.decodeFromString
@@ -40,6 +42,19 @@ import org.koin.core.component.inject
 import org.quiltmc.community.cozy.modules.welcome.blocks.Block
 import org.quiltmc.community.cozy.modules.welcome.blocks.InteractionBlock
 import org.quiltmc.community.cozy.modules.welcome.config.WelcomeChannelConfig
+import kotlin.collections.List
+import kotlin.collections.MutableList
+import kotlin.collections.MutableMap
+import kotlin.collections.filter
+import kotlin.collections.forEach
+import kotlin.collections.forEachIndexed
+import kotlin.collections.getOrNull
+import kotlin.collections.map
+import kotlin.collections.mutableListOf
+import kotlin.collections.mutableMapOf
+import kotlin.collections.set
+import kotlin.collections.sortedBy
+import kotlin.collections.toMutableList
 
 public class WelcomeChannel(
     public val channel: GuildMessageChannel,
@@ -109,7 +124,32 @@ public class WelcomeChannel(
 
         val guild = channel.getGuild()
 
-        blocks = getBlocks().toMutableList()
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            blocks = getBlocks().toMutableList()
+        } catch (e: Exception) {
+            log {
+                embed {
+                    title = "Welcome channel update failed"
+                    color = DISCORD_RED
+
+                    description = buildString {
+                        appendLine("**__Failed to update blocks__**")
+                        appendLine()
+                        appendLine("```")
+                        appendLine(e)
+                        appendLine("```")
+                    }
+
+                    field {
+                        name = "Channel"
+                        value = "${channel.mention} (`${channel.id}` / `${channel.name}`)"
+                    }
+                }
+            }
+
+            throw e
+        }
 
         blocks.forEach {
             it.channel = channel
@@ -122,53 +162,81 @@ public class WelcomeChannel(
             .toList()
             .sortedBy { it.id.timestamp }
 
-        if (messages.size > blocks.size) {
-            messages.forEachIndexed { index, message ->
-                val block = blocks.getOrNull(index)
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            if (messages.size > blocks.size) {
+                messages.forEachIndexed { index, message ->
+                    val block = blocks.getOrNull(index)
 
-                if (block != null) {
-                    if (messageNeedsUpdate(message, block)) {
-                        message.edit {
-                            block.edit(this)
+                    if (block != null) {
+                        if (messageNeedsUpdate(message, block)) {
+                            message.edit {
+                                block.edit(this)
+
+                                allowedMentions { }
+                            }
+                        }
+
+                        messageMapping[message.id] = block
+                    } else {
+                        message.delete()
+                        messageMapping.remove(message.id)
+                    }
+                }
+            } else {
+                blocks.forEachIndexed { index, block ->
+                    val message = messages.getOrNull(index)
+
+                    if (message != null) {
+                        if (messageNeedsUpdate(message, block)) {
+                            message.edit {
+                                block.edit(this)
+
+                                allowedMentions { }
+                            }
+                        }
+
+                        messageMapping[message.id] = block
+                    } else {
+                        val newMessage = channel.createMessage {
+                            block.create(this)
 
                             allowedMentions { }
                         }
-                    }
 
-                    messageMapping[message.id] = block
-                } else {
-                    message.delete()
-                    messageMapping.remove(message.id)
+                        messageMapping[newMessage.id] = block
+                    }
                 }
             }
-        } else {
-            blocks.forEachIndexed { index, block ->
-                val message = messages.getOrNull(index)
+        } catch (e: Exception) {
+            log {
+                embed {
+                    title = "Welcome channel update failed"
+                    color = DISCORD_RED
 
-                if (message != null) {
-                    if (messageNeedsUpdate(message, block)) {
-                        message.edit {
-                            block.edit(this)
-
-                            allowedMentions { }
-                        }
+                    description = buildString {
+                        appendLine("**__Failed to update messages__**")
+                        appendLine()
+                        appendLine("```")
+                        appendLine(e)
+                        appendLine("```")
                     }
 
-                    messageMapping[message.id] = block
-                } else {
-                    val newMessage = channel.createMessage {
-                        block.create(this)
-
-                        allowedMentions { }
+                    field {
+                        name = "Channel"
+                        value = "${channel.mention} (`${channel.id}` / `${channel.name}`)"
                     }
-
-                    messageMapping[newMessage.id] = block
                 }
             }
+
+            throw e
         }
 
         task?.start()
     }
+
+    public suspend fun log(builder: suspend UserMessageCreateBuilder.() -> Unit): Message? =
+        config.getLoggingChannel(channel, channel.guild.asGuild())?.createMessage { builder() }
 
     public suspend fun clear() {
         val messages = channel.withStrategy(EntitySupplyStrategy.rest)
@@ -180,7 +248,32 @@ public class WelcomeChannel(
             channel.bulkDelete(messages.map { it.id })
         } catch (e: RestRequestException) {
             if (e.hasNotStatus(HttpStatusCode.NotFound)) {
-                messages.forEach { it.deleteIgnoringNotFound() }
+                @Suppress("TooGenericExceptionCaught")
+                try {
+                    messages.forEach { it.deleteIgnoringNotFound() }
+                } catch (e: Exception) {
+                    log {
+                        embed {
+                            title = "Failed to clear welcome channel"
+                            color = DISCORD_RED
+
+                            description = buildString {
+                                appendLine("**__Failed to clear channel__**")
+                                appendLine()
+                                appendLine("```")
+                                appendLine(e)
+                                appendLine("```")
+                            }
+
+                            field {
+                                name = "Channel"
+                                value = "${channel.mention} (`${channel.id}` / `${channel.name}`)"
+                            }
+                        }
+                    }
+
+                    throw e
+                }
             }
         }
     }

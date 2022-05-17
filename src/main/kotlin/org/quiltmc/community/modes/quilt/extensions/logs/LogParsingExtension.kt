@@ -14,9 +14,7 @@ import dev.kord.common.entity.MessageType
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
 import org.quiltmc.community.inLadysnakeGuild
-import org.quiltmc.community.modes.quilt.extensions.logs.parsers.BaseLogParser
-import org.quiltmc.community.modes.quilt.extensions.logs.parsers.FabricImplParser
-import org.quiltmc.community.modes.quilt.extensions.logs.parsers.LoaderVersionParser
+import org.quiltmc.community.modes.quilt.extensions.logs.parsers.*
 import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.*
 
 class LogParsingExtension : Extension() {
@@ -26,6 +24,8 @@ class LogParsingExtension : Extension() {
 //        FabricLoaderParser(),
         FabricImplParser(),
         LoaderVersionParser(),
+        PlayerIPParser(),
+        QSLVersionParser(),
     )
 
     private val retrievers: List<BaseLogRetriever> = listOf(

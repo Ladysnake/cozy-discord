@@ -96,7 +96,9 @@ class PersistentCacheExtension : Extension() {
 
         vfsFile.parent.mkdirs()
 
-        json.toString().byteInputStream(Charsets.UTF_8).toAsync().toAsyncStream().useIt { input ->
+        val bytes = json.toString().encodeToByteArray()
+
+        bytes.inputStream().toAsync(bytes.size.toLong()).toAsyncStream().useIt { input ->
             vfsFile.open(VfsOpenMode.CREATE_OR_TRUNCATE).useIt { output ->
                 Lzma.compress(BitReader(input), output)
             }

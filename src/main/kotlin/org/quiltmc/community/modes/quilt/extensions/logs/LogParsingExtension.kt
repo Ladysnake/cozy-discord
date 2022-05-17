@@ -13,34 +13,31 @@ import com.kotlindiscord.kord.extensions.utils.respond
 import dev.kord.common.entity.MessageType
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
-import org.quiltmc.community.inQuiltGuild
+import org.quiltmc.community.inLadysnakeGuild
 import org.quiltmc.community.modes.quilt.extensions.logs.parsers.BaseLogParser
 import org.quiltmc.community.modes.quilt.extensions.logs.parsers.FabricImplParser
-import org.quiltmc.community.modes.quilt.extensions.logs.parsers.FabricLoaderParser
 import org.quiltmc.community.modes.quilt.extensions.logs.parsers.LoaderVersionParser
-import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.AttachmentLogRetriever
-import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.BaseLogRetriever
-import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.RawLogRetriever
-import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.ScrapingLogRetriever
+import org.quiltmc.community.modes.quilt.extensions.logs.retrievers.*
 
 class LogParsingExtension : Extension() {
     override val name: String = "log-parsing"
 
     private val parsers: List<BaseLogParser> = listOf(
-        FabricLoaderParser(),
+//        FabricLoaderParser(),
         FabricImplParser(),
         LoaderVersionParser(),
     )
 
     private val retrievers: List<BaseLogRetriever> = listOf(
         AttachmentLogRetriever(),
+        CrashyLogRetriever(),
         RawLogRetriever(),
         ScrapingLogRetriever(),
     )
 
     override suspend fun setup() {
         event<MessageCreateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check {
                 failIfNot(event.message.type in arrayOf(MessageType.Default, MessageType.Reply))
             }

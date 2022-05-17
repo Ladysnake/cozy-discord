@@ -7,22 +7,22 @@
 package org.quiltmc.community.modes.quilt.extensions.logs.retrievers
 
 import dev.kord.core.entity.Message
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
 import mu.KotlinLogging
 
 private const val SLUG: String = "([^/?#]*)"
 
 private val strategyMap: Map<Regex, String> = mutableMapOf(
-    "0x0.st/$SLUG".toRegex() to "https://0x0.st/$1",
-    "bytebin.lucko.me/$SLUG".toRegex() to "https://bytebin.lucko.me/$1",
-    "gist.github.com/$SLUG/$SLUG".toRegex() to "https://gist.githubusercontent.com/$1/$2/raw",
-    "gist.githubusercontent.com/$SLUG/$SLUG/raw".toRegex() to "https://gist.githubusercontent.com/$1/$2/raw",
-    "paste.ee/[pd]/$SLUG".toRegex() to "https://paste.ee/d/$1",
+    "0x0\\.st/$SLUG".toRegex() to "https://0x0.st/$1",
+    "bytebin\\.lucko\\.me/$SLUG".toRegex() to "https://bytebin.lucko.me/$1",
+    "gist\\.github\\.com/$SLUG/$SLUG".toRegex() to "https://gist.githubusercontent.com/$1/$2/raw",
+    "gist\\.githubusercontent.com/$SLUG/$SLUG/raw".toRegex() to "https://gist.githubusercontent.com/$1/$2/raw",
+    "paste\\.ee/[pd]/$SLUG".toRegex() to "https://paste.ee/d/$1",
 
-    "pastebin.com/$SLUG".toRegex() to "https://pastebin.com/dl/$1",
-    "pastebin.com/(raw|dl|clone|embed|print)/$SLUG".toRegex() to "https://pastebin.com/dl/$2",
+    "pastebin\\.com/$SLUG".toRegex() to "https://pastebin.com/dl/$1",
+    "pastebin\\.com/(raw|dl|clone|embed|print)/$SLUG".toRegex() to "https://pastebin.com/dl/$2",
 )
 
 class RawLogRetriever : BaseLogRetriever {

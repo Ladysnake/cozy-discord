@@ -24,6 +24,7 @@ import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.channel.withTyping
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
@@ -490,7 +491,16 @@ class SuggestionsExtension : Extension() {
                     pingMessage.edit {
                         content = "Reminder <@!${suggestion.owner}>, please use " +
                                 "`/thread rename <name>` to enable voting on your suggestion. " +
-                                "As soon as you do, your vote will automatically be counted as an upvote."
+                                "As soon as you do, your vote will automatically be counted as an upvote. " +
+                                "This thread is automatically archived to reduce clutter for our precious " +
+                                "moderators. Anyone can un-archive it by sending a message in the thread."
+                    }
+
+                    delay(1.seconds)
+
+                    thread.edit {
+                        archived = true
+                        locked = false // allow anyone to un-archive
                     }
                 } catch (e: Exception) {
                     logger.error(e) { "Failed to create thread for suggestion" }

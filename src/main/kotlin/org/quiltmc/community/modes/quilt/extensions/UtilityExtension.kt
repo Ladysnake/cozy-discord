@@ -64,6 +64,7 @@ import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
+import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
@@ -123,7 +124,7 @@ class UtilityExtension : Extension() {
 
     override suspend fun setup() {
         event<MemberUpdateEvent> {
-            check { inQuiltGuild() }
+            check { inLadysnakeGuild() }
             check { isNotBot() }
 
             check {
@@ -137,18 +138,20 @@ class UtilityExtension : Extension() {
                 val flags = userFlags.get(event.member.id) ?: UserFlags(event.member.id)
 
                 if (flags.syncNicks) {
-                    val otherMember = when (event.guild.id) {
-                        COMMUNITY_GUILD -> kord.getGuild(TOOLCHAIN_GUILD)?.getMemberOrNull(event.member.id)
-                        TOOLCHAIN_GUILD -> kord.getGuild(COMMUNITY_GUILD)?.getMemberOrNull(event.member.id)
+                    val guilds = getKoin().get<GlobalSettingsCollection>().get()?.ladysnakeGuilds
+                        ?: GUILDS // in case the global settings collection is nonexistent
 
-                        else            -> null
-                    } ?: return@action
+                    val otherGuilds = guilds.mapNotNull { kord.getGuild(it) }
+                        .mapNotNull { it.getMemberOrNull(event.member.id) }
+                        .filter { it.nickname != event.member.nickname } // reduce extra calls
 
-                    if (event.member.nickname != otherMember.nickname) {
-                        otherMember.setNickname(
-                            event.member.nickname,
-                            "Synced from ${event.guild.asGuild().name}"
-                        )
+                    otherGuilds.forEach {
+                        if (event.member.nickname != it.nickname) {
+                            it.setNickname(
+                                event.member.nickname,
+                                "Synced from ${event.guild.asGuild().name}"
+                            )
+                        }
                     }
                 }
             }

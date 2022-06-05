@@ -226,4 +226,16 @@ object AllMigrations {
     suspend fun v20(db: CoroutineDatabase) {
         db.createCollection(QuoteCollection.name)
     }
+
+    /**
+     * Targets upstream's v16 migration.
+     */
+    suspend fun v21(db: CoroutineDatabase) {
+        with(db.getCollection<UserFlags>(UserFlagsCollection.name)) {
+            updateMany(
+                UserFlags::syncNicks exists false,
+                setValue(UserFlags::syncNicks, true),
+            )
+        }
+    }
 }

@@ -14,6 +14,7 @@ import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.DISCORD_GREEN
 import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
+import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.*
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
@@ -30,6 +31,7 @@ import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.dm
+import com.kotlindiscord.kord.extensions.utils.setNickname
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.MessageType
@@ -43,6 +45,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.channel.thread.TextChannelThreadCreateEvent
 import dev.kord.core.event.channel.thread.ThreadUpdateEvent
+import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
@@ -119,6 +122,38 @@ class UtilityExtension : Extension() {
     }
 
     override suspend fun setup() {
+        event<MemberUpdateEvent> {
+            check { inQuiltGuild() }
+            check { isNotBot() }
+
+            check {
+                failIf {
+                    event.old != null && event.member.nickname == event.old?.nickname
+                }
+            }
+
+            @OptIn(DoNotChain::class)
+            action {
+                val flags = userFlags.get(event.member.id) ?: UserFlags(event.member.id)
+
+                if (flags.syncNicks) {
+                    val otherMember = when (event.guild.id) {
+                        COMMUNITY_GUILD -> kord.getGuild(TOOLCHAIN_GUILD)?.getMemberOrNull(event.member.id)
+                        TOOLCHAIN_GUILD -> kord.getGuild(COMMUNITY_GUILD)?.getMemberOrNull(event.member.id)
+
+                        else            -> null
+                    } ?: return@action
+
+                    if (event.member.nickname != otherMember.nickname) {
+                        otherMember.setNickname(
+                            event.member.nickname,
+                            "Synced from ${event.guild.asGuild().name}"
+                        )
+                    }
+                }
+            }
+        }
+
         event<MessageCreateEvent> {
             check { inLadysnakeGuild() }
             check { isNotBot() }
@@ -191,7 +226,7 @@ class UtilityExtension : Extension() {
                     LADYSNAKE_GUILD -> event.channel.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
                     YOUTUBE_GUILD -> event.channel.guild.getRole(YOUTUBE_MODERATOR_ROLE)
 
-                    else -> return@action
+                    else            -> return@action
                 }
 
                 val message = event.channel.createMessage {
@@ -1018,7 +1053,7 @@ class UtilityExtension : Extension() {
                         LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
                         YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+                        else            -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
 
                     val moderatorRole = guild!!.getRole(roleId)
@@ -1076,7 +1111,7 @@ class UtilityExtension : Extension() {
                         LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
                         YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+                        else            -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
 
                     val moderatorRole = guild!!.getRole(roleId)
@@ -1143,7 +1178,7 @@ class UtilityExtension : Extension() {
                         LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
                         YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else -> null
+                        else            -> null
                     }
 
                     val ch = channelObj.asChannelOf<TextChannel>()

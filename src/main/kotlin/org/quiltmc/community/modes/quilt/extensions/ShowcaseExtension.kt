@@ -13,8 +13,8 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.utils.authorId
 import dev.kord.common.entity.MessageType
+import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.channel.withTyping
@@ -23,9 +23,6 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.TextChannelThread
 import dev.kord.core.event.message.MessageCreateEvent
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.toList
 import org.koin.core.component.inject
 import org.quiltmc.community.GALLERY_CHANNEL
 import org.quiltmc.community.database.collections.OwnedThreadCollection
@@ -38,11 +35,13 @@ private val THREAD_DELAY = 3.seconds
 private const val CHANNEL_NAME_LENGTH = 75
 
 private val THREAD_DELIMITERS = arrayOf(
-    ",", ".",
-    "(", ")",
-    "<", ">",
-    "[", "]",
+        ",", ".",
+        "(", ")",
+        "<", ">",
+        "[", "]",
 )
+
+private val CHANNEL_REGEX = "<#(\\d)+>".toRegex()
 
 class ShowcaseExtension : Extension() {
     override val name: String = "showcase"
@@ -68,10 +67,12 @@ class ShowcaseExtension : Extension() {
 
             check {
                 // Don't do anything if the message mentions a thread in the same channel.
-                val threads = event.message.mentionedChannels
-                    .mapNotNull { it.asChannelOfOrNull<TextChannelThread>() }
-                    .filter { it.parentId == GALLERY_CHANNEL }
-                    .toList()
+                val threads = CHANNEL_REGEX.findAll(event.message.content)
+                        .toList()
+                        .map { Snowflake(it.groupValues[1]) }
+                        .mapNotNull { kord.getChannelOf<TextChannelThread>(it) }
+                        .filter { it.parentId == GALLERY_CHANNEL }
+                        .toList()
 
                 failIf(threads.isNotEmpty())
             }
@@ -88,21 +89,21 @@ class ShowcaseExtension : Extension() {
 
                 @Suppress("SpreadOperator")  // What choice do I have, exactly?
                 val title = event.message.content.trim()
-                    .split("\n")
-                    .firstOrNull()
-                    ?.split(*THREAD_DELIMITERS)
-                    ?.firstOrNull()
-                    ?.take(CHANNEL_NAME_LENGTH)
+                        .split("\n")
+                        .firstOrNull()
+                        ?.split(*THREAD_DELIMITERS)
+                        ?.firstOrNull()
+                        ?.take(CHANNEL_NAME_LENGTH)
 
-                    ?: "Gallery | ${event.message.id}"
+                        ?: "Gallery | ${event.message.id}"
 
                 val thread = channel.startPublicThreadWithMessage(
-                    event.message.id,
-                    title
+                        event.message.id,
+                        title
                 )
 
                 threads.set(
-                    OwnedThread(thread.id, author.id, guild.id)
+                        OwnedThread(thread.id, author.id, guild.id)
                 )
 
                 val message = thread.createMessage {

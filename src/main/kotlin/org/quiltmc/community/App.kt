@@ -19,18 +19,15 @@ import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import dev.kord.common.entity.Permission
-import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.lastOrNull
 import org.quiltmc.community.cozy.modules.cleanup.userCleanup
 import org.quiltmc.community.cozy.modules.tags.tags
 import org.quiltmc.community.cozy.modules.welcome.welcomeChannel
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
+import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
@@ -66,7 +63,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         add(::LogParsingExtension)
         add(::MessageLogExtension)
         add(::MinecraftExtension)
-        add(::PKExtension)
+//        add(::PKExtension)   Disabled because PluralKit is not in the Ladysnake servers
         add(::SettingsExtension)
         add(::SuggestionsExtension)
         add(::SyncExtension)
@@ -90,10 +87,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
             }
 
             getLogChannel { _, guild ->
-                guild.channels
-                    .filterIsInstance<GuildMessageChannel>()
-                    .filter { it.name == "cozy-logs" }
-                    .lastOrNull()
+                guild.getSettings()?.getConfiguredLogChannel()
             }
 
             refreshDuration = 5.minutes
@@ -107,7 +101,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
             }
 
             staffCommandCheck {
-                notHasBaseModeratorRole()
+                hasBaseModeratorRole()
             }
         }
 
@@ -140,6 +134,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
         sentry {
             distribution = "ladysnake"
+            dsn = envOrNull("SENTRY_DSN")
         }
     }
 }

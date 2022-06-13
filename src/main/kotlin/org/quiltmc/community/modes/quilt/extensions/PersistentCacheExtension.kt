@@ -10,6 +10,7 @@ package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.sentry.BreadcrumbType
 import com.soywiz.korio.async.useIt
 import com.soywiz.korio.compression.lzma.Lzma
 import com.soywiz.korio.compression.uncompressStream
@@ -26,6 +27,7 @@ import dev.kord.cache.api.query
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ConnectEvent
 import dev.kord.core.event.gateway.DisconnectEvent
+import io.sentry.Breadcrumb
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.*
 
@@ -48,6 +50,7 @@ class PersistentCacheExtension : Extension() {
         event<DisconnectEvent> {
             action {
                 extension.bot.withLock {
+                    sentry.breadcrumb(Breadcrumb.info("Disconnected - caching messages"))
                     val cache = event.kord.cache
 
                     val messageData = cache.query<MessageData>()
@@ -62,6 +65,10 @@ class PersistentCacheExtension : Extension() {
                     val jsonArray = JsonArray(messagesListJsonified)
 
                     saveJsonToFile(jsonArray, "cache/messages.json.gz")
+                    sentry.breadcrumb(BreadcrumbType.Info) {
+                        message = "Finished caching messages"
+                        data["count"] = messagesListJsonified.size
+                    }
                 }
             }
         }
@@ -69,6 +76,7 @@ class PersistentCacheExtension : Extension() {
         event<ConnectEvent> {
             action {
                 extension.bot.withLock {
+                    sentry.breadcrumb(Breadcrumb.info("Connected - loading messages"))
                     try {
                         val cache = event.kord.cache
 
@@ -83,8 +91,16 @@ class PersistentCacheExtension : Extension() {
                         }
 
                         cache.putAll(messagesList)
+
+                        sentry.breadcrumb(BreadcrumbType.Info) {
+                            message = "Finished loading messages"
+                            data["count"] = messagesList.size
+                        }
                     } catch (e: FileNotFoundException) {
-                        // No cache file found, do nothing
+                        sentry.breadcrumb(BreadcrumbType.Info) {
+                            message = "No messages to load"
+                            data["exception"] = e.message
+                        }
                     }
                 }
             }

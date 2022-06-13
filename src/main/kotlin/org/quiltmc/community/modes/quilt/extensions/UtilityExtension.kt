@@ -501,7 +501,13 @@ class UtilityExtension : Extension() {
                     description = "Rename the current thread, if you have permission"
 
                     action {
-                        val channel = channel.asChannelOf<ThreadChannel>()
+                        val channel = channel.asChannelOfOrNull<ThreadChannel>()
+                            ?: run {
+                                respond {
+                                    content = "**Error:** ${channel.mention} isn't a thread!"
+                                }
+                                return@action
+                            }
                         val member = user.asMember(guild!!.id)
                         val roles = member.roles.toList().map { it.id }
 

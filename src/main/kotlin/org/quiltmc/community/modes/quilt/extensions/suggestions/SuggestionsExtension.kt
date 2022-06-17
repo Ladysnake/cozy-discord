@@ -164,9 +164,9 @@ class SuggestionsExtension : Extension() {
                     ?: defaultAutoRemovals
 
                 for (autoRemoval in autoRemovals) {
-                    if (autoRemoval.regex.matches(suggestion.text)) {
+                    if (autoRemoval.regex.containsMatchIn(suggestion.text)) {
                         suggestion.status = autoRemoval.status
-                        suggestion.comment = autoRemoval.reason
+                        suggestion.comment = "(Automatic response) " + autoRemoval.reason
                         break
                     }
                 }

@@ -21,6 +21,7 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.utils.suggestStringMap
 import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Permission
 import dev.kord.core.Kord
@@ -44,6 +45,7 @@ import org.quiltmc.community.modes.quilt.extensions.converters.sealedObjectChoic
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.AutoRemoval
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
+import org.quiltmc.community.modes.quilt.extensions.suggestions.defaultAutoRemovals
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -1223,6 +1225,30 @@ class SettingsExtension : Extension() {
         val id by string {
             name = "id"
             description = "ID of the auto-response object to modify"
+
+            validate {
+                failIf("ID must link to a valid auto response!") {
+                    val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                        ?: defaultAutoRemovals
+
+                    list.none { it.id == value }
+                }
+            }
+
+            autoComplete {
+                val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                    ?: defaultAutoRemovals
+
+                val map = list.associate {
+                    val key = it.id
+                    val arg = "${it.status} - ${it.reason}"
+
+                    @Suppress("MagicNumber")
+                    (if (arg.length > 100) arg.substring(0..96) + "..." else arg) to key
+                }
+
+                suggestStringMap(map)
+            }
         }
 
         val regex by optionalString {
@@ -1246,6 +1272,30 @@ class SettingsExtension : Extension() {
         val id by string {
             name = "id"
             description = "ID of the auto-response object to delete"
+
+            validate {
+                failIf("ID must link to a valid auto response!") {
+                    val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                        ?: defaultAutoRemovals
+
+                    list.none { it.id == value }
+                }
+            }
+
+            autoComplete {
+                val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                    ?: defaultAutoRemovals
+
+                val map = list.associate {
+                    val key = it.id
+                    val arg = "${it.status} - ${it.reason}"
+
+                    @Suppress("MagicNumber")
+                    (if (arg.length > 100) arg.substring(0..96) + "..." else arg) to key
+                }
+
+                suggestStringMap(map)
+            }
         }
     }
 }

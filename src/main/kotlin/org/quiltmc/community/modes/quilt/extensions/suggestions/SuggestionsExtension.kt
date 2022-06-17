@@ -13,7 +13,9 @@ package org.quiltmc.community.modes.quilt.extensions.suggestions
 import com.kotlindiscord.kord.extensions.checks.topChannelFor
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
+import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
@@ -360,45 +362,80 @@ class SuggestionsExtension : Extension() {
             }
         }
 
-        ephemeralSlashCommand(::SuggestionStateArguments) {
-            name = "suggestion"
-            description = "Suggestion state change command; \"clear\" to remove comment"
-
-//            guild(LADYSNAKE_GUILD)
+        ephemeralSlashCommand {
+            name = "manage-suggestion"
+            description = "Manage suggestions, if you have the permissions to do so"
 
             MODERATOR_ROLES.forEach(::allowRole)
 
             check { hasBaseModeratorRole() }
 
-            action {
-                val status = arguments.status
+            ephemeralSubCommand(::SuggestionStateArguments) {
+                name = "state"
+                description = "Suggestion state change command; \"clear\" to remove comment"
 
-                if (status != null) {
-                    arguments.suggestion.status = status
-                }
+//            guild(LADYSNAKE_GUILD)
 
-                if (arguments.comment != null) {
-                    arguments.suggestion.comment = if (arguments.comment!!.lowercase() in CLEAR_WORDS) {
-                        null
-                    } else {
-                        arguments.comment
+                MODERATOR_ROLES.forEach(::allowRole)
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val status = arguments.status
+
+                    if (status != null) {
+                        arguments.suggestion.status = status
+                    }
+
+                    if (arguments.comment != null) {
+                        arguments.suggestion.comment = if (arguments.comment!!.lowercase() in CLEAR_WORDS) {
+                            null
+                        } else {
+                            arguments.comment
+                        }
+                    }
+
+                    if (arguments.issue != null) {
+                        arguments.suggestion.githubIssue = if (arguments.issue!!.lowercase() in CLEAR_WORDS) {
+                            null
+                        } else {
+                            arguments.issue
+                        }
+                    }
+
+                    suggestions.set(arguments.suggestion)
+                    sendSuggestion(arguments.suggestion)
+                    sendSuggestionUpdateMessage(arguments.suggestion)
+
+                    respond {
+                        content = "Suggestion updated."
                     }
                 }
+            }
 
-                if (arguments.issue != null) {
-                    arguments.suggestion.githubIssue = if (arguments.issue!!.lowercase() in CLEAR_WORDS) {
-                        null
-                    } else {
-                        arguments.issue
-                    }
-                }
+            ephemeralSubCommand(::SuggestionCannedResponseArguments) {
+                name = "auto-response"
+                description = "Use an automated response to a suggestion"
 
-                suggestions.set(arguments.suggestion)
-                sendSuggestion(arguments.suggestion)
-                sendSuggestionUpdateMessage(arguments.suggestion)
+                MODERATOR_ROLES.forEach(::allowRole)
 
-                respond {
-                    content = "Suggestion updated."
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val suggestion = arguments.suggestion
+                    val responseId = arguments.id
+
+                    val responses = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                        ?: defaultAutoRemovals
+
+                    val response = responses.first { it.id == responseId }
+
+                    suggestion.status = response.status
+                    suggestion.comment = response.reason
+
+                    suggestions.set(suggestion)
+                    sendSuggestion(suggestion)
+                    sendSuggestionUpdateMessage(suggestion)
                 }
             }
         }
@@ -806,6 +843,8 @@ class SuggestionsExtension : Extension() {
         val suggestion by suggestion {
             name = "suggestion"
             description = "Suggestion ID to act on"
+
+            autocomplete()
         }
 
         val text by optionalString {
@@ -866,6 +905,8 @@ class SuggestionsExtension : Extension() {
         val suggestion by suggestion {
             name = "suggestion"
             description = "Suggestion ID to act on"
+
+            autocomplete()
         }
 
         val status by optionalEnumChoice<SuggestionStatus> {
@@ -905,5 +946,47 @@ class SuggestionsExtension : Extension() {
                 }
             }
         }
+    }
+
+    inner class SuggestionCannedResponseArguments : Arguments() {
+        val suggestion by suggestion {
+            name = "suggestion"
+            description = "Suggestion ID to act on"
+
+            autocomplete()
+        }
+
+        val id by string {
+            name = "id"
+            description = "Auto response ID"
+
+            validate {
+                failIf("ID must link to a valid auto response!") {
+                    val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                        ?: defaultAutoRemovals
+
+                    list.none { it.id == value }
+                }
+            }
+
+            autoComplete {
+                val list = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                    ?: defaultAutoRemovals
+
+                val map = list.associate {
+                    val key = it.id
+                    val arg = "${it.status} - ${it.reason}"
+
+                    @Suppress("MagicNumber")
+                    (if (arg.length > 100) arg.substring(0..96) + "..." else arg) to key
+                }
+
+                suggestStringMap(map)
+            }
+        }
+    }
+
+    private fun SuggestionConverterBuilder.autocomplete() {
+        // TODO: Autocomplete
     }
 }

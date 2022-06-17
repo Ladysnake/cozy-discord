@@ -15,6 +15,7 @@ import org.quiltmc.community.LADYSNAKE_SUGGESTION_CHANNEL
 import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.MatchTarget
+import org.quiltmc.community.modes.quilt.extensions.suggestions.defaultAutoRemovals
 
 @Suppress("unused")
 object AllMigrations {
@@ -235,6 +236,15 @@ object AllMigrations {
             updateMany(
                 UserFlags::syncNicks exists false,
                 setValue(UserFlags::syncNicks, true),
+            )
+        }
+    }
+
+    suspend fun v22(db: CoroutineDatabase) {
+        with(db.getCollection<GlobalSettings>(GlobalSettingsCollection.name)) {
+            updateMany(
+                GlobalSettings::suggestionAutoRemovals exists false,
+                setValue(GlobalSettings::suggestionAutoRemovals, defaultAutoRemovals.toMutableList())
             )
         }
     }

@@ -54,6 +54,7 @@ import org.koin.core.component.inject
 import org.quiltmc.community.MODERATOR_ROLES
 import org.quiltmc.community.SUGGESTION_CHANNELS
 import org.quiltmc.community.api.pluralkit.PluralKit
+import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
@@ -157,6 +158,18 @@ class SuggestionsExtension : Extension() {
                         ownerAvatar = event.message.author!!.avatar?.url,
                         ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName
                     )
+                }
+
+                val autoRemovals = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+                    ?: defaultAutoRemovals
+
+                for (autoRemoval in autoRemovals) {
+                    val regex = autoRemoval.regex.toRegex(RegexOption.IGNORE_CASE)
+                    if (regex.matches(suggestion.text)) {
+                        suggestion.status = autoRemoval.status
+                        suggestion.comment = autoRemoval.reason
+                        break
+                    }
                 }
 
                 if (suggestion.text.length > SUGGESTION_SIZE_LIMIT) {

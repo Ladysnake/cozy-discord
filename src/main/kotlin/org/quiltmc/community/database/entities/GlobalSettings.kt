@@ -21,6 +21,8 @@ import kotlinx.serialization.UseSerializers
 import org.quiltmc.community.*
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
+import org.quiltmc.community.modes.quilt.extensions.suggestions.AutoRemoval
+import org.quiltmc.community.modes.quilt.extensions.suggestions.defaultAutoRemovals
 import java.util.*
 
 @Serializable
@@ -41,6 +43,8 @@ data class GlobalSettings(
         LADYSNAKE_SUGGESTION_CHANNEL
     ),
     var githubLogChannel: Snowflake? = GITHUB_LOG_CHANNEL,
+
+    var suggestionAutoRemovals: MutableList<AutoRemoval> = defaultAutoRemovals.toMutableList(),
 ) : Entity<UUID> {
     suspend fun save() {
         val collection = getKoin().get<GlobalSettingsCollection>()
@@ -100,6 +104,14 @@ data class GlobalSettings(
             }
         } else {
             builder.append(":x: No servers configured")
+        }
+
+        builder.append("\n\n")
+
+        builder.append("Suggestion Auto Removals:".bold() + '\n')
+
+        suggestionAutoRemovals.forEach {
+            builder.append("**»** $it\n")
         }
 
         with(embedBuilder) {

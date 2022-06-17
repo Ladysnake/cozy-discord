@@ -12,6 +12,7 @@ import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
+import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.optionalEnumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.group
@@ -41,6 +42,8 @@ import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.enums.LadysnakeServerType
 import org.quiltmc.community.modes.quilt.extensions.converters.sealedObjectChoice
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
+import org.quiltmc.community.modes.quilt.extensions.suggestions.AutoRemoval
+import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
@@ -929,6 +932,98 @@ class SettingsExtension : Extension() {
                 }
             }
         }
+
+        ephemeralSlashCommand {
+            name = "auto-suggestions"
+            description = "Manage auto suggestion responses"
+
+            ephemeralSubCommand(::SuggestionAutoRemovalArg) {
+                name = "add"
+                description = "Add a rule for automatic responses"
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val rule = AutoRemoval(
+                        arguments.id,
+                        arguments.regex,
+                        arguments.result,
+                        arguments.reason
+                    )
+
+                    val settings = globalSettings.get() ?: GlobalSettings()
+
+                    settings.suggestionAutoRemovals.add(rule)
+                    settings.save()
+
+                    respond {
+                        content = "Auto removal rule added: ${rule.id}"
+                    }
+                }
+            }
+
+            ephemeralSubCommand(::SuggestionAutoRemovalEditArg) {
+                name = "edit"
+                description = "Edit an existing rule"
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val rule = globalSettings.get()?.suggestionAutoRemovals?.find { it.id == arguments.id }
+
+                    if (rule == null) {
+                        respond {
+                            content = ":x: No auto removal rule with ID: `${arguments.id}`"
+                        }
+
+                        return@action
+                    }
+
+                    val newRule = AutoRemoval(
+                        arguments.id,
+                        arguments.regex?.toRegex(RegexOption.IGNORE_CASE) ?: rule.regex,
+                        arguments.result ?: rule.status,
+                        arguments.reason ?: rule.reason
+                    )
+
+                    val settings = globalSettings.get() ?: GlobalSettings()
+
+                    settings.suggestionAutoRemovals.remove(rule)
+                    settings.suggestionAutoRemovals.add(newRule)
+
+                    settings.save()
+
+                    respond {
+                        content = "Auto rule edited: $newRule"
+                    }
+                }
+            }
+
+            ephemeralSubCommand(::SuggestionAutoRemovalDeleteArg) {
+                name = "delete"
+                description = "Delete an existing rule"
+
+                check { hasBaseModeratorRole() }
+
+                action {
+                    val settings = globalSettings.get() ?: GlobalSettings()
+
+                    val rule = settings.suggestionAutoRemovals.find { it.id == arguments.id }
+
+                    if (rule == null) {
+                        respond {
+                            content = ":x: No rule with ID: `${arguments.id}`"
+                        }
+
+                        return@action
+                    }
+
+                    settings.suggestionAutoRemovals.remove(rule)
+
+                    settings.save()
+                }
+            }
+        }
     }
 
     fun booleanFlag(desc: String): () -> BooleanFlag = {
@@ -1103,6 +1198,57 @@ class SettingsExtension : Extension() {
         val serverId by optionalSnowflake {
             name = "server"
             description = "Server ID, if not the current one"
+        }
+    }
+
+    inner class SuggestionAutoRemovalArg : Arguments() {
+        val id by string {
+            name = "id"
+            description = "ID of the auto-response object to add"
+        }
+
+        val regex by string {
+            name = "regex"
+            description = "Regex to match"
+        }
+
+        val result by enumChoice<SuggestionStatus> {
+            name = "result"
+            description = "Automatic result to set"
+        }
+
+        val reason by string {
+            name = "reason"
+            description = "Reason for the result"
+        }
+    }
+
+    inner class SuggestionAutoRemovalEditArg : Arguments() {
+        val id by string {
+            name = "id"
+            description = "ID of the auto-response object to modify"
+        }
+
+        val regex by optionalString {
+            name = "regex"
+            description = "Regex to match"
+        }
+
+        val result by optionalEnumChoice<SuggestionStatus> {
+            name = "result"
+            description = "Automatic result to set"
+        }
+
+        val reason by optionalString {
+            name = "reason"
+            description = "Reason for the result"
+        }
+    }
+
+    inner class SuggestionAutoRemovalDeleteArg : Arguments() {
+        val id by string {
+            name = "id"
+            description = "ID of the auto-response object to delete"
         }
     }
 }

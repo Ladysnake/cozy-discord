@@ -164,8 +164,7 @@ class SuggestionsExtension : Extension() {
                     ?: defaultAutoRemovals
 
                 for (autoRemoval in autoRemovals) {
-                    val regex = autoRemoval.regex.toRegex(RegexOption.IGNORE_CASE)
-                    if (regex.matches(suggestion.text)) {
+                    if (autoRemoval.regex.matches(suggestion.text)) {
                         suggestion.status = autoRemoval.status
                         suggestion.comment = autoRemoval.reason
                         break

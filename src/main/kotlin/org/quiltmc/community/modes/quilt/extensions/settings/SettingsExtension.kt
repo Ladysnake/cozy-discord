@@ -20,12 +20,15 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.types.edit
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.suggestStringMap
 import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Permission
 import dev.kord.core.Kord
+import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.channel.Category
+import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.rest.builder.message.create.embed
@@ -42,6 +45,7 @@ import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.enums.LadysnakeServerType
 import org.quiltmc.community.modes.quilt.extensions.converters.sealedObjectChoice
+import org.quiltmc.community.modes.quilt.extensions.rotatinglog.CategoryRotator
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.AutoRemoval
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
@@ -725,8 +729,18 @@ class SettingsExtension : Extension() {
                             }
 
                             event.kord.launch {
-                                // Trigger a rotation, to be safe.
-                                messageLogExtension?.getRotator(settings._id)?.populate()
+                                val logChannel = settings.getConfiguredLogChannel()
+                                    ?: channel.asChannelOfOrNull<GuildMessageChannel>()
+                                    ?: run {
+                                        edit {
+                                            content = ":x: No log channel configured. No logs can be sent."
+                                        }
+                                        return@launch
+                                    }
+
+                                messageLogExtension?.rotators?.getOrPut(settings._id) {
+                                    CategoryRotator(category, logChannel)
+                                }?.populate()
                             }
                         }
                     }

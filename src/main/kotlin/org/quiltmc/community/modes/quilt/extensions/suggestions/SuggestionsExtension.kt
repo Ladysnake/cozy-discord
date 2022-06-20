@@ -1016,6 +1016,9 @@ class SuggestionsExtension : Extension() {
 
             run {
                 suggestions.find(and(requiredConditions)).publisher.collect {
+                    // Using publisher.collect() to be able to easily escape the loop
+                    // since if using an inline function, you can exit by returning from a higher function
+                    // (in this case `run`)
                     val id = it._id.toString()
                     var arg = it.text
 

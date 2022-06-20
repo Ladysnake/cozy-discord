@@ -94,7 +94,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         }
 
         tags(getKoin().get<TagsCollection>()) {
-            loggingChannelName = "cozy-logs"
+            loggingChannelName = "rtuuy-message-log"
 
             userCommandCheck {
                 inLadysnakeGuild()
@@ -108,7 +108,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         extPhishing {
             appName = "Ladysnake's Modification of Quilt's Cozy Bot"
             detectionAction = DetectionAction.Kick
-            logChannelName = "hissie-logs"
+            logChannelName = "rtuuy-message-log"
             requiredCommandPermission = null
 
             check { inLadysnakeGuild() }
@@ -118,7 +118,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         userCleanup {
             maxPendingDuration = 3.days
             taskDelay = 1.days
-            loggingChannelName = "cozy-logs"
+            loggingChannelName = "rtuuy-message-log"
 
             runAutomatically = true
 

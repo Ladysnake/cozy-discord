@@ -20,7 +20,6 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.Category
-import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
@@ -34,7 +33,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -43,6 +41,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.quiltmc.community.*
+import org.quiltmc.community.database.getSettings
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -426,8 +425,7 @@ class MessageLogExtension : Extension() {
             return
         }
 
-        val modLogChannel = guild.channels.firstOrNull { it.name == "moderation-log" }
-            ?.asChannelOrNull() as? GuildMessageChannel
+        val modLogChannel = guild.getSettings()?.getConfiguredLogChannel()
 
         if (modLogChannel == null) {
             logger.warn {

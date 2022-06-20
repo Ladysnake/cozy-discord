@@ -51,8 +51,12 @@ import dev.kord.rest.builder.message.modify.embed
 import io.ktor.client.plugins.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.collect
 import mu.KotlinLogging
 import org.koin.core.component.inject
+import org.litote.kmongo.and
+import org.litote.kmongo.eq
+import org.litote.kmongo.`in`
 import org.quiltmc.community.MODERATOR_ROLES
 import org.quiltmc.community.SUGGESTION_CHANNELS
 import org.quiltmc.community.api.pluralkit.PluralKit
@@ -844,7 +848,7 @@ class SuggestionsExtension : Extension() {
             name = "suggestion"
             description = "Suggestion ID to act on"
 
-            autocomplete()
+            autocomplete(onlyUser = true)
         }
 
         val text by optionalString {
@@ -986,7 +990,48 @@ class SuggestionsExtension : Extension() {
         }
     }
 
-    private fun SuggestionConverterBuilder.autocomplete() {
-        // TODO: Autocomplete
+    private fun SuggestionConverterBuilder.autocomplete(onlyUser: Boolean = false) {
+        autoComplete {
+            var partialText = focusedOption.value
+            val suggestionFilter = if (partialText.matches("^[a-z]+:.*".toRegex())) {
+                val allowedStatusText = partialText.substringBefore(':')
+                partialText = partialText.substringAfter(':').trim()
+                val allowedStatus = SuggestionStatus.values().find { it.readableName.lowercase() == allowedStatusText }
+
+                if (allowedStatus != null) {
+                    listOf(allowedStatus)
+                } else {
+                    listOf(SuggestionStatus.RequiresName, SuggestionStatus.Open)
+                }
+            } else {
+                listOf(SuggestionStatus.RequiresName, SuggestionStatus.Open)
+            }
+
+            val map = mutableMapOf<String, String>()
+
+            val requiredConditions = mutableListOf(Suggestion::status `in` suggestionFilter)
+            if (onlyUser) {
+                requiredConditions += Suggestion::owner eq user.id
+            }
+
+            run {
+                suggestions.find(and(requiredConditions)).publisher.collect {
+                    val id = it._id.toString()
+                    var arg = it.text
+
+                    if (arg.length > 100) {
+                        arg = arg.substring(0..96) + "..."
+                    }
+
+                    if (!arg.startsWith(partialText)) return@collect
+
+                    map[arg] = id
+
+                    if (map.size >= 25) return@run // jump out once we've collected enough
+                }
+            }
+
+            suggestStringMap(map)
+        }
     }
 }

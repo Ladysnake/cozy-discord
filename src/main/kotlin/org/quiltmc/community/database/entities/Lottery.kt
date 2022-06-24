@@ -16,4 +16,5 @@ data class Lottery(
 
     val participants: MutableSet<Snowflake>,
     val winners: Int,
+    val autoMessage: String? = null,
 ) : Entity<Snowflake>

@@ -17,10 +17,7 @@ import com.kotlindiscord.kord.extensions.pagination.MessageButtonPaginator
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.parser.StringParser
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.download
-import com.kotlindiscord.kord.extensions.utils.getKoin
-import com.kotlindiscord.kord.extensions.utils.suggestIntMap
-import com.kotlindiscord.kord.extensions.utils.toReaction
+import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Permission
@@ -35,10 +32,12 @@ import dev.kord.core.behavior.reply
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -356,6 +355,88 @@ class UserFunExtension : Extension() {
             }
         }
 
+        ephemeralSlashCommand(::LotteryCreateArguments) {
+            name = "create-drawing"
+            description = "Create a drawing"
+
+            MODERATOR_ROLES.forEach(::allowRole)
+
+            action {
+                val winnerCount = arguments.winners
+                val autoResponse = arguments.autoMessage
+                val desc = arguments.description
+                val channel = arguments.channel as TopGuildMessageChannel? ?: getChannel().asChannelOf()
+
+                val message = channel.createMessage("Drawing!")
+
+                message.edit {
+                    embed {
+                        title = "Drawing"
+                        description = desc
+                        color = DISCORD_BLURPLE
+
+                        field {
+                            name = "Host"
+                            value = message.author?.mention ?: "N/A"
+                            inline = true
+                        }
+
+                        field {
+                            name = "Current entrants"
+                            value = "0"
+                        }
+
+                        if (autoResponse != null) {
+                            field {
+                                name = "Enable DMs!"
+                                value = "A message will be sent to you in DMs if you win. " +
+                                        "Be sure to enable DMs to get the message!"
+                            }
+                        }
+                    }
+
+                    actionRow {
+                        interactionButton(
+                            ButtonStyle.Primary,
+                            "lottery:${message.id}:enter"
+                        ) {
+                            label = "Enter"
+                            emoji(ReactionEmoji.Unicode("✅"))
+                        }
+
+                        interactionButton(
+                            ButtonStyle.Danger,
+                            "lottery:${message.id}:cancel"
+                        ) {
+                            label = "Cancel"
+                            emoji(ReactionEmoji.Unicode("❌"))
+                        }
+
+                        interactionButton(
+                            ButtonStyle.Secondary,
+                            "lottery:${message.id}:close"
+                        ) {
+                            label = "Close"
+                            emoji(ReactionEmoji.Unicode("🔒"))
+                        }
+                    }
+                }
+
+                val newLottery = Lottery(
+                    message.id,
+                    mutableSetOf(),
+                    winnerCount,
+                    autoResponse
+                )
+
+                lotteryCollection.save(newLottery)
+
+                respond {
+                    content = "Drawing created!"
+                }
+            }
+        }
+
         event<ButtonInteractionCreateEvent> {
             action {
                 val interaction = event.interaction
@@ -455,11 +536,11 @@ class UserFunExtension : Extension() {
                         }
 
                         val channel = interaction.channel.asChannelOf<GuildMessageChannel>()
-                        channel.withTyping {
-                            val winners = lottery.participants.shuffled()
-                                .mapNotNull { channel.guild.getMemberOrNull(it) }
-                                .take(lottery.winners)
+                        val winners = lottery.participants.shuffled()
+                            .mapNotNull { channel.guild.getMemberOrNull(it) }
+                            .take(lottery.winners)
 
+                        channel.withTyping {
                             interaction.message.edit {
                                 components = mutableListOf()
                             }
@@ -474,6 +555,15 @@ class UserFunExtension : Extension() {
                                     description = "The event has ended! Here are the winners:\n\n" +
                                         winners.joinToString("\n") { it.mention }
                                 }
+                            }
+                        }
+
+                        if (lottery.autoMessage != null) {
+                            winners.forEach {
+                                it.dm(
+                                    "You have won a drawing! Response added to the drawing:\n\n" +
+                                            lottery.autoMessage
+                                )
                             }
                         }
                     }
@@ -744,6 +834,33 @@ class UserFunExtension : Extension() {
         val author by optionalString {
             name = "author"
             description = "The author of the quote, or Anonymous if not specified"
+        }
+    }
+
+    class LotteryCreateArguments : Arguments() {
+        val description by string {
+            name = "description"
+            description = "The description of the lottery"
+        }
+
+        val winners by int {
+            name = "winners"
+            description = "The number of winners"
+        }
+
+        val autoMessage by optionalString {
+            name = "auto-message"
+            description = "The message to send to the winners"
+        }
+
+        val channel by optionalChannel {
+            name = "channel"
+            description = "The channel to send the message to, the current channel if not specified"
+            requireSameGuild = true
+
+            validate {
+                failIf { value != null && value!!.type !in listOf(ChannelType.GuildText, ChannelType.GuildNews) }
+            }
         }
     }
 }

@@ -85,7 +85,7 @@ class ModerationExtension(
                 name = "purge"
                 description = "Purge a number of messages from a channel"
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action {
                     val channel = arguments.channel ?: channel.asChannel()
@@ -125,7 +125,7 @@ class ModerationExtension(
                 name = "slowmode"
                 description = "Sets/disables a channel's slowmode."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action(::slowmode)
             }
@@ -252,13 +252,13 @@ class ModerationExtension(
                 name = "mention-restriction"
                 description = "Change the mention settings for a user or role."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 ephemeralSubCommand(::MentionArguments) {
                     name = "edit"
                     description = "Add or edit mention restrictions."
 
-                    MODERATOR_ROLES.forEach(::allowRole)
+                    check { hasBaseModeratorRole() }
 
                     action {
 //                    val guild = getGuild()?.asGuild() ?: return@action
@@ -326,7 +326,7 @@ class ModerationExtension(
                     name = "remove"
                     description = "Remove mention restrictions."
 
-                    MODERATOR_ROLES.forEach(::allowRole)
+                    check { hasBaseModeratorRole() }
 
                     action {
                         invalidMentions.delete(arguments.mentionable.id)
@@ -341,7 +341,7 @@ class ModerationExtension(
                     name = "change-exception"
                     description = "Add/remove a user from a mention exception list."
 
-                    MODERATOR_ROLES.forEach(::allowRole)
+                    check { hasBaseModeratorRole() }
 
                     action {
                         val invalidMention = invalidMentions.get(arguments.mentionable.id) ?: InvalidMention(
@@ -374,7 +374,7 @@ class ModerationExtension(
                 name = "ban"
                 description = "Ban a user from the server for a specified amount of time."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action(::beanUser)
             }
@@ -382,7 +382,7 @@ class ModerationExtension(
                 name = "timeout"
                 description = "Timeout a user from the server for a specified amount of time."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action(::timeout)
             }
@@ -390,7 +390,7 @@ class ModerationExtension(
                 name = "kick"
                 description = "Kick a user from the server."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action {
                     val user = arguments.user
@@ -438,7 +438,7 @@ class ModerationExtension(
                 name = "note"
                 description = "Add a note to a user, message, or both, for only moderators to see."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action {
                     val user = arguments.user
@@ -511,8 +511,7 @@ class ModerationExtension(
                 name = "advance-timeout"
                 description = "Advance the timeout / tempban of a user."
 
-                MODERATOR_ROLES.forEach(::allowRole)
-
+                check { hasBaseModeratorRole() }
                 check { inLadysnakeGuild() }
 
                 action {
@@ -537,7 +536,7 @@ class ModerationExtension(
                 name = "id-action"
                 description = "Perform an action on a user by their ID."
 
-                MODERATOR_ROLES.forEach(::allowRole)
+                check { hasBaseModeratorRole() }
 
                 action {
                     val endTime = Clock.System.now() + arguments.length.seconds

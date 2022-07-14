@@ -36,7 +36,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
@@ -330,7 +329,7 @@ inline fun EmbedBuilder.copyFrom(embed: DiscordEmbed) {
     title = embed.title.value
     description = embed.description.value
     color = embed.color.value?.let { Color(it) }
-    timestamp = embed.timestamp.value?.toInstant()
+    timestamp = embed.timestamp.value
     url = embed.url.value
     image = embed.image.value?.url?.value
 

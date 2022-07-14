@@ -1,4 +1,4 @@
-FROM gradle:7.3.3-jdk17-alpine as BUILD
+FROM openjdk:17-jdk-slim as BUILD
 
 WORKDIR /app
 
@@ -7,7 +7,7 @@ ENV GRADLE_USER_HOME=/home/gradle/.gradle
 # copy build files
 COPY . .
 
-RUN gradle build
+RUN ./gradlew build
 
 FROM openjdk:17-jdk-slim as DEPLOY
 

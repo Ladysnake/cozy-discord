@@ -370,8 +370,6 @@ class SuggestionsExtension : Extension() {
             name = "manage-suggestion"
             description = "Manage suggestions, if you have the permissions to do so"
 
-            MODERATOR_ROLES.forEach(::allowRole)
-
             check { hasBaseModeratorRole() }
 
             ephemeralSubCommand(::SuggestionStateArguments) {
@@ -418,8 +416,6 @@ class SuggestionsExtension : Extension() {
             ephemeralSubCommand(::SuggestionCannedResponseArguments) {
                 name = "auto-response"
                 description = "Use an automated response to a suggestion"
-
-                MODERATOR_ROLES.forEach(::allowRole)
 
                 check { hasBaseModeratorRole() }
 

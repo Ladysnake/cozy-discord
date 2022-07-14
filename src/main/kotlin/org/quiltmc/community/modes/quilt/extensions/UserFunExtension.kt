@@ -41,7 +41,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import org.koin.core.component.inject
-import org.quiltmc.community.MODERATOR_ROLES
 import org.quiltmc.community.database.collections.LotteryCollection
 import org.quiltmc.community.database.collections.QuoteCollection
 import org.quiltmc.community.database.entities.Lottery
@@ -267,7 +266,7 @@ class UserFunExtension : Extension() {
         ephemeralMessageCommand {
             name = "Create a drawing"
 
-            MODERATOR_ROLES.forEach(::allowRole)
+            check { hasBaseModeratorRole() }
 
             action {
                 val message = targetMessages.first()
@@ -348,7 +347,7 @@ class UserFunExtension : Extension() {
             name = "create-drawing"
             description = "Create a drawing"
 
-            MODERATOR_ROLES.forEach(::allowRole)
+            check { hasBaseModeratorRole() }
 
             action {
                 val winnerCount = arguments.winners

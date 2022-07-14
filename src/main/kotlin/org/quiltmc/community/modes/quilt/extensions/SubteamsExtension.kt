@@ -97,7 +97,6 @@ class SubteamsExtension : Extension() {
 
             guild(YOUTUBE_GUILD)
 
-            allowRole(YOUTUBE_MODERATOR_ROLE)
             check { hasRole(YOUTUBE_MODERATOR_ROLE) }
 
             ephemeralSubCommand(::ManageTeamAllowArguments) {

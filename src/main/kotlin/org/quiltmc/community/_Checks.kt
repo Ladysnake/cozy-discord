@@ -12,6 +12,7 @@ import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.Permission
 import dev.kord.core.event.Event
+import dev.kord.core.event.interaction.InteractionCreateEvent
 import mu.KotlinLogging
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 
@@ -177,7 +178,7 @@ suspend fun <T : Event> CheckContext<T>.any(vararg checks: suspend CheckContext<
     fail()
 }
 
-suspend fun CheckContext<*>.isAdminOrHasOverride() {
+suspend fun CheckContext<InteractionCreateEvent>.isAdminOrHasOverride() {
     any(
         { hasPermissionInMainGuild(Permission.Administrator) },
         { failIf(event.interaction.user.id !in OVERRIDING_USERS) }

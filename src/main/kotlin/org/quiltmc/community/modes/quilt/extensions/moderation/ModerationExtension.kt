@@ -59,7 +59,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.DurationUnit
 import kotlin.time.ExperimentalTime
 
 class ModerationExtension(
@@ -648,38 +647,24 @@ class ModerationExtension(
                     .map { it.first to it.second!! }
 
                 timedOutIds.forEach { (restriction, member) ->
-                    @Suppress("TooGenericExceptionCaught") // because idk what's failing
-                    try {
-                        if (restriction.returningBanTime!! < Clock.System.now()) {
-                            member.edit {
-                                // ok so this allows a timeout to be longer than discord's max (28 days)
-                                // which means we need to use our own timeouts
-                                val returnTime = restriction.returningBanTime!!
-                                val currentDisabled = communicationDisabledUntil
+                    val currentlyDisabled = member.communicationDisabledUntil
+                    val requestedDisabled = restriction.returningBanTime!!
+                    val now = Clock.System.now()
 
-                                val durationRemaining = returnTime - Clock.System.now()
+                    // remove the return time on the restriction if it's already past
+                    if (requestedDisabled < now) {
+                        restriction.returningBanTime = null
+                        restriction.save()
+                        return@forEach
+                    }
 
-                                @Suppress("MagicNumber") // 28 days is funky
-                                if (durationRemaining.toDouble(DurationUnit.DAYS) > 28.0) {
-                                    if (currentDisabled == null || currentDisabled <= Clock.System.now()) {
-                                        // refresh the timeout
-                                        communicationDisabledUntil = Clock.System.now() + 28.days
-                                    }
-                                } else {
-                                    if (currentDisabled == null || currentDisabled <= returnTime) {
-                                        // set the timeout to the remaining time
-                                        communicationDisabledUntil = returnTime
-                                    }
-                                }
-                            }
+                    // 1 minute offset to allow the bot to re-time out before the current timeout expires
+                    if (currentlyDisabled == null || currentlyDisabled - 1.minutes < requestedDisabled) {
+                        member.edit {
+                            val remainingTime = requestedDisabled - now
+                            @Suppress("MagicNumber") // Timeouts max at 28 days
+                            communicationDisabledUntil = now + min(remainingTime, 28.days)
                         }
-                    } catch (e: Exception) {
-                        val guild = member.getGuild()
-                        logger.error(e) {
-                            "Failed to remove timeout for user ${restriction._id}" +
-                                    "in guild ${guild.name} (${guild.id}). Removing restriction."
-                        }
-                        userRestrictions.remove(restriction._id)
                     }
                 }
 
@@ -904,6 +889,15 @@ class ModerationExtension(
 
             this.reason = reason
         }
+
+        val restriction = userRestrictions.get(user.id) ?: UserRestrictions(
+            member.id,
+            context.guild!!.id,
+            false,
+            null,
+        )
+        restriction.returningBanTime = endTime
+        restriction.save()
 
         val returnTime = endTime.toDiscord(TimestampType.Default)
 

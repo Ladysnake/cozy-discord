@@ -658,7 +658,7 @@ class ModerationExtension(
                     }
 
                     // 1 minute offset to allow the bot to re-time out before the current timeout expires
-                    if (currentlyDisabled == null || currentlyDisabled - 1.minutes < requestedDisabled) {
+                    if (currentlyDisabled == null || currentlyDisabled - 1.minutes < now) {
                         member.edit {
                             val remainingTime = requestedDisabled - now
                             @Suppress("MagicNumber") // Timeouts max at 28 days

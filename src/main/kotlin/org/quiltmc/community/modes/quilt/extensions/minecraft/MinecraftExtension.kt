@@ -29,11 +29,11 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.embed
-import io.ktor.client.HttpClient
-import io.ktor.client.call.body
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.request.get
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.request.*
+import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.Clock
 import mu.KotlinLogging
 import org.apache.commons.text.StringEscapeUtils
@@ -159,10 +159,12 @@ class MinecraftExtension : Extension() {
                         YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
                     }
 
-                    check { any(
-                        { hasPermission(Permission.Administrator) },
-                        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                    ) }
+                    check {
+                        any(
+                            { hasPermission(Permission.Administrator) },
+                            { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
+                        )
+                    }
 
                     action {
                         if (!::currentEntries.isInitialized) {
@@ -251,6 +253,12 @@ class MinecraftExtension : Extension() {
 
     fun String.formatHTML(): String {
         var result = this
+
+        result = result.replace("\u200B", "")
+        result = result.replace("<p></p>", "")
+
+        result = result.replace("<hr/?>".toRegex(), "\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_\\_")
+        result = result.replace("</hr>", "")
 
         result = result.replace("[\n]*</p>\n+<p>[\n]*".toRegex(), "\n\n")
         result = result.replace("[\n]*<[/]*p>[\n]*".toRegex(), "\n")

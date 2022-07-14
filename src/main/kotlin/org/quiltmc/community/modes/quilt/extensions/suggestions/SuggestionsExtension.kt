@@ -380,8 +380,6 @@ class SuggestionsExtension : Extension() {
 
 //            guild(LADYSNAKE_GUILD)
 
-                MODERATOR_ROLES.forEach(::allowRole)
-
                 check { hasBaseModeratorRole() }
 
                 action {
@@ -464,10 +462,10 @@ class SuggestionsExtension : Extension() {
 
         // interpret the text to see if it has a problem/solution word pair
         if (suggestion.problem == null && "problem: " in suggestion.text.lowercase()) {
-            val regex = Regex("""^(.*?\n?)?problem: (.*?)(?:\nsolution: (.*?))?$""", setOf(
-                RegexOption.IGNORE_CASE,
-                RegexOption.DOT_MATCHES_ALL
-            ))
+            val regex = Regex(
+                """^(.*?\n?)?problem: (.*?)(?:\nsolution: (.*?))?$""",
+                setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL)
+            )
 
             val match = regex.matchEntire(suggestion.text) ?: run {
                 logger.warn { "Failed to parse problem/solution from suggestion text: ${suggestion.text}" }

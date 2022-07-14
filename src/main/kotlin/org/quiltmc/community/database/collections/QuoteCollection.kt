@@ -6,15 +6,15 @@
 
 package org.quiltmc.community.database.collections
 
+import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import kotlinx.coroutines.flow.filter
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.litote.kmongo.eq
 import org.quiltmc.community.database.Collection
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.entities.Quote
 
-class QuoteCollection : KoinComponent {
+class QuoteCollection : KordExKoinComponent {
     private val db: Database by inject()
     private val col = db.mongo.getCollection<Quote>(name)
 

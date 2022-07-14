@@ -41,6 +41,7 @@ import org.koin.dsl.bind
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.ServerSettings
+import org.quiltmc.community.database.storage.MongoDBDataAdapter
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
@@ -167,6 +168,8 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
 }
 
 suspend fun ExtensibleBotBuilder.common() {
+    dataAdapter(::MongoDBDataAdapter)
+
     applicationCommands {
         // Need to disable this due to the slash command perms experiment
         syncPermissions = false

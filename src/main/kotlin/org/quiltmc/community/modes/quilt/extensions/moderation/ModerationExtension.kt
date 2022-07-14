@@ -744,9 +744,11 @@ class ModerationExtension(
         }
         val slowmode = context.arguments.waitTime
         // a bit of a hack to attempt to bypass a bug with kmongo
-        kord.rest.channel.patchChannel(channel.id, ChannelModifyPatchRequest(
-            rateLimitPerUser = slowmode.seconds.optional()
-        ), reason = "Slowmode set by ${context.user}")
+        kord.rest.channel.patchChannel(
+            channel.id,
+            ChannelModifyPatchRequest(rateLimitPerUser = slowmode.seconds.optional()),
+            reason = "Slowmode set by ${context.user}"
+        )
         reportToModChannel(context.guild?.asGuild()) {
             title = "Slowmode set"
             description =
@@ -1076,10 +1078,9 @@ class ModerationExtension(
         ;
 
         companion object {
-            val allSupported = values()
-                .filterNot { it in listOf(
-                    BAN_SHARING // the only one that's not supported yet
-                ) }
+            val allSupported = values().filterNot {
+                it in listOf(BAN_SHARING /* the only one that's not supported yet */)
+            }
         }
     }
 }

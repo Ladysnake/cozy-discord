@@ -12,6 +12,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import com.charleskorn.kaml.YamlException
 import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
+import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.hasNotStatus
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
@@ -37,30 +38,18 @@ import io.ktor.http.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.decodeFromString
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.quiltmc.community.cozy.modules.welcome.blocks.Block
 import org.quiltmc.community.cozy.modules.welcome.blocks.InteractionBlock
 import org.quiltmc.community.cozy.modules.welcome.config.WelcomeChannelConfig
-import kotlin.collections.List
-import kotlin.collections.MutableList
-import kotlin.collections.MutableMap
-import kotlin.collections.filter
-import kotlin.collections.forEach
-import kotlin.collections.forEachIndexed
-import kotlin.collections.getOrNull
-import kotlin.collections.map
-import kotlin.collections.mutableListOf
-import kotlin.collections.mutableMapOf
-import kotlin.collections.set
-import kotlin.collections.sortedBy
-import kotlin.collections.toMutableList
+import kotlin.collections.*
 
 public class WelcomeChannel(
     public val channel: GuildMessageChannel,
     public val url: String,
-) : KoinComponent {
+) : KordExKoinComponent {
     private var blocks: MutableList<Block> = mutableListOf()
+
     private val messageMapping: MutableMap<Snowflake, Block> = mutableMapOf()
 
     private val config: WelcomeChannelConfig by inject()
@@ -107,7 +96,7 @@ public class WelcomeChannel(
         scheduler.shutdown()
     }
 
-    public suspend fun getBlocks(): List<Block> {
+    private suspend fun fetchBlocks(): List<Block> {
         try {
             val response = client.get(url).body<String>()
 
@@ -119,6 +108,9 @@ public class WelcomeChannel(
         }
     }
 
+    public fun getBlocks(): List<Block> =
+        blocks.toList()
+
     public suspend fun populate() {
         task?.cancel()
 
@@ -126,7 +118,7 @@ public class WelcomeChannel(
 
         @Suppress("TooGenericExceptionCaught")
         try {
-            blocks = getBlocks().toMutableList()
+            blocks = fetchBlocks().toMutableList()
         } catch (e: Exception) {
             log {
                 embed {

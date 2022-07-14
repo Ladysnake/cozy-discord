@@ -7,7 +7,6 @@
 package org.quiltmc.community.modes.quilt.extensions
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
@@ -20,7 +19,6 @@ import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
@@ -43,10 +41,13 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import org.koin.core.component.inject
-import org.quiltmc.community.*
+import org.quiltmc.community.MODERATOR_ROLES
 import org.quiltmc.community.database.collections.LotteryCollection
 import org.quiltmc.community.database.collections.QuoteCollection
 import org.quiltmc.community.database.entities.Lottery
+import org.quiltmc.community.hasBaseModeratorRole
+import org.quiltmc.community.inLadysnakeGuild
+import org.quiltmc.community.isAdminOrHasOverride
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import java.io.ByteArrayInputStream
 import kotlin.time.Duration.Companion.minutes
@@ -78,10 +79,7 @@ class UserFunExtension : Extension() {
                 name = "start"
                 description = "Start creating a new role selector"
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     if (currentAssignable != null && Clock.System.now() - currentAssignable!!.lastChange < 2.minutes) {
@@ -102,10 +100,7 @@ class UserFunExtension : Extension() {
                 name = "cancel"
                 description = "Cancel the current assignable"
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     if (currentAssignable == null) {
@@ -136,10 +131,7 @@ class UserFunExtension : Extension() {
                 name = "finish"
                 description = "Finish the assignable and send the message"
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     val outputChannel = arguments.channel.asChannelOf<GuildMessageChannel>()
@@ -172,10 +164,7 @@ class UserFunExtension : Extension() {
                 name = "add"
                 description = "Add a role to the assignable"
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     if (currentAssignable == null) {

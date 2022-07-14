@@ -32,6 +32,7 @@ import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.dm
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
+import com.kotlindiscord.kord.extensions.utils.respond
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createEmbed
@@ -283,6 +284,16 @@ class FilterExtension : Extension() {
                             return@action
                         }
 
+                        if (arguments.action == FilterAction.RESPOND && filter.note == null) {
+                            respond {
+                                content = "The given action (**${arguments.action?.readableName}**) is not valid " +
+                                        "for filters that do not have a note set, as the note will be sent in " +
+                                        "response to users that trigger the filter."
+                            }
+
+                            return@action
+                        }
+
                         filter.action = arguments.action
                         filters.set(filter)
                         filterCache[filter._id] = filter
@@ -424,6 +435,15 @@ class FilterExtension : Extension() {
                             return@action
                         }
 
+                        if (filter.action == FilterAction.RESPOND && arguments.note == null) {
+                            respond {
+                                content = "Responding filters must include a note, which will be sent to the user in" +
+                                        "response."
+                            }
+
+                            return@action
+                        }
+
                         filter.note = arguments.note
                         filters.set(filter)
                         filterCache[filter._id] = filter
@@ -462,6 +482,15 @@ class FilterExtension : Extension() {
                             respond {
                                 content = "The given action (**${arguments.action?.readableName}**) is not valid " +
                                         "for filters that target user profiles."
+                            }
+
+                            return@action
+                        }
+
+                        if (arguments.action == FilterAction.RESPOND && arguments.note == null) {
+                            respond {
+                                content = "Responding filters must include a note, which will be sent to the user in" +
+                                        "response."
                             }
 
                             return@action
@@ -929,6 +958,10 @@ class FilterExtension : Extension() {
                 message.author!!.asMember(message.getGuild().id).ban {
                     reason = "Banned by filter: $_id"
                 }
+            }
+
+            FilterAction.RESPOND -> message.respond {
+                content = "**An automated message from the moderators:** $note"
             }
 
             null -> {}  // Nothing

@@ -370,6 +370,7 @@ class UtilityExtension : Extension() {
                     guild(guildId)
 
                     check { hasBaseModeratorRole() }
+                    check { isInThread() }
 
                     action {
                         val thread = channel.asChannelOfOrNull<ThreadChannel>()
@@ -500,6 +501,8 @@ class UtilityExtension : Extension() {
                     name = "rename"
                     description = "Rename the current thread, if you have permission"
 
+                    check { isInThread() }
+
                     action {
                         val channel = channel.asChannelOfOrNull<ThreadChannel>()
                             ?: run {
@@ -561,6 +564,8 @@ class UtilityExtension : Extension() {
                 ephemeralSubCommand(::ArchiveArguments) {
                     name = "archive"
                     description = "Archive the current thread, if you have permission"
+
+                    check { isInThread() }
 
                     action {
                         val channel = channel.asChannelOf<ThreadChannel>()
@@ -634,6 +639,8 @@ class UtilityExtension : Extension() {
                     name = "pin"
                     description = "Pin a message in this thread, if you have permission"
 
+                    check { isInThread() }
+
                     action {
                         val channel = channel.asChannelOf<ThreadChannel>()
                         val member = user.asMember(guild!!.id)
@@ -669,6 +676,8 @@ class UtilityExtension : Extension() {
                 ephemeralSubCommand(::PinMessageArguments) {
                     name = "unpin"
                     description = "Unpin a message in this thread, if you have permission"
+
+                    check { isInThread() }
 
                     action {
                         val channel = channel.asChannelOf<ThreadChannel>()
@@ -708,10 +717,8 @@ class UtilityExtension : Extension() {
 
                     guild(guildId)
 
-                    check {
-                        hasBaseModeratorRole()
-                        isInThread()
-                    }
+                    check { hasBaseModeratorRole() }
+                    check { isInThread() }
 
                     action {
                         val channel = channel.asChannelOf<ThreadChannel>()
@@ -763,6 +770,8 @@ class UtilityExtension : Extension() {
                 ephemeralSubCommand(::SetOwnerArguments) {
                     name = "set-owner"
                     description = "Change the owner of the thread, if you have permission"
+
+                    check { isInThread() }
 
                     action {
                         val channel = channel.asChannel() as ThreadChannel
@@ -944,10 +953,7 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     val role = arguments.role ?: guild?.asGuild()?.roles?.firstOrNull { it.name.lowercase() == "muted" }
@@ -1052,17 +1058,14 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     val roleId = when (guild!!.id) {
                         LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
                         YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else            -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
 
                     val moderatorRole = guild!!.getRole(roleId)
@@ -1110,17 +1113,14 @@ class UtilityExtension : Extension() {
 
                 guild(guildId)
 
-                check { any(
-                    { hasPermission(Permission.Administrator) },
-                    { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
-                ) }
+                check { isAdminOrHasOverride() }
 
                 action {
                     val roleId = when (guild!!.id) {
                         LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
                         YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else            -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
                     }
 
                     val moderatorRole = guild!!.getRole(roleId)

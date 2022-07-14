@@ -176,3 +176,10 @@ suspend fun <T : Event> CheckContext<T>.any(vararg checks: suspend CheckContext<
 
     fail()
 }
+
+suspend fun CheckContext<*>.isAdminOrHasOverride() {
+    any(
+        { hasPermissionInMainGuild(Permission.Administrator) },
+        { failIf(event.interaction.user.id !in OVERRIDING_USERS) }
+    )
+}

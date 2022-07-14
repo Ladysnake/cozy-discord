@@ -260,6 +260,7 @@ class CategoryRotator(private val category: Category, private val modLog: GuildM
 
                 @Suppress("MagicNumber", "TooGenericExceptionCaught")
                 allChannels.sortBy {
+                    @Suppress("DestructuringDeclarationWithTooManyEntries") // detekt added more checks!
                     try {
                         val (logTypes, _, year, week) = it.name.split("-")
                         year.toLong() * 1000 + week.toLong() * 10 + if (logTypes == "message") 0 else 1

@@ -70,7 +70,10 @@ object RegexSerializer : KSerializer<Regex> {
     override fun serialize(encoder: Encoder, value: Regex) {
         encoder.encodeStructure(descriptor) {
             encodeStringElement(descriptor, 0, value.pattern)
-            encodeSerializableElement(descriptor, 1, IntArraySerializer(),
+            encodeSerializableElement(
+                descriptor,
+                1,
+                IntArraySerializer(),
                 value.options.map { it.ordinal }.toIntArray()
             )
         }

@@ -56,14 +56,13 @@ class MessageEditExtension : Extension() {
                         val messageLink = arguments.messageLink
                         val newContent = arguments.content
 
-                        // https://canary.discord.com/channels/924373275688198204/924373276141162526/926555659804229663
-                        val (_, guildId, channelId, messageId) = messageLink.substringAfter(".com/").split("/")
+                        val (guildId, channelId, messageId) = messageLink.messageIds()
 
                         var response = ""
 
-                        getKoin().get<Kord>().getGuild(Snowflake(guildId))
-                            ?.getChannelOfOrNull<GuildMessageChannel>(Snowflake(channelId))
-                            ?.getMessageOrNull(Snowflake(messageId))
+                        getKoin().get<Kord>().getGuild(guildId)
+                            ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
+                            ?.getMessageOrNull(messageId)
                             ?.edit {
                                 content = newContent
                             }
@@ -107,12 +106,11 @@ class MessageEditExtension : Extension() {
                         }
 
                         val newContent = if (arguments.content.matches(urlRegex)) {
-                            val (_, guildId, channelId, messageId) =
-                                messageLink.substringAfter(".com/").split("/")
+                            val (guildId, channelId, messageId) = messageLink.messageIds()
 
-                            getKoin().get<Kord>().getGuild(Snowflake(guildId))
-                                ?.getChannelOfOrNull<GuildMessageChannel>(Snowflake(channelId))
-                                ?.getMessageOrNull(Snowflake(messageId))
+                            getKoin().get<Kord>().getGuild(guildId)
+                                ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
+                                ?.getMessageOrNull(messageId)
                                 ?.data?.content
                                 ?: "Could not find message"
                         } else {
@@ -128,12 +126,11 @@ class MessageEditExtension : Extension() {
                             return@action
                         }
 
-                        // https://canary.discord.com/channels/924373275688198204/924373276141162526/926555659804229663
-                        val (_, guildId, channelId, messageId) = messageLink.substringAfter(".com/").split("/")
+                        val (guildId, channelId, messageId) = messageLink.messageIds()
 
-                        val message = getKoin().get<Kord>().getGuild(Snowflake(guildId))
-                            ?.getChannelOfOrNull<GuildMessageChannel>(Snowflake(channelId))
-                            ?.getMessageOrNull(Snowflake(messageId))
+                        val message = getKoin().get<Kord>().getGuild(guildId)
+                            ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
+                            ?.getMessageOrNull(messageId)
 
                         if (message == null) {
                             respond {
@@ -232,6 +229,8 @@ class MessageEditExtension : Extension() {
             }
         }
     }
+
+    private fun String.messageIds() = substringAfter(".com/channels/").split("/").map { Snowflake(it) }
 
     open class MessageArguments : Arguments() {
         val messageLink by string {

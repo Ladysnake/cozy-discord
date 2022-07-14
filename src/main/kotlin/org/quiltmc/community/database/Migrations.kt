@@ -6,8 +6,8 @@
 
 package org.quiltmc.community.database
 
+import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
 import mu.KotlinLogging
-import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.MetaCollection
 import org.quiltmc.community.database.entities.Meta
@@ -19,7 +19,7 @@ import kotlin.reflect.full.findParameterByName
 
 const val FILE_TEMPLATE = "migrations/v{VERSION}.bson"
 
-object Migrations : KoinComponent {
+object Migrations : KordExKoinComponent {
     private val logger = KotlinLogging.logger { }
 
     val db: Database by inject()

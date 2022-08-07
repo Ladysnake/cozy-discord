@@ -17,17 +17,17 @@ import org.quiltmc.community.database.collections.UserRestrictionsCollection
 
 @Serializable
 data class UserRestrictions(
-    override val _id: Snowflake,
-    val guildId: Snowflake,
+	override val _id: Snowflake,
+	val guildId: Snowflake,
 
-    var isBanned: Boolean = false,
-    var returningBanTime: Instant? = null,
+	var isBanned: Boolean = false,
+	var returningBanTime: Instant? = null,
 
-    var lastProgressiveTimeoutLength: Int = 0,
+	var lastProgressiveTimeoutLength: Int = 0,
 ) : Entity<Snowflake> {
-    suspend fun save() {
+	suspend fun save() {
         val collection = getKoin().get<UserRestrictionsCollection>()
 
         collection.set(this)
-    }
+	}
 }

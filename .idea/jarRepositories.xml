@@ -66,5 +66,20 @@
       <option name="name" value="Sonatype Snapshots" />
       <option name="url" value="https://oss.sonatype.org/content/repositories/snapshots" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenRepo" />
+      <option name="name" value="MavenRepo" />
+      <option name="url" value="https://repo.maven.apache.org/maven2/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="MavenLocal" />
+      <option name="name" value="MavenLocal" />
+      <option name="url" value="file:/$USER_HOME$/.m2/repository/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="Kotlin Discord (Snapshots)" />
+      <option name="name" value="Kotlin Discord (Snapshots)" />
+      <option name="url" value="https://maven.kotlindiscord.com/repository/maven-snapshots/" />
+    </remote-repository>
   </component>
 </project>

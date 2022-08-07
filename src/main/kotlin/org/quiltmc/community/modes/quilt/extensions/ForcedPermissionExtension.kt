@@ -15,11 +15,11 @@ import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 
 class ForcedPermissionExtension : Extension() {
-    override val name = "forced-permissions"
+	override val name = "forced-permissions"
 
-    private val globalSettings: GlobalSettingsCollection by inject()
+	private val globalSettings: GlobalSettingsCollection by inject()
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         val settingsGuilds = globalSettings.get()?.ladysnakeGuilds ?: emptySet()
         val envGuilds = GUILDS
 
@@ -48,5 +48,5 @@ class ForcedPermissionExtension : Extension() {
                 }
             }
         }
-    }
+	}
 }

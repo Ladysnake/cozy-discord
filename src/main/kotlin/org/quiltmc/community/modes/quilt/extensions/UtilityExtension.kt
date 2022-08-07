@@ -79,22 +79,22 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 val SPEAKING_PERMISSIONS: Array<Permission> = arrayOf(
-    Permission.SendMessages,
-    Permission.AddReactions,
-    Permission.CreatePublicThreads,
-    Permission.CreatePrivateThreads,
-    Permission.SendMessagesInThreads,
+	Permission.SendMessages,
+	Permission.AddReactions,
+	Permission.CreatePublicThreads,
+	Permission.CreatePrivateThreads,
+	Permission.SendMessagesInThreads,
 )
 
 val THREAD_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
-    ChannelType.PublicGuildThread,
-    ChannelType.PublicNewsThread,
-    ChannelType.PrivateThread,
+	ChannelType.PublicGuildThread,
+	ChannelType.PublicNewsThread,
+	ChannelType.PrivateThread,
 )
 
 val TEXT_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
-    ChannelType.GuildText,
-    ChannelType.GuildNews,
+	ChannelType.GuildText,
+	ChannelType.GuildNews,
 )
 
 val DELETE_DELAY = 10.seconds
@@ -103,49 +103,49 @@ val PIN_DELETE_DELAY = 10.seconds
 val THREAD_CREATE_DELETE_DELAY = 30.minutes
 
 class UtilityExtension : Extension() {
-    override val name: String = "utility"
+	override val name: String = "utility"
 
-    private val logger = KotlinLogging.logger { }
-    private val threads: OwnedThreadCollection by inject()
+	private val logger = KotlinLogging.logger { }
+	private val threads: OwnedThreadCollection by inject()
 
-    private val userFlags: UserFlagsCollection by inject()
+	private val userFlags: UserFlagsCollection by inject()
 
-    private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
-    private val suggestions: SuggestionsCollection? = suggestionsExtension?.suggestions
+	private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
+	private val suggestions: SuggestionsCollection? = suggestionsExtension?.suggestions
 
-    @OptIn(ExperimentalSerializationApi::class)
-    private val json = Json {
+	@OptIn(ExperimentalSerializationApi::class)
+	private val json = Json {
         prettyPrint = true
-        prettyPrintIndent = "    "
+        prettyPrintIndent = "	"
 
-        classDiscriminator = "_type"
-        encodeDefaults = false
-    }
+		classDiscriminator = "_type"
+		encodeDefaults = false
+	}
 
-    override suspend fun setup() {
-        event<MemberUpdateEvent> {
-            check { inLadysnakeGuild() }
-            check { isNotBot() }
+	override suspend fun setup() {
+		event<MemberUpdateEvent> {
+			check { inLadysnakeGuild() }
+			check { isNotBot() }
 
-            check {
-                failIf {
-                    event.old != null && event.member.nickname == event.old?.nickname
-                }
-            }
+			check {
+				failIf {
+					event.old != null && event.member.nickname == event.old?.nickname
+				}
+			}
 
-            @OptIn(DoNotChain::class)
-            action {
-                val flags = userFlags.get(event.member.id) ?: UserFlags(event.member.id)
+			@OptIn(DoNotChain::class)
+			action {
+				val flags = userFlags.get(event.member.id) ?: UserFlags(event.member.id)
 
-                if (flags.syncNicks) {
-                    val guilds = getKoin().get<GlobalSettingsCollection>().get()?.ladysnakeGuilds
-                        ?: GUILDS // in case the global settings collection is nonexistent
+				if (flags.syncNicks) {
+					val guilds = getKoin().get<GlobalSettingsCollection>().get()?.ladysnakeGuilds
+						?: GUILDS // in case the global settings collection is nonexistent
 
                     val otherGuilds = guilds.mapNotNull { kord.getGuild(it) }
                         .mapNotNull { it.getMemberOrNull(event.member.id) }
                         .filter { it.nickname != event.member.nickname } // reduce extra calls
 
-                    otherGuilds.forEach {
+					otherGuilds.forEach {
                         if (event.member.nickname != it.nickname) {
                             it.setNickname(
                                 event.member.nickname,
@@ -157,44 +157,44 @@ class UtilityExtension : Extension() {
             }
         }
 
-        event<MessageCreateEvent> {
-            check { inLadysnakeGuild() }
-            check { isNotBot() }
-            check { channelType(ChannelType.GuildNews) }
-            check { failIf(event.message.author == null) }
+		event<MessageCreateEvent> {
+			check { inLadysnakeGuild() }
+			check { isNotBot() }
+			check { channelType(ChannelType.GuildNews) }
+			check { failIf(event.message.author == null) }
 
-            action {
-                val flags = userFlags.get(event.message.author!!.id) ?: UserFlags(event.message.author!!.id)
+			action {
+				val flags = userFlags.get(event.message.author!!.id) ?: UserFlags(event.message.author!!.id)
 
-                if (flags.autoPublish) {
-                    event.message.publish()
-                }
-            }
-        }
+				if (flags.autoPublish) {
+					event.message.publish()
+				}
+			}
+		}
 
-        event<MessageCreateEvent> {
-            check { failIf { event.message.type != MessageType.ChannelPinnedMessage } }
+		event<MessageCreateEvent> {
+			check { failIf { event.message.type != MessageType.ChannelPinnedMessage } }
 //            check { failIf { event.message.data.authorId != event.kord.selfId } }
 
-            action {
-                delay(PIN_DELETE_DELAY)
+			action {
+				delay(PIN_DELETE_DELAY)
 
-                event.message.deleteIgnoringNotFound()
-            }
-        }
+				event.message.deleteIgnoringNotFound()
+			}
+		}
 
-        event<MessageCreateEvent> {
-            check { inLadysnakeGuild() }
-            check { failIf { event.message.type != MessageType.ThreadCreated } }
+		event<MessageCreateEvent> {
+			check { inLadysnakeGuild() }
+			check { failIf { event.message.type != MessageType.ThreadCreated } }
 
-            action {
-                delay(THREAD_CREATE_DELETE_DELAY)
+			action {
+				delay(THREAD_CREATE_DELETE_DELAY)
 
-                event.message.deleteIgnoringNotFound()
-            }
-        }
+				event.message.deleteIgnoringNotFound()
+			}
+		}
 
-        event<MessageCreateEvent> {
+		event<MessageCreateEvent> {
             check { failIf { event.message.type != MessageType.ThreadCreated } }
 
             action {
@@ -217,311 +217,311 @@ class UtilityExtension : Extension() {
 
         event<TextChannelThreadCreateEvent> {
             check { inLadysnakeGuild() }
-            check { failIf(event.channel.ownerId == kord.selfId) }
-            check { failIf(event.channel.member != null) }  // We only want thread creation, not join
+			check { failIf(event.channel.ownerId == kord.selfId) }
+			check { failIf(event.channel.member != null) }  // We only want thread creation, not join
 
-            action {
-                val owner = event.channel.owner.asUser()
+			action {
+				val owner = event.channel.owner.asUser()
 
-                logger.info { "Thread created by ${owner.tag}" }
+				logger.info { "Thread created by ${owner.tag}" }
 
-                val role = when (event.channel.guildId) {
-                    LADYSNAKE_GUILD -> event.channel.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
-                    YOUTUBE_GUILD -> event.channel.guild.getRole(YOUTUBE_MODERATOR_ROLE)
+				val role = when (event.channel.guildId) {
+					LADYSNAKE_GUILD -> event.channel.guild.getRole(LADYSNAKE_MODERATOR_ROLE)
+					YOUTUBE_GUILD -> event.channel.guild.getRole(YOUTUBE_MODERATOR_ROLE)
 
-                    else            -> return@action
-                }
+					else -> return@action
+				}
 
-                val message = event.channel.createMessage {
-                    content = "Oh hey, that's a nice thread you've got there! Let me just get the mods in on this " +
-                            "sweet discussion..."
-                }
+				val message = event.channel.createMessage {
+					content = "Oh hey, that's a nice thread you've got there! Let me just get the mods in on this " +
+							"sweet discussion..."
+				}
 
-                event.channel.withTyping {
-                    delay(3.seconds)
-                }
+				event.channel.withTyping {
+					delay(3.seconds)
+				}
 
-                message.edit {
-                    content = "Hey, ${role.mention}, you've gotta check this thread out!"
-                }
+				message.edit {
+					content = "Hey, ${role.mention}, you've gotta check this thread out!"
+				}
 
-                event.channel.withTyping {
-                    delay(3.seconds)
-                }
+				event.channel.withTyping {
+					delay(3.seconds)
+				}
 
-                message.edit {
-                    content = "Welcome to your new thread, ${owner.mention}! This message is at the " +
-                            "start of the thread. Remember, you're welcome to use the `/thread` commands to manage " +
-                            "your thread as needed."
-                }
+				message.edit {
+					content = "Welcome to your new thread, ${owner.mention}! This message is at the " +
+							"start of the thread. Remember, you're welcome to use the `/thread` commands to manage " +
+							"your thread as needed."
+				}
 
-                message.pin("First message in the thread.")
-            }
-        }
+				message.pin("First message in the thread.")
+			}
+		}
 
-        event<ThreadUpdateEvent> {
-            action {
-                val channel = event.channel
-                val ownedThread = threads.get(channel)
+		event<ThreadUpdateEvent> {
+			action {
+				val channel = event.channel
+				val ownedThread = threads.get(channel)
 
-                if (channel.isArchived && ownedThread != null && ownedThread.preventArchiving) {
-                    channel.edit {
-                        archived = false
-                        reason = "Preventing thread from being archived."
-                    }
-                }
-            }
-        }
+				if (channel.isArchived && ownedThread != null && ownedThread.preventArchiving) {
+					channel.edit {
+						archived = false
+						reason = "Preventing thread from being archived."
+					}
+				}
+			}
+		}
 
-        GUILDS.forEach { guildId ->
-            ephemeralMessageCommand {
-                name = "Raw JSON"
+		GUILDS.forEach { guildId ->
+			ephemeralMessageCommand {
+				name = "Raw JSON"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { hasBaseModeratorRole() }
+				check { hasBaseModeratorRole() }
 
-                action {
-                    val messages = targetMessages.map { it.data }
-                    val data = json.encodeToString(messages)
+				action {
+					val messages = targetMessages.map { it.data }
+					val data = json.encodeToString(messages)
 
-                    respond {
-                        content = "Raw message data attached below."
+					respond {
+						content = "Raw message data attached below."
 
-                        addFile("message.json", data.byteInputStream())
-                    }
-                }
-            }
+						addFile("message.json", data.byteInputStream())
+					}
+				}
+			}
 
-            ephemeralMessageCommand {
-                name = "Pin in thread"
+			ephemeralMessageCommand {
+				name = "Pin in thread"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { isInThread() }
+				check { isInThread() }
 
-                action {
-                    val channel = channel.asChannelOf<ThreadChannel>()
-                    val member = user.asMember(guild!!.id)
-                    val roles = member.roles.toList().map { it.id }
+				action {
+					val channel = channel.asChannelOf<ThreadChannel>()
+					val member = user.asMember(guild!!.id)
+					val roles = member.roles.toList().map { it.id }
 
-                    if (MODERATOR_ROLES.any { it in roles }) {
-                        targetMessages.forEach { it.pin("Pinned by ${member.tag}") }
-                        edit { content = "Messages pinned." }
+					if (MODERATOR_ROLES.any { it in roles }) {
+						targetMessages.forEach { it.pin("Pinned by ${member.tag}") }
+						edit { content = "Messages pinned." }
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-                        respond { content = "**Error:** This is not your thread." }
+					if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
+						respond { content = "**Error:** This is not your thread." }
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    targetMessages.forEach { it.pin("Pinned by ${member.tag}") }
+					targetMessages.forEach { it.pin("Pinned by ${member.tag}") }
 
-                    edit { content = "Messages pinned." }
-                }
-            }
+					edit { content = "Messages pinned." }
+				}
+			}
 
-            ephemeralMessageCommand {
-                name = "Unpin in thread"
+			ephemeralMessageCommand {
+				name = "Unpin in thread"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { isInThread() }
+				check { isInThread() }
 
-                action {
-                    val channel = channel.asChannelOf<ThreadChannel>()
-                    val member = user.asMember(guild!!.id)
-                    val roles = member.roles.toList().map { it.id }
+				action {
+					val channel = channel.asChannelOf<ThreadChannel>()
+					val member = user.asMember(guild!!.id)
+					val roles = member.roles.toList().map { it.id }
 
-                    if (MODERATOR_ROLES.any { it in roles }) {
-                        targetMessages.forEach { it.unpin("Unpinned by ${member.tag}") }
-                        edit { content = "Messages unpinned." }
+					if (MODERATOR_ROLES.any { it in roles }) {
+						targetMessages.forEach { it.unpin("Unpinned by ${member.tag}") }
+						edit { content = "Messages unpinned." }
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-                        respond { content = "**Error:** This is not your thread." }
+					if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
+						respond { content = "**Error:** This is not your thread." }
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    targetMessages.forEach { it.unpin("Unpinned by ${member.tag}") }
+					targetMessages.forEach { it.unpin("Unpinned by ${member.tag}") }
 
-                    edit { content = "Messages unpinned." }
-                }
-            }
+					edit { content = "Messages unpinned." }
+				}
+			}
 
-            ephemeralSlashCommand {
-                name = "thread"
-                description = "Thread management commands"
+			ephemeralSlashCommand {
+				name = "thread"
+				description = "Thread management commands"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { isInThread() }
+				check { isInThread() }
 
-                publicSubCommand {
-                    name = "backup"
-                    description = "Get all messages in the current thread, saving them into a Markdown file."
+				publicSubCommand {
+					name = "backup"
+					description = "Get all messages in the current thread, saving them into a Markdown file."
 
-                    guild(guildId)
+					guild(guildId)
 
-                    check { hasBaseModeratorRole() }
-                    check { isInThread() }
+					check { hasBaseModeratorRole() }
+					check { isInThread() }
 
-                    action {
-                        val thread = channel.asChannelOfOrNull<ThreadChannel>()
+					action {
+						val thread = channel.asChannelOfOrNull<ThreadChannel>()
 
-                        if (thread == null) {
-                            respondEphemeral {
-                                content = "**Error:** This channel isn't a thread!"
-                            }
+						if (thread == null) {
+							respondEphemeral {
+								content = "**Error:** This channel isn't a thread!"
+							}
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        val messageBuilder = StringBuilder()
-                        val formatter = DateTimeFormatter.ofPattern("dd LL, yyyy -  kk:mm:ss")
+						val messageBuilder = StringBuilder()
+						val formatter = DateTimeFormatter.ofPattern("dd LL, yyyy -  kk:mm:ss")
 
-                        if (thread.lastMessageId == null) {
-                            respondEphemeral {
-                                content = "**Error:** This thread has no messages!"
-                            }
+						if (thread.lastMessageId == null) {
+							respondEphemeral {
+								content = "**Error:** This thread has no messages!"
+							}
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        val messages = thread.getMessagesBefore(thread.lastMessageId!!)
-                        val lastMessage = thread.getLastMessage()!!
+						val messages = thread.getMessagesBefore(thread.lastMessageId!!)
+						val lastMessage = thread.getLastMessage()!!
 
-                        val parent = thread.parent.asChannel()
+						val parent = thread.parent.asChannel()
 
-                        messageBuilder.append("# Thread: ${thread.name}\n\n")
-                        messageBuilder.append("* **ID:** `${thread.id.value}`\n")
-                        messageBuilder.append("* **Parent:** #${parent.name} (`${parent.id.value}`)\n\n")
+						messageBuilder.append("# Thread: ${thread.name}\n\n")
+						messageBuilder.append("* **ID:** `${thread.id.value}`\n")
+						messageBuilder.append("* **Parent:** #${parent.name} (`${parent.id.value}`)\n\n")
 
-                        val messageStrings: MutableList<String> = mutableListOf()
+						val messageStrings: MutableList<String> = mutableListOf()
 
-                        messages.collect { msg ->
-                            val author = msg.author
-                            val builder = StringBuilder()
-                            val timestamp = formatter.format(
-                                msg.id.timestamp.toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
-                            )
+						messages.collect { msg ->
+							val author = msg.author
+							val builder = StringBuilder()
+							val timestamp = formatter.format(
+								msg.id.timestamp.toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
+							)
 
-                            if (msg.content.isNotEmpty() || msg.attachments.isNotEmpty()) {
-                                val authorName = author?.tag ?: msg.data.author.username
+							if (msg.content.isNotEmpty() || msg.attachments.isNotEmpty()) {
+								val authorName = author?.tag ?: msg.data.author.username
 
-                                this@UtilityExtension.logger.debug { "\nAuthor name: `$authorName`\n${msg.content}\n" }
+								this@UtilityExtension.logger.debug { "\nAuthor name: `$authorName`\n${msg.content}\n" }
 
-                                if (msg.type == MessageType.ChatInputCommand) {
-                                    builder.append("🖥️ ")
-                                } else if (author == null) {
-                                    builder.append("🌐 ")
-                                } else if (author.isBot) {
-                                    builder.append("🤖 ")
-                                } else {
-                                    builder.append("💬 ")
-                                }
+								if (msg.type == MessageType.ChatInputCommand) {
+									builder.append("🖥️ ")
+								} else if (author == null) {
+									builder.append("🌐 ")
+								} else if (author.isBot) {
+									builder.append("🤖 ")
+								} else {
+									builder.append("💬 ")
+								}
 
-                                builder.append("**$authorName** at $timestamp (UTC)\n\n")
+								builder.append("**$authorName** at $timestamp (UTC)\n\n")
 
-                                if (msg.content.isNotEmpty()) {
-                                    builder.append(msg.content.lines().joinToString("\n") { line -> "> $line" })
-                                    builder.append("\n\n")
-                                }
+								if (msg.content.isNotEmpty()) {
+									builder.append(msg.content.lines().joinToString("\n") { line -> "> $line" })
+									builder.append("\n\n")
+								}
 
-                                if (msg.attachments.isNotEmpty()) {
-                                    msg.attachments.forEach { att ->
-                                        builder.append("* 📄 [${att.filename}](${att.url})\n")
-                                    }
+								if (msg.attachments.isNotEmpty()) {
+									msg.attachments.forEach { att ->
+										builder.append("* 📄 [${att.filename}](${att.url})\n")
+									}
 
-                                    builder.append("\n")
-                                }
+									builder.append("\n")
+								}
 
-                                messageStrings.add(builder.toString())
-                            }
-                        }
+								messageStrings.add(builder.toString())
+							}
+						}
 
-                        messageStrings.reverse()
+						messageStrings.reverse()
 
-                        lastMessage.let { msg ->
-                            val author = msg.author
-                            val builder = StringBuilder()
-                            val timestamp = formatter.format(
-                                msg.id.timestamp.toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
-                            )
+						lastMessage.let { msg ->
+							val author = msg.author
+							val builder = StringBuilder()
+							val timestamp = formatter.format(
+								msg.id.timestamp.toLocalDateTime(TimeZone.UTC).toJavaLocalDateTime()
+							)
 
-                            if (msg.content.isNotEmpty() || msg.attachments.isNotEmpty()) {
-                                val authorName = author?.tag ?: msg.data.author.username
+							if (msg.content.isNotEmpty() || msg.attachments.isNotEmpty()) {
+								val authorName = author?.tag ?: msg.data.author.username
 
-                                if (msg.type == MessageType.ChatInputCommand) {
-                                    builder.append("🖥️ ")
-                                } else if (author == null) {
-                                    builder.append("🌐 ")
-                                } else if (author.isBot) {
-                                    builder.append("🤖 ")
-                                } else {
-                                    builder.append("💬 ")
-                                }
+								if (msg.type == MessageType.ChatInputCommand) {
+									builder.append("🖥️ ")
+								} else if (author == null) {
+									builder.append("🌐 ")
+								} else if (author.isBot) {
+									builder.append("🤖 ")
+								} else {
+									builder.append("💬 ")
+								}
 
-                                builder.append("**$authorName** at $timestamp (UTC)\n\n")
+								builder.append("**$authorName** at $timestamp (UTC)\n\n")
 
-                                if (msg.content.isNotEmpty()) {
-                                    builder.append(msg.content.lines().joinToString("\n") { line -> "> $line" })
-                                    builder.append("\n\n")
-                                }
+								if (msg.content.isNotEmpty()) {
+									builder.append(msg.content.lines().joinToString("\n") { line -> "> $line" })
+									builder.append("\n\n")
+								}
 
-                                if (msg.attachments.isNotEmpty()) {
-                                    msg.attachments.forEach { att ->
-                                        builder.append("* 📄 [${att.filename}](${att.url})\n")
-                                    }
+								if (msg.attachments.isNotEmpty()) {
+									msg.attachments.forEach { att ->
+										builder.append("* 📄 [${att.filename}](${att.url})\n")
+									}
 
-                                    builder.append("\n")
-                                }
+									builder.append("\n")
+								}
 
-                                messageStrings.add(builder.toString())
-                            }
-                        }
+								messageStrings.add(builder.toString())
+							}
+						}
 
-                        messageStrings.forEach(messageBuilder::append)
+						messageStrings.forEach(messageBuilder::append)
 
-                        respond {
-                            content = "**Thread backup created by ${user.mention}.**"
+						respond {
+							content = "**Thread backup created by ${user.mention}.**"
 
-                            addFile("thread.md", messageBuilder.toString().byteInputStream())
-                        }
-                    }
-                }
+							addFile("thread.md", messageBuilder.toString().byteInputStream())
+						}
+					}
+				}
 
-                ephemeralSubCommand(::RenameArguments) {
-                    name = "rename"
-                    description = "Rename the current thread, if you have permission"
+				ephemeralSubCommand(::RenameArguments) {
+					name = "rename"
+					description = "Rename the current thread, if you have permission"
 
-                    check { isInThread() }
+					check { isInThread() }
 
-                    action {
-                        val channel = channel.asChannelOfOrNull<ThreadChannel>()
+					action {
+						val channel = channel.asChannelOfOrNull<ThreadChannel>()
                             ?: run {
                                 respond {
                                     content = "**Error:** ${channel.mention} isn't a thread!"
                                 }
                                 return@action
                             }
-                        val member = user.asMember(guild!!.id)
-                        val roles = member.roles.toList().map { it.id }
+						val member = user.asMember(guild!!.id)
+						val roles = member.roles.toList().map { it.id }
 
-                        if (MODERATOR_ROLES.any { it in roles }) {
-                            channel.edit {
-                                name = arguments.name
+						if (MODERATOR_ROLES.any { it in roles }) {
+							channel.edit {
+								name = arguments.name
 
-                                reason = "Renamed by ${member.tag}"
-                            }
+								reason = "Renamed by ${member.tag}"
+							}
 
-                            val suggestion = suggestions?.getByThread(channel.id)
+							val suggestion = suggestions?.getByThread(channel.id)
 
                             if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
                                 suggestion.status = SuggestionStatus.Open
@@ -534,22 +534,22 @@ class UtilityExtension : Extension() {
 
                             edit { content = "Thread renamed." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if ((channel.ownerId != user.id && threads.isOwner(channel, user) != true)) {
-                            edit { content = "**Error:** This is not your thread." }
+						if ((channel.ownerId != user.id && threads.isOwner(channel, user) != true)) {
+							edit { content = "**Error:** This is not your thread." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        channel.edit {
-                            name = arguments.name
+						channel.edit {
+							name = arguments.name
 
-                            reason = "Renamed by ${member.tag}"
-                        }
+							reason = "Renamed by ${member.tag}"
+						}
 
-                        val suggestion = suggestions?.getByThread(channel.id)
+						val suggestion = suggestions?.getByThread(channel.id)
 
                         if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
                             suggestion.status = SuggestionStatus.Open
@@ -561,336 +561,336 @@ class UtilityExtension : Extension() {
                     }
                 }
 
-                ephemeralSubCommand(::ArchiveArguments) {
-                    name = "archive"
-                    description = "Archive the current thread, if you have permission"
+				ephemeralSubCommand(::ArchiveArguments) {
+					name = "archive"
+					description = "Archive the current thread, if you have permission"
 
-                    check { isInThread() }
+					check { isInThread() }
 
-                    action {
-                        val channel = channel.asChannelOf<ThreadChannel>()
-                        val member = user.asMember(guild!!.id)
-                        val roles = member.roles.toList().map { it.id }
-                        val ownedThread = threads.get(channel)
+					action {
+						val channel = channel.asChannelOf<ThreadChannel>()
+						val member = user.asMember(guild!!.id)
+						val roles = member.roles.toList().map { it.id }
+						val ownedThread = threads.get(channel)
 
-                        if (MODERATOR_ROLES.any { it in roles }) {
-                            if (ownedThread != null) {
-                                ownedThread.preventArchiving = false
-                                threads.set(ownedThread)
-                            }
+						if (MODERATOR_ROLES.any { it in roles }) {
+							if (ownedThread != null) {
+								ownedThread.preventArchiving = false
+								threads.set(ownedThread)
+							}
 
-                            channel.edit {
-                                this.archived = true
-                                this.locked = arguments.lock
+							channel.edit {
+								this.archived = true
+								this.locked = arguments.lock
 
-                                reason = "Archived by ${user.asUser().tag}"
-                            }
+								reason = "Archived by ${user.asUser().tag}"
+							}
 
-                            edit {
-                                content = "Thread archived"
+							edit {
+								content = "Thread archived"
 
-                                if (arguments.lock) {
-                                    content += " and locked"
-                                }
+								if (arguments.lock) {
+									content += " and locked"
+								}
 
-                                content += "."
-                            }
+								content += "."
+							}
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-                            edit { content = "This is not your thread." }
+						if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
+							edit { content = "This is not your thread." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (channel.isArchived) {
-                            edit { content = "**Error:** This channel is already archived." }
+						if (channel.isArchived) {
+							edit { content = "**Error:** This channel is already archived." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (arguments.lock) {
-                            edit { content = "**Error:** Only moderators may lock threads." }
+						if (arguments.lock) {
+							edit { content = "**Error:** Only moderators may lock threads." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (ownedThread != null && ownedThread.preventArchiving) {
-                            edit {
-                                content = "**Error:** This thread can only be archived by a moderator."
-                            }
+						if (ownedThread != null && ownedThread.preventArchiving) {
+							edit {
+								content = "**Error:** This thread can only be archived by a moderator."
+							}
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        channel.edit {
-                            archived = true
+						channel.edit {
+							archived = true
 
-                            reason = "Archived by ${user.asUser().tag}"
-                        }
+							reason = "Archived by ${user.asUser().tag}"
+						}
 
-                        edit { content = "Thread archived." }
-                    }
-                }
+						edit { content = "Thread archived." }
+					}
+				}
 
-                ephemeralSubCommand(::PinMessageArguments) {
-                    name = "pin"
-                    description = "Pin a message in this thread, if you have permission"
+				ephemeralSubCommand(::PinMessageArguments) {
+					name = "pin"
+					description = "Pin a message in this thread, if you have permission"
 
-                    check { isInThread() }
+					check { isInThread() }
 
-                    action {
-                        val channel = channel.asChannelOf<ThreadChannel>()
-                        val member = user.asMember(guild!!.id)
-                        val roles = member.roles.toList().map { it.id }
+					action {
+						val channel = channel.asChannelOf<ThreadChannel>()
+						val member = user.asMember(guild!!.id)
+						val roles = member.roles.toList().map { it.id }
 
-                        if (arguments.message.channelId != channel.id) {
-                            edit {
-                                content = "**Error:** You may only pin a message in the current thread."
-                            }
+						if (arguments.message.channelId != channel.id) {
+							edit {
+								content = "**Error:** You may only pin a message in the current thread."
+							}
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (MODERATOR_ROLES.any { it in roles }) {
-                            arguments.message.pin("Pinned by ${member.tag}")
-                            edit { content = "Message pinned." }
+						if (MODERATOR_ROLES.any { it in roles }) {
+							arguments.message.pin("Pinned by ${member.tag}")
+							edit { content = "Message pinned." }
 
-                            return@action
-                        }
+							return@action
+						}
 
-                        if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-                            edit { content = "**Error:** This is not your thread." }
+						if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
+							edit { content = "**Error:** This is not your thread." }
 
-                            return@action
-                        }
-
-                        arguments.message.pin("Pinned by ${member.tag}")
+							return@action
+						}
+
+						arguments.message.pin("Pinned by ${member.tag}")
 
-                        edit { content = "Message pinned." }
-                    }
-                }
+						edit { content = "Message pinned." }
+					}
+				}
 
-                ephemeralSubCommand(::PinMessageArguments) {
-                    name = "unpin"
-                    description = "Unpin a message in this thread, if you have permission"
+				ephemeralSubCommand(::PinMessageArguments) {
+					name = "unpin"
+					description = "Unpin a message in this thread, if you have permission"
 
-                    check { isInThread() }
-
-                    action {
-                        val channel = channel.asChannelOf<ThreadChannel>()
-                        val member = user.asMember(guild!!.id)
-                        val roles = member.roles.toList().map { it.id }
-
-                        if (arguments.message.channelId != channel.id) {
-                            edit {
-                                content = "**Error:** You may only pin a message in the current thread."
-                            }
-
-                            return@action
-                        }
-
-                        if (MODERATOR_ROLES.any { it in roles }) {
-                            arguments.message.unpin("Unpinned by ${member.tag}")
-                            edit { content = "Message unpinned." }
-
-                            return@action
-                        }
-
-                        if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-                            edit { content = "**Error:** This is not your thread." }
-
-                            return@action
-                        }
-
-                        arguments.message.unpin("Unpinned by ${member.tag}")
-
-                        edit { content = "Message unpinned." }
-                    }
-                }
-
-                ephemeralSubCommand {
-                    name = "prevent-archiving"
-                    description = "Prevent the current thread from archiving, if you have permission"
-
-                    guild(guildId)
-
-                    check { hasBaseModeratorRole() }
-                    check { isInThread() }
-
-                    action {
-                        val channel = channel.asChannelOf<ThreadChannel>()
-                        val member = user.asMember(guild!!.id)
-
-                        if (channel.isArchived) {
-                            channel.edit {
-                                archived = false
-                                reason = "`/thread prevent-archiving` run by ${member.tag}"
-                            }
-                        }
-
-                        val thread = threads.get(channel)
-
-                        if (thread != null) {
-                            if (thread.preventArchiving) {
-                                edit {
-                                    content = "I'm already stopping this thread from being archived."
-                                }
-
-                                return@action
-                            }
-
-                            thread.preventArchiving = true
-                            threads.set(thread)
-                        } else {
-                            threads.set(
-                                OwnedThread(
-                                    channel.id,
-                                    channel.owner.id,
-                                    channel.guild.id,
-                                    true
-                                )
-                            )
-                        }
-
-                        edit { content = "Thread will no longer be archived." }
-
-                        guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
-                            title = "Thread Persistence Enabled"
-                            color = DISCORD_BLURPLE
-
-                            userField(member, "Moderator")
-                            channelField(channel, "Thread")
-                        }
-                    }
-                }
-
-                ephemeralSubCommand(::SetOwnerArguments) {
-                    name = "set-owner"
-                    description = "Change the owner of the thread, if you have permission"
-
-                    check { isInThread() }
-
-                    action {
-                        val channel = channel.asChannel() as ThreadChannel
-                        val member = user.asMember(guild!!.id)
-                        val roles = member.roles.toList().map { it.id }
-                        var thread = threads.get(channel)
-
-                        if (thread == null) {
-                            thread = OwnedThread(
-                                _id = channel.id,
-                                owner = channel.ownerId,
-                                guild = guild!!.id,
-                                preventArchiving = false,
-                            )
-                        }
-
-                        val previousOwner = thread.owner
-
-                        if ((thread.owner != user.id && threads.isOwner(channel, user) != true) &&
-                            !MODERATOR_ROLES.any { it in roles }
-                        ) {
-                            edit { content = "**Error:** This is not your thread." }
-                            return@action
-                        }
-
-                        if (thread.owner == arguments.user.id) {
-                            edit {
-                                content = "That user already owns this thread."
-                            }
-
-                            return@action
-                        }
-
-                        if (MODERATOR_ROLES.any { it in roles }) {
-                            thread.owner = arguments.user.id
-                            threads.set(thread)
-
-                            edit { content = "Updated thread owner to ${arguments.user.mention}" }
-
-                            guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
-                                title = "Thread Owner Updated (Moderator)"
-                                color = DISCORD_BLURPLE
-
-                                userField(member.asUser(), "Moderator")
-                                userField(guild!!.getMember(previousOwner), "Previous Owner")
-                                userField(arguments.user, "New Owner")
-                                channelField(channel, "Thread")
-                            }
-                        } else {
-                            respond {
-                                embed {
-                                    color = DISCORD_BLURPLE
-                                    description =
-                                        "Are you sure you want to transfer ownership to " +
-                                                "${arguments.user.mention}? To cancel the" +
-                                                " transfer, simply ignore this message."
-                                }
-
-                                components(15.seconds) {
-                                    onTimeout {
-                                        edit {
-                                            embed {
-                                                color = DISCORD_BLURPLE
-                                                description =
-                                                    "Action timed out - no change performed"
-                                            }
-
-                                            components {
-                                                removeAll()
-                                            }
-                                        }
-                                    }
-
-                                    ephemeralButton {
-                                        label = "Yes"
-                                        action {
-                                            thread.owner = arguments.user.id
-                                            threads.set(thread)
-
-                                            edit {
-                                                embed {
-                                                    color = DISCORD_BLURPLE
-                                                    description =
-                                                        "Updated thread owner to " +
-                                                                arguments.user.mention
-                                                }
-
-                                                components {
-                                                    removeAll()
-                                                }
-                                            }
-
-                                            guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
-                                                title = "Thread Owner Updated (User)"
-                                                color = DISCORD_BLURPLE
-
-                                                userField(member.asUser(), "Previous Owner")
-                                                userField(arguments.user, "New Owner")
-                                                channelField(channel, "Thread")
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            ephemeralSlashCommand(::SayArguments) {
-                name = "say"
-                description = "Send a message."
-
-                guild(guildId)
-
-                check { hasBaseModeratorRole() }
-
-                action {
-                    val flags = arguments.flags?.split(",")?.map { it.trim().lowercase() } ?: emptyList()
+					check { isInThread() }
+
+					action {
+						val channel = channel.asChannelOf<ThreadChannel>()
+						val member = user.asMember(guild!!.id)
+						val roles = member.roles.toList().map { it.id }
+
+						if (arguments.message.channelId != channel.id) {
+							edit {
+								content = "**Error:** You may only pin a message in the current thread."
+							}
+
+							return@action
+						}
+
+						if (MODERATOR_ROLES.any { it in roles }) {
+							arguments.message.unpin("Unpinned by ${member.tag}")
+							edit { content = "Message unpinned." }
+
+							return@action
+						}
+
+						if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
+							edit { content = "**Error:** This is not your thread." }
+
+							return@action
+						}
+
+						arguments.message.unpin("Unpinned by ${member.tag}")
+
+						edit { content = "Message unpinned." }
+					}
+				}
+
+				ephemeralSubCommand {
+					name = "prevent-archiving"
+					description = "Prevent the current thread from archiving, if you have permission"
+
+					guild(guildId)
+
+					check { hasBaseModeratorRole() }
+					check { isInThread() }
+
+					action {
+						val channel = channel.asChannelOf<ThreadChannel>()
+						val member = user.asMember(guild!!.id)
+
+						if (channel.isArchived) {
+							channel.edit {
+								archived = false
+								reason = "`/thread prevent-archiving` run by ${member.tag}"
+							}
+						}
+
+						val thread = threads.get(channel)
+
+						if (thread != null) {
+							if (thread.preventArchiving) {
+								edit {
+									content = "I'm already stopping this thread from being archived."
+								}
+
+								return@action
+							}
+
+							thread.preventArchiving = true
+							threads.set(thread)
+						} else {
+							threads.set(
+								OwnedThread(
+									channel.id,
+									channel.owner.id,
+									channel.guild.id,
+									true
+								)
+							)
+						}
+
+						edit { content = "Thread will no longer be archived." }
+
+						guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+							title = "Thread Persistence Enabled"
+							color = DISCORD_BLURPLE
+
+							userField(member, "Moderator")
+							channelField(channel, "Thread")
+						}
+					}
+				}
+
+				ephemeralSubCommand(::SetOwnerArguments) {
+					name = "set-owner"
+					description = "Change the owner of the thread, if you have permission"
+
+					check { isInThread() }
+
+					action {
+						val channel = channel.asChannel() as ThreadChannel
+						val member = user.asMember(guild!!.id)
+						val roles = member.roles.toList().map { it.id }
+						var thread = threads.get(channel)
+
+						if (thread == null) {
+							thread = OwnedThread(
+								_id = channel.id,
+								owner = channel.ownerId,
+								guild = guild!!.id,
+								preventArchiving = false,
+							)
+						}
+
+						val previousOwner = thread.owner
+
+						if ((thread.owner != user.id && threads.isOwner(channel, user) != true) &&
+							!MODERATOR_ROLES.any { it in roles }
+						) {
+							edit { content = "**Error:** This is not your thread." }
+							return@action
+						}
+
+						if (thread.owner == arguments.user.id) {
+							edit {
+								content = "That user already owns this thread."
+							}
+
+							return@action
+						}
+
+						if (MODERATOR_ROLES.any { it in roles }) {
+							thread.owner = arguments.user.id
+							threads.set(thread)
+
+							edit { content = "Updated thread owner to ${arguments.user.mention}" }
+
+							guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+								title = "Thread Owner Updated (Moderator)"
+								color = DISCORD_BLURPLE
+
+								userField(member.asUser(), "Moderator")
+								userField(guild!!.getMember(previousOwner), "Previous Owner")
+								userField(arguments.user, "New Owner")
+								channelField(channel, "Thread")
+							}
+						} else {
+							respond {
+								embed {
+									color = DISCORD_BLURPLE
+									description =
+										"Are you sure you want to transfer ownership to " +
+												"${arguments.user.mention}? To cancel the" +
+												" transfer, simply ignore this message."
+								}
+
+								components(15.seconds) {
+									onTimeout {
+										edit {
+											embed {
+												color = DISCORD_BLURPLE
+												description =
+													"Action timed out - no change performed"
+											}
+
+											components {
+												removeAll()
+											}
+										}
+									}
+
+									ephemeralButton {
+										label = "Yes"
+										action {
+											thread.owner = arguments.user.id
+											threads.set(thread)
+
+											edit {
+												embed {
+													color = DISCORD_BLURPLE
+													description =
+														"Updated thread owner to " +
+																arguments.user.mention
+												}
+
+												components {
+													removeAll()
+												}
+											}
+
+											guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+												title = "Thread Owner Updated (User)"
+												color = DISCORD_BLURPLE
+
+												userField(member.asUser(), "Previous Owner")
+												userField(arguments.user, "New Owner")
+												channelField(channel, "Thread")
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			ephemeralSlashCommand(::SayArguments) {
+				name = "say"
+				description = "Send a message."
+
+				guild(guildId)
+
+				check { hasBaseModeratorRole() }
+
+				action {
+					val flags = arguments.flags?.split(",")?.map { it.trim().lowercase() } ?: emptyList()
                     val targetChannel = (arguments.target ?: channel.asChannel()).asChannelOf<GuildMessageChannel>()
 
                     val message = arguments.message
@@ -910,17 +910,17 @@ class UtilityExtension : Extension() {
                         }
                     }
 
-                    targetChannel.createMessage(arguments.message)
+					targetChannel.createMessage(arguments.message)
 
-                    guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
-                        title = "/say command used"
-                        description = arguments.message
+					guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+						title = "/say command used"
+						description = arguments.message
 
-                        field {
-                            inline = true
-                            name = "Channel"
-                            value = targetChannel.mention
-                        }
+						field {
+							inline = true
+							name = "Channel"
+							value = targetChannel.mention
+						}
 
                         field {
                             inline = true
@@ -943,324 +943,324 @@ class UtilityExtension : Extension() {
                         }
                     }
 
-                    edit { content = "Done!" }
-                }
-            }
+					edit { content = "Done!" }
+				}
+			}
 
-            ephemeralSlashCommand(::MuteRoleArguments) {
-                name = "fix-mute-role"
-                description = "Fix the permissions for the mute role on this server."
+			ephemeralSlashCommand(::MuteRoleArguments) {
+				name = "fix-mute-role"
+				description = "Fix the permissions for the mute role on this server."
 
-                guild(guildId)
+				guild(guildId)
 
-                check { isAdminOrHasOverride() }
+				check { isAdminOrHasOverride() }
 
-                action {
-                    val role = arguments.role ?: guild?.asGuild()?.roles?.firstOrNull { it.name.lowercase() == "muted" }
+				action {
+					val role = arguments.role ?: guild?.asGuild()?.roles?.firstOrNull { it.name.lowercase() == "muted" }
 
-                    if (role == null) {
-                        respond {
-                            content =
-                                "Unable to find a role named `Muted` - double-check the list of roles, or provide " +
-                                        "one as an argument."
-                        }
-                        return@action
-                    }
+					if (role == null) {
+						respond {
+							content =
+								"Unable to find a role named `Muted` - double-check the list of roles, or provide " +
+										"one as an argument."
+						}
+						return@action
+					}
 
-                    var channelsUpdated = 0
+					var channelsUpdated = 0
 
-                    for (channel in guild!!.channels.toList()) {
-                        val overwrite = channel.getPermissionOverwritesForRole(role.id)
+					for (channel in guild!!.channels.toList()) {
+						val overwrite = channel.getPermissionOverwritesForRole(role.id)
 
-                        val allowedPerms = overwrite?.allowed
-                        val deniedPerms = overwrite?.denied
+						val allowedPerms = overwrite?.allowed
+						val deniedPerms = overwrite?.denied
 
-                        val hasNonDeniedPerms =
-                            deniedPerms == null || SPEAKING_PERMISSIONS.any { !deniedPerms.contains(it) }
+						val hasNonDeniedPerms =
+							deniedPerms == null || SPEAKING_PERMISSIONS.any { !deniedPerms.contains(it) }
 
-                        val canDenyNonAllowedPerms = allowedPerms == null || SPEAKING_PERMISSIONS.any {
-                            !allowedPerms.contains(it) && deniedPerms?.contains(it) != true
-                        }
+						val canDenyNonAllowedPerms = allowedPerms == null || SPEAKING_PERMISSIONS.any {
+							!allowedPerms.contains(it) && deniedPerms?.contains(it) != true
+						}
 
-                        if (hasNonDeniedPerms && canDenyNonAllowedPerms) {
-                            channel.editRolePermission(role.id) {
-                                SPEAKING_PERMISSIONS
-                                    .filter { allowedPerms?.contains(it) != true }
-                                    .forEach { denied += it }
+						if (hasNonDeniedPerms && canDenyNonAllowedPerms) {
+							channel.editRolePermission(role.id) {
+								SPEAKING_PERMISSIONS
+									.filter { allowedPerms?.contains(it) != true }
+									.forEach { denied += it }
 
-                                SPEAKING_PERMISSIONS
-                                    .filter { allowedPerms?.contains(it) == true }
-                                    .forEach { allowed += it }
+								SPEAKING_PERMISSIONS
+									.filter { allowedPerms?.contains(it) == true }
+									.forEach { allowed += it }
 
-                                reason = "Mute role permissions update triggered by ${user.asUser().tag}"
-                            }
+								reason = "Mute role permissions update triggered by ${user.asUser().tag}"
+							}
 
-                            channelsUpdated += 1
-                        }
-                    }
+							channelsUpdated += 1
+						}
+					}
 
-                    respond {
-                        content = if (channelsUpdated > 0) {
-                            "Updated permissions for $channelsUpdated channel/s."
-                        } else {
-                            "No channels to update."
-                        }
-                    }
-
-                    val roleUpdated = if (role.permissions.values.isNotEmpty()) {
-                        role.edit {
-                            permissions = Permissions()
-
-                            reason = "Mute role permissions update triggered by ${user.asUser().tag}"
-                        }
+					respond {
+						content = if (channelsUpdated > 0) {
+							"Updated permissions for $channelsUpdated channel/s."
+						} else {
+							"No channels to update."
+						}
+					}
+
+					val roleUpdated = if (role.permissions.values.isNotEmpty()) {
+						role.edit {
+							permissions = Permissions()
+
+							reason = "Mute role permissions update triggered by ${user.asUser().tag}"
+						}
 
-                        respond { content = "Mute role permissions cleared." }
+						respond { content = "Mute role permissions cleared." }
 
-                        true
-                    } else {
-                        respond { content = "Mute role already has no extra permissions." }
+						true
+					} else {
+						respond { content = "Mute role already has no extra permissions." }
 
-                        false
-                    }
+						false
+					}
 
-                    if (channelsUpdated > 0 || roleUpdated) {
-                        guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
-                            title = "Mute role updated"
-                            color = DISCORD_BLURPLE
+					if (channelsUpdated > 0 || roleUpdated) {
+						guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
+							title = "Mute role updated"
+							color = DISCORD_BLURPLE
 
-                            description =
-                                "Mute role (${role.mention} / `${role.id}`) permissions updated by " +
-                                        "${user.mention}."
+							description =
+								"Mute role (${role.mention} / `${role.id}`) permissions updated by " +
+										"${user.mention}."
 
-                            timestamp = Clock.System.now()
-
-                            field {
-                                name = "Channels Updated"
-                                inline = true
+							timestamp = Clock.System.now()
+
+							field {
+								name = "Channels Updated"
+								inline = true
 
-                                value = "$channelsUpdated"
-                            }
-
-                            field {
-                                name = "Role Updated"
-                                inline = true
-
-                                value = if (roleUpdated) "Yes" else "No"
-                            }
-                        }
-                    }
-                }
-            }
-
-            ephemeralSlashCommand {
-                name = "lock-server"
-                description = "Lock the server, preventing anyone but staff from talking"
-
-                guild(guildId)
-
-                check { isAdminOrHasOverride() }
-
-                action {
-                    val roleId = when (guild!!.id) {
-                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
-
-                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
-                    }
-
-                    val moderatorRole = guild!!.getRole(roleId)
-                    val everyoneRole = guild!!.getRole(guild!!.id)
-
-                    everyoneRole.edit {
-                        permissions = everyoneRole.permissions
-                            .minus(Permission.AddReactions)
-                            .minus(Permission.CreatePrivateThreads)
-                            .minus(Permission.CreatePublicThreads)
-                            .minus(Permission.SendMessages)
-                            .minus(Permission.SendMessagesInThreads)
-
-                        reason = "Server locked down by ${user.asUser().tag}"
-                    }
-
-                    moderatorRole.edit {
-                        permissions = moderatorRole.permissions
-                            .plus(Permission.AddReactions)
-                            .plus(Permission.CreatePrivateThreads)
-                            .plus(Permission.CreatePublicThreads)
-                            .plus(Permission.SendMessages)
-                            .plus(Permission.SendMessagesInThreads)
-
-                        reason = "Server locked down by ${user.asUser().tag}"
-                    }
-
-                    guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
-                        title = "Server locked"
-                        color = DISCORD_RED
-
-                        description = "Server was locked by ${user.mention}."
-                        timestamp = Clock.System.now()
-                    }
-
-                    respond {
-                        content = "Server locked."
-                    }
-                }
-            }
+								value = "$channelsUpdated"
+							}
+
+							field {
+								name = "Role Updated"
+								inline = true
+
+								value = if (roleUpdated) "Yes" else "No"
+							}
+						}
+					}
+				}
+			}
+
+			ephemeralSlashCommand {
+				name = "lock-server"
+				description = "Lock the server, preventing anyone but staff from talking"
+
+				guild(guildId)
+
+				check { isAdminOrHasOverride() }
+
+				action {
+					val roleId = when (guild!!.id) {
+						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+
+						else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+					}
+
+					val moderatorRole = guild!!.getRole(roleId)
+					val everyoneRole = guild!!.getRole(guild!!.id)
+
+					everyoneRole.edit {
+						permissions = everyoneRole.permissions
+							.minus(Permission.AddReactions)
+							.minus(Permission.CreatePrivateThreads)
+							.minus(Permission.CreatePublicThreads)
+							.minus(Permission.SendMessages)
+							.minus(Permission.SendMessagesInThreads)
+
+						reason = "Server locked down by ${user.asUser().tag}"
+					}
+
+					moderatorRole.edit {
+						permissions = moderatorRole.permissions
+							.plus(Permission.AddReactions)
+							.plus(Permission.CreatePrivateThreads)
+							.plus(Permission.CreatePublicThreads)
+							.plus(Permission.SendMessages)
+							.plus(Permission.SendMessagesInThreads)
+
+						reason = "Server locked down by ${user.asUser().tag}"
+					}
+
+					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
+						title = "Server locked"
+						color = DISCORD_RED
+
+						description = "Server was locked by ${user.mention}."
+						timestamp = Clock.System.now()
+					}
+
+					respond {
+						content = "Server locked."
+					}
+				}
+			}
 
-            ephemeralSlashCommand {
-                name = "unlock-server"
-                description = "Unlock the server, allowing users to talk again"
+			ephemeralSlashCommand {
+				name = "unlock-server"
+				description = "Unlock the server, allowing users to talk again"
 
-                guild(guildId)
-
-                check { isAdminOrHasOverride() }
+				guild(guildId)
+
+				check { isAdminOrHasOverride() }
 
-                action {
-                    val roleId = when (guild!!.id) {
-                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+				action {
+					val roleId = when (guild!!.id) {
+						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
-                    }
-
-                    val moderatorRole = guild!!.getRole(roleId)
-                    val everyoneRole = guild!!.getRole(guild!!.id)
-
-                    everyoneRole.edit {
-                        permissions = everyoneRole.permissions
-                            .plus(Permission.AddReactions)
-                            .plus(Permission.CreatePrivateThreads)
-                            .plus(Permission.CreatePublicThreads)
-                            .plus(Permission.SendMessages)
-                            .plus(Permission.SendMessagesInThreads)
+						else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+					}
+
+					val moderatorRole = guild!!.getRole(roleId)
+					val everyoneRole = guild!!.getRole(guild!!.id)
+
+					everyoneRole.edit {
+						permissions = everyoneRole.permissions
+							.plus(Permission.AddReactions)
+							.plus(Permission.CreatePrivateThreads)
+							.plus(Permission.CreatePublicThreads)
+							.plus(Permission.SendMessages)
+							.plus(Permission.SendMessagesInThreads)
 
-                        reason = "Server unlocked by ${user.asUser().tag}"
-                    }
+						reason = "Server unlocked by ${user.asUser().tag}"
+					}
 
-                    moderatorRole.edit {
-                        permissions = moderatorRole.permissions
-                            .minus(Permission.AddReactions)
-                            .minus(Permission.CreatePrivateThreads)
-                            .minus(Permission.CreatePublicThreads)
-                            .minus(Permission.SendMessages)
-                            .minus(Permission.SendMessagesInThreads)
-
-                        reason = "Server unlocked by ${user.asUser().tag}"
-                    }
+					moderatorRole.edit {
+						permissions = moderatorRole.permissions
+							.minus(Permission.AddReactions)
+							.minus(Permission.CreatePrivateThreads)
+							.minus(Permission.CreatePublicThreads)
+							.minus(Permission.SendMessages)
+							.minus(Permission.SendMessagesInThreads)
+
+						reason = "Server unlocked by ${user.asUser().tag}"
+					}
 
-                    guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
-                        title = "Server unlocked"
-                        color = DISCORD_GREEN
+					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
+						title = "Server unlocked"
+						color = DISCORD_GREEN
 
-                        description = "Server was unlocked by ${user.mention}."
-                        timestamp = Clock.System.now()
-                    }
+						description = "Server was unlocked by ${user.mention}."
+						timestamp = Clock.System.now()
+					}
 
-                    respond {
-                        content = "Server unlocked."
-                    }
-                }
-            }
+					respond {
+						content = "Server unlocked."
+					}
+				}
+			}
 
-            ephemeralSlashCommand(::LockArguments) {
-                name = "lock"
-                description = "Lock a channel, so only moderators can interact in it"
+			ephemeralSlashCommand(::LockArguments) {
+				name = "lock"
+				description = "Lock a channel, so only moderators can interact in it"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { hasBaseModeratorRole() }
+				check { hasBaseModeratorRole() }
 
-                action {
-                    var channelObj = arguments.channel ?: channel.asChannel()
+				action {
+					var channelObj = arguments.channel ?: channel.asChannel()
 
-                    if (channelObj.type in THREAD_CHANNEL_TYPES) {
-                        channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
-                    }
+					if (channelObj.type in THREAD_CHANNEL_TYPES) {
+						channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
+					}
 
-                    if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
-                        respond {
-                            content = "This command can only be run in a guild text channel."
-                        }
-                    }
+					if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
+						respond {
+							content = "This command can only be run in a guild text channel."
+						}
+					}
 
-                    val staffRoleId = when (guild?.id) {
-                        LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-                        YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+					val staffRoleId = when (guild?.id) {
+						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-                        else            -> null
-                    }
+						else -> null
+					}
 
-                    val ch = channelObj.asChannelOf<TextChannel>()
+					val ch = channelObj.asChannelOf<TextChannel>()
 
-                    if (staffRoleId != null) {
-                        ch.editRolePermission(staffRoleId) {
-                            SPEAKING_PERMISSIONS.forEach { allowed += it }
+					if (staffRoleId != null) {
+						ch.editRolePermission(staffRoleId) {
+							SPEAKING_PERMISSIONS.forEach { allowed += it }
 
-                            reason = "Channel locked by ${user.asUser().tag}"
-                        }
-                    }
+							reason = "Channel locked by ${user.asUser().tag}"
+						}
+					}
 
-                    ch.editRolePermission(guild!!.id) {
-                        SPEAKING_PERMISSIONS.forEach { denied += it }
+					ch.editRolePermission(guild!!.id) {
+						SPEAKING_PERMISSIONS.forEach { denied += it }
 
-                        reason = "Channel locked by ${user.asUser().tag}"
-                    }
+						reason = "Channel locked by ${user.asUser().tag}"
+					}
 
-                    ch.createMessage {
-                        content = "Channel locked by a moderator."
-                    }
+					ch.createMessage {
+						content = "Channel locked by a moderator."
+					}
 
-                    guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
-                        title = "Channel locked"
-                        color = DISCORD_RED
+					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
+						title = "Channel locked"
+						color = DISCORD_RED
 
-                        description = "Channel ${ch.mention} was locked by ${user.mention}."
-                        timestamp = Clock.System.now()
-                    }
+						description = "Channel ${ch.mention} was locked by ${user.mention}."
+						timestamp = Clock.System.now()
+					}
 
-                    respond {
-                        content = "Channel locked."
-                    }
-                }
-            }
+					respond {
+						content = "Channel locked."
+					}
+				}
+			}
 
-            ephemeralSlashCommand(::LockArguments) {
-                name = "unlock"
-                description = "Unlock a previously locked channel"
+			ephemeralSlashCommand(::LockArguments) {
+				name = "unlock"
+				description = "Unlock a previously locked channel"
 
-                guild(guildId)
+				guild(guildId)
 
-                check { hasBaseModeratorRole() }
+				check { hasBaseModeratorRole() }
 
-                action {
-                    var channelObj = arguments.channel ?: channel.asChannel()
+				action {
+					var channelObj = arguments.channel ?: channel.asChannel()
 
-                    if (channelObj.type in THREAD_CHANNEL_TYPES) {
-                        channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
-                    }
+					if (channelObj.type in THREAD_CHANNEL_TYPES) {
+						channelObj = channelObj.asChannelOf<ThreadChannel>().parent.asChannel()
+					}
 
-                    if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
-                        respond {
-                            content = "This command can only be run in a guild text channel."
-                        }
-                    }
+					if (channelObj.type !in TEXT_CHANNEL_TYPES) {  // Should never happen, but we handle it for safety
+						respond {
+							content = "This command can only be run in a guild text channel."
+						}
+					}
 
-                    val ch = channelObj.asChannelOf<TextChannel>()
+					val ch = channelObj.asChannelOf<TextChannel>()
 
-                    ch.getPermissionOverwritesForRole(guild!!.id)
-                        ?.delete("Channel unlocked by ${user.asUser().tag}")
+					ch.getPermissionOverwritesForRole(guild!!.id)
+						?.delete("Channel unlocked by ${user.asUser().tag}")
 
-                    ch.createMessage {
-                        content = "Channel unlocked by a moderator."
-                    }
+					ch.createMessage {
+						content = "Channel unlocked by a moderator."
+					}
 
-                    guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
-                        title = "Channel unlocked"
-                        color = DISCORD_GREEN
+					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
+						title = "Channel unlocked"
+						color = DISCORD_GREEN
 
-                        description = "Channel ${ch.mention} was unlocked by ${user.mention}."
-                        timestamp = Clock.System.now()
-                    }
+						description = "Channel ${ch.mention} was unlocked by ${user.mention}."
+						timestamp = Clock.System.now()
+					}
 
                     respond {
                         content = "Channel unlocked."
@@ -1430,64 +1430,64 @@ class UtilityExtension : Extension() {
                 }
             }
         }
-    }
+	}
 
-    inner class PinMessageArguments : Arguments() {
-        val message by message {
-            name = "message"
-            description = "Message link or ID to pin/unpin"
-        }
-    }
+	inner class PinMessageArguments : Arguments() {
+		val message by message {
+			name = "message"
+			description = "Message link or ID to pin/unpin"
+		}
+	}
 
-    inner class RenameArguments : Arguments() {
-        val name by string {
-            name = "name"
-            description = "Name to give the current thread"
-        }
-    }
+	inner class RenameArguments : Arguments() {
+		val name by string {
+			name = "name"
+			description = "Name to give the current thread"
+		}
+	}
 
-    inner class ArchiveArguments : Arguments() {
-        val lock by defaultingBoolean {
-            name = "lock"
-            description = "Whether to lock the thread, if you're staff - defaults to false"
+	inner class ArchiveArguments : Arguments() {
+		val lock by defaultingBoolean {
+			name = "lock"
+			description = "Whether to lock the thread, if you're staff - defaults to false"
 
-            defaultValue = false
-        }
-    }
+			defaultValue = false
+		}
+	}
 
-    inner class SetOwnerArguments : Arguments() {
-        val user by user {
-            name = "user"
-            description = "User to set as the owner of the thread"
-        }
-    }
+	inner class SetOwnerArguments : Arguments() {
+		val user by user {
+			name = "user"
+			description = "User to set as the owner of the thread"
+		}
+	}
 
-    inner class LockArguments : Arguments() {
-        val channel by optionalChannel {
-            name = "channel"
-            description = "Channel to lock/unlock, if not the current one"
-        }
-    }
+	inner class LockArguments : Arguments() {
+		val channel by optionalChannel {
+			name = "channel"
+			description = "Channel to lock/unlock, if not the current one"
+		}
+	}
 
-    inner class MuteRoleArguments : Arguments() {
-        val role by optionalRole {
-            name = "role"
-            description = "Mute role ID, if the role isn't named Muted"
-        }
-    }
+	inner class MuteRoleArguments : Arguments() {
+		val role by optionalRole {
+			name = "role"
+			description = "Mute role ID, if the role isn't named Muted"
+		}
+	}
 
-    inner class SayArguments : Arguments() {
-        val message by string {
-            name = "message"
-            description = "Message to send"
-        }
+	inner class SayArguments : Arguments() {
+		val message by string {
+			name = "message"
+			description = "Message to send"
+		}
 
-        val target by optionalChannel {
-            name = "target"
-            description = "Channel to use, if not this one"
+		val target by optionalChannel {
+			name = "target"
+			description = "Channel to use, if not this one"
 
-            validate {
-                failIf("${value?.mention} is not a guild text channel.") {
+			validate {
+				failIf("${value?.mention} is not a guild text channel.") {
                     value != null && value!!.type !in listOf(
                         ChannelType.GuildText,
                         ChannelType.GuildNews,
@@ -1499,19 +1499,19 @@ class UtilityExtension : Extension() {
         }
 
         val flags by optionalString {
-            name = "flags"
+			name = "flags"
             description = "A comma-separated list of flags to use"
 
             mutate {
                 it?.split(",")?.joinToString(",") { s -> s.trim() }
             }
         }
-    }
+	}
 
-    inner class LeaveGuildArguments : Arguments() {
+	inner class LeaveGuildArguments : Arguments() {
         val guild by guild {
             name = "guild"
             description = "Guild to use. To specify this guild, use its ID."
-        }
-    }
+		}
+	}
 }

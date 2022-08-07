@@ -56,261 +56,261 @@ import kotlin.time.ExperimentalTime
 // TODO: Implement these settings in other parts of the bot, and add logging
 
 class SettingsExtension : Extension() {
-    override val name: String = "settings"
+	override val name: String = "settings"
 
-    private val logger = KotlinLogging.logger { }
+	private val logger = KotlinLogging.logger { }
 
-    private val globalSettings: GlobalSettingsCollection by inject()
-    private val serverSettings: ServerSettingsCollection by inject()
-    private val userFlags: UserFlagsCollection by inject()
+	private val globalSettings: GlobalSettingsCollection by inject()
+	private val serverSettings: ServerSettingsCollection by inject()
+	private val userFlags: UserFlagsCollection by inject()
 
-    private val messageLogExtension get() = bot.findExtension<MessageLogExtension>()
+	private val messageLogExtension get() = bot.findExtension<MessageLogExtension>()
 
-    override suspend fun setup() {
-        if (globalSettings.get() == null) {
-            logger.info { "Creating initial global settings entry" }
+	override suspend fun setup() {
+		if (globalSettings.get() == null) {
+			logger.info { "Creating initial global settings entry" }
 
-            GlobalSettings().save()
-        }
+			GlobalSettings().save()
+		}
 
-        event<GuildCreateEvent> {
-            action {
-                val settings = serverSettings.get(event.guild.id)
+		event<GuildCreateEvent> {
+			action {
+				val settings = serverSettings.get(event.guild.id)
 
-                if (settings == null) {
-                    logger.info { "Creating settings entry for guild: ${event.guild.name} (${event.guild.id.value})" }
+				if (settings == null) {
+					logger.info { "Creating settings entry for guild: ${event.guild.name} (${event.guild.id.value})" }
 
-                    serverSettings.set(ServerSettings(event.guild.id))
-                } else if (settings.leaveServer) {
-                    logger.info { "Leaving guild, as configured: ${event.guild.name} (${event.guild.id.value})" }
+					serverSettings.set(ServerSettings(event.guild.id))
+				} else if (settings.leaveServer) {
+					logger.info { "Leaving guild, as configured: ${event.guild.name} (${event.guild.id.value})" }
 
-                    delay(2.seconds)
+					delay(2.seconds)
 
-                    event.guild.leave()
-                }
-            }
-        }
+					event.guild.leave()
+				}
+			}
+		}
 
-        GUILDS.forEach { guildId ->
-            ephemeralSlashCommand {
-                name = "config"
-                description = "Manage your bot settings"
+		GUILDS.forEach { guildId ->
+			ephemeralSlashCommand {
+				name = "config"
+				description = "Manage your bot settings"
 
-                guild(guildId)
+				guild(guildId)
 
-                ephemeralSubCommand {
-                    name = "get"
-                    description = "Show your settings"
+				ephemeralSubCommand {
+					name = "get"
+					description = "Show your settings"
 
-                    action {
-                        val flags = userFlags.get(user.id) ?: UserFlags(user.id)
+					action {
+						val flags = userFlags.get(user.id) ?: UserFlags(user.id)
 
-                        respond {
-                            embed {
-                                title = "Your Settings"
-                                color = DISCORD_BLURPLE
+						respond {
+							embed {
+								title = "Your Settings"
+								color = DISCORD_BLURPLE
 
-                                description = buildString {
-                                    append("**Auto publish:** ")
+								description = buildString {
+									append("**Auto publish:** ")
 
-                                    if (flags.autoPublish) {
-                                        appendLine("Enabled")
-                                    } else {
-                                        appendLine("Disabled")
-                                    }
+									if (flags.autoPublish) {
+										appendLine("Enabled")
+									} else {
+										appendLine("Disabled")
+									}
 
-                                    append("**Sync nicknames:** ")
+									append("**Sync nicknames:** ")
 
-                                    if (flags.syncNicks) {
-                                        appendLine("Enabled")
-                                    } else {
-                                        appendLine("Disabled")
-                                    }
+									if (flags.syncNicks) {
+										appendLine("Enabled")
+									} else {
+										appendLine("Disabled")
+									}
 
-                                    trim()
-                                }
-                            }
-                        }
-                    }
-                }
+									trim()
+								}
+							}
+						}
+					}
+				}
 
-                ephemeralSubCommand(booleanFlag("auto-publish announcement messages")) {
-                    name = "auto-publish"
-                    description = "Configure the automatic publishing of announcement messages"
+				ephemeralSubCommand(booleanFlag("auto-publish announcement messages")) {
+					name = "auto-publish"
+					description = "Configure the automatic publishing of announcement messages"
 
-                    action {
-                        val flags = userFlags.get(user.id) ?: UserFlags(user.id)
+					action {
+						val flags = userFlags.get(user.id) ?: UserFlags(user.id)
 
-                        flags.autoPublish = arguments.value
-                        flags.save()
+						flags.autoPublish = arguments.value
+						flags.save()
 
-                        respond {
-                            content = "Auto-publishing **" + if (flags.autoPublish) {
-                                "enabled"
-                            } else {
-                                "disabled"
-                            } + "**."
-                        }
-                    }
-                }
+						respond {
+							content = "Auto-publishing **" + if (flags.autoPublish) {
+								"enabled"
+							} else {
+								"disabled"
+							} + "**."
+						}
+					}
+				}
 
-                ephemeralSubCommand(booleanFlag("sync nickname between servers")) {
-                    name = "nick-sync"
-                    description = "Set whether your nickname should be synced between Quilt servers"
+				ephemeralSubCommand(booleanFlag("sync nickname between servers")) {
+					name = "nick-sync"
+					description = "Set whether your nickname should be synced between Quilt servers"
 
-                    action {
-                        val flags = userFlags.get(user.id) ?: UserFlags(user.id)
+					action {
+						val flags = userFlags.get(user.id) ?: UserFlags(user.id)
 
-                        flags.syncNicks = arguments.value
-                        flags.save()
+						flags.syncNicks = arguments.value
+						flags.save()
 
-                        respond {
-                            content = "Nickname sync **" + if (flags.syncNicks) {
-                                "enabled"
-                            } else {
-                                "disabled"
-                            } + "**."
-                        }
-                    }
-                }
-            }
-        }
+						respond {
+							content = "Nickname sync **" + if (flags.syncNicks) {
+								"enabled"
+							} else {
+								"disabled"
+							} + "**."
+						}
+					}
+				}
+			}
+		}
 
-        ephemeralSlashCommand {
-            name = "global-config"
-            description = "Global Cozy configuration commands"
+		ephemeralSlashCommand {
+			name = "global-config"
+			description = "Global Cozy configuration commands"
 
-            check { isAdminOrHasOverride() }
+			check { isAdminOrHasOverride() }
 
-            ephemeralSubCommand {
-                name = "get"
-                description = "Retrieve Cozy's global configuration"
+			ephemeralSubCommand {
+				name = "get"
+				description = "Retrieve Cozy's global configuration"
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
 
-                    respond {
-                        embed {
-                            settings.apply(this)
-                        }
-                    }
-                }
-            }
+					respond {
+						embed {
+							settings.apply(this)
+						}
+					}
+				}
+			}
 
-            ephemeralSubCommand(::InviteArg) {
-                name = "appeals-invite"
-                description = "Set or get the invite code used to invite banned users to the appeals server"
+			ephemeralSubCommand(::InviteArg) {
+				name = "appeals-invite"
+				description = "Set or get the invite code used to invite banned users to the appeals server"
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
 
-                    if (arguments.inviteCode == null) {
-                        respond {
-                            content = "**Current invite:** https://discord.gg/${settings.appealsInvite}"
-                        }
+					if (arguments.inviteCode == null) {
+						respond {
+							content = "**Current invite:** https://discord.gg/${settings.appealsInvite}"
+						}
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    var code = arguments.inviteCode!!
+					var code = arguments.inviteCode!!
 
-                    if ("/" in code) {
-                        code = code.split("/").last()
-                    }
+					if ("/" in code) {
+						code = code.split("/").last()
+					}
 
-                    settings.appealsInvite = code
-                    settings.save()
+					settings.appealsInvite = code
+					settings.save()
 
-                    respond {
-                        content = "**New invite set:** https://discord.gg/${settings.appealsInvite}"
-                    }
-                }
-            }
+					respond {
+						content = "**New invite set:** https://discord.gg/${settings.appealsInvite}"
+					}
+				}
+			}
 
-            ephemeralSubCommand(::TokenArg) {
-                name = "github-token"
-                description = "Set the GitHub login token used by the GitHub commands"
+			ephemeralSubCommand(::TokenArg) {
+				name = "github-token"
+				description = "Set the GitHub login token used by the GitHub commands"
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
 
-                    settings.githubToken = arguments.loginToken
-                    settings.save()
+					settings.githubToken = arguments.loginToken
+					settings.save()
 
-                    respond {
-                        content = "**GitHub login token set successfully**"
-                    }
-                }
-            }
+					respond {
+						content = "**GitHub login token set successfully**"
+					}
+				}
+			}
 
-            ephemeralSubCommand(::TopMessageChannelArg) {
-                name = "github-log-channel"
-                description = "Set or get the channel used for logging GitHub command actions"
+			ephemeralSubCommand(::TopMessageChannelArg) {
+				name = "github-log-channel"
+				description = "Set or get the channel used for logging GitHub command actions"
 
-                check { inYoutube() }
+				check { inYoutube() }
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
 
-                    if (arguments.channel == null) {
-                        respond {
-                            content = "**Current GitHub log channel:** <#${settings.githubLogChannel}>"
-                        }
+					if (arguments.channel == null) {
+						respond {
+							content = "**Current GitHub log channel:** <#${settings.githubLogChannel}>"
+						}
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    settings.githubLogChannel = arguments.channel!!.id
-                    settings.save()
+					settings.githubLogChannel = arguments.channel!!.id
+					settings.save()
 
-                    respond {
-                        content = "**New GitHub log channel set:** <#${settings.githubLogChannel}>"
-                    }
-                }
-            }
+					respond {
+						content = "**New GitHub log channel set:** <#${settings.githubLogChannel}>"
+					}
+				}
+			}
 
-            ephemeralSubCommand(::GuildArg) {
-                name = "add-guild"
-                description = "Mark a server as an official Ladysnake server"
+			ephemeralSubCommand(::GuildArg) {
+				name = "add-guild"
+				description = "Mark a server as an official Ladysnake server"
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
                     val server = arguments.server
 
-                    if (server.id in settings.ladysnakeGuilds) {
-                        respond {
-                            content = ":x: **${server.name}** is already marked as an official Ladysnake guild."
-                        }
+					if (server.id in settings.ladysnakeGuilds) {
+						respond {
+							content = ":x: **${server.name}** is already marked as an official Ladysnake guild."
+						}
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    settings.ladysnakeGuilds.add(server.id)
-                    settings.save()
+					settings.ladysnakeGuilds.add(server.id)
+					settings.save()
 
-                    respond {
-                        content = "**${server.name}** marked as an official Ladysnake guild."
-                    }
-                }
-            }
+					respond {
+						content = "**${server.name}** marked as an official Ladysnake guild."
+					}
+				}
+			}
 
-            ephemeralSubCommand(::GuildSnowflakeArg) {
-                name = "remove-guild"
-                description = "Unmark a server as an official Ladysnake server"
+			ephemeralSubCommand(::GuildSnowflakeArg) {
+				name = "remove-guild"
+				description = "Unmark a server as an official Ladysnake server"
 
-                action {
-                    val settings = globalSettings.get()!!
+				action {
+					val settings = globalSettings.get()!!
 
-                    if (arguments.serverId !in settings.ladysnakeGuilds) {
-                        respond {
-                            content = ":x: `${arguments.serverId.value}` is not marked as an official Ladysnake guild."
-                        }
+					if (arguments.serverId !in settings.ladysnakeGuilds) {
+						respond {
+							content = ":x: `${arguments.serverId.value}` is not marked as an official Ladysnake guild."
+						}
 
-                        return@action
-                    }
+						return@action
+					}
 
-                    settings.ladysnakeGuilds.remove(arguments.serverId)
-                    settings.save()
+					settings.ladysnakeGuilds.remove(arguments.serverId)
+					settings.save()
 
                     respond {
                         content = "`${arguments.serverId.value}` is no longer marked as an official Ladysnake guild."
@@ -337,8 +337,8 @@ class SettingsExtension : Extension() {
                     settings.suggestionAutoRemovals.add(rule)
                     settings.save()
 
-                    respond {
-                        content = "Auto removal rule added: ${rule.id}"
+					respond {
+						content = "Auto removal rule added: ${rule.id}"
                     }
                 }
             }
@@ -402,17 +402,17 @@ class SettingsExtension : Extension() {
                     settings.suggestionAutoRemovals.remove(rule)
 
                     settings.save()
-                }
-            }
-        }
+				}
+			}
+		}
 
-        ephemeralSlashCommand {
-            name = "server-config"
-            description = "Server-specific Cozy configuration commands"
+		ephemeralSlashCommand {
+			name = "server-config"
+			description = "Server-specific Cozy configuration commands"
 
-            check { anyGuild() }
-            check {
-                any(
+			check { anyGuild() }
+			check {
+				any(
                     { hasPermissionInMainGuild(Permission.Administrator) },
                     { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
                 )
@@ -420,7 +420,7 @@ class SettingsExtension : Extension() {
 
             group("general") {
                 this@SettingsExtension.logger.error {
-                    "This shouldn't be required to be in a group! Kordex is a bit funky though"
+					"This shouldn't be required to be in a group! Kordex is a bit funky though"
                 }
 
                 description = "General commands which don't fit in any other category"
@@ -1017,172 +1017,172 @@ class SettingsExtension : Extension() {
                 }
             }
         }
-    }
+	}
 
-    fun booleanFlag(desc: String): () -> BooleanFlag = {
-        BooleanFlag(desc)
-    }
+	fun booleanFlag(desc: String): () -> BooleanFlag = {
+		BooleanFlag(desc)
+	}
 
-    inner class BooleanFlag(desc: String) : Arguments() {
-        val value by boolean {
-            name = "value"
-            description = "Whether to $desc"
-        }
-    }
+	inner class BooleanFlag(desc: String) : Arguments() {
+		val value by boolean {
+			name = "value"
+			description = "Whether to $desc"
+		}
+	}
 
-    inner class InviteArg : Arguments() {
-        val inviteCode by optionalString {
-            name = "invite-code"
-            description = "Invite code to use"
-        }
-    }
+	inner class InviteArg : Arguments() {
+		val inviteCode by optionalString {
+			name = "invite-code"
+			description = "Invite code to use"
+		}
+	}
 
-    inner class TokenArg : Arguments() {
-        val loginToken by string {
-            name = "login-token"
-            description = "Login token to use"
-        }
-    }
+	inner class TokenArg : Arguments() {
+		val loginToken by string {
+			name = "login-token"
+			description = "Login token to use"
+		}
+	}
 
-    inner class TopMessageChannelArg : Arguments() {
-        val channel by optionalChannel {
-            name = "channel"
-            description = "Channel to use"
+	inner class TopMessageChannelArg : Arguments() {
+		val channel by optionalChannel {
+			name = "channel"
+			description = "Channel to use"
 
-            validate {
-                val channel = value
+			validate {
+				val channel = value
 
-                if (channel != null) {
-                    val kord = getKoin().get<Kord>()
+				if (channel != null) {
+					val kord = getKoin().get<Kord>()
 
-                    if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
-                        fail("${channel.mention} isn't a guild message channel")
-                    }
-                }
-            }
-        }
-    }
+					if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
+						fail("${channel.mention} isn't a guild message channel")
+					}
+				}
+			}
+		}
+	}
 
-    inner class TopMessageChannelGuildArg : Arguments() {
-        val channel by optionalChannel {
-            name = "channel"
-            description = "Channel to use"
+	inner class TopMessageChannelGuildArg : Arguments() {
+		val channel by optionalChannel {
+			name = "channel"
+			description = "Channel to use"
 
-            validate {
-                val channel = value
+			validate {
+				val channel = value
 
-                if (channel != null) {
-                    val kord = getKoin().get<Kord>()
+				if (channel != null) {
+					val kord = getKoin().get<Kord>()
 
-                    if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
-                        fail("${channel.mention} isn't a guild message channel")
-                    }
-                }
-            }
-        }
+					if (kord.getChannelOf<TopGuildMessageChannel>(channel.id) == null) {
+						fail("${channel.mention} isn't a guild message channel")
+					}
+				}
+			}
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class GuildArg : Arguments() {
-        val server by guild {
-            name = "server"
-            description = "Server ID to use"
-        }
-    }
+	inner class GuildArg : Arguments() {
+		val server by guild {
+			name = "server"
+			description = "Server ID to use"
+		}
+	}
 
-    inner class GuildSnowflakeArg : Arguments() {
-        val serverId by snowflake {
-            name = "server"
-            description = "Server ID to use"
-        }
-    }
+	inner class GuildSnowflakeArg : Arguments() {
+		val serverId by snowflake {
+			name = "server"
+			description = "Server ID to use"
+		}
+	}
 
-    inner class OptionalGuildSnowflakeArg : Arguments() {
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+	inner class OptionalGuildSnowflakeArg : Arguments() {
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class CategoryGuildArg : Arguments() {
-        val category by optionalChannel {
-            name = "category"
-            description = "Category to use"
+	inner class CategoryGuildArg : Arguments() {
+		val category by optionalChannel {
+			name = "category"
+			description = "Category to use"
 
-            validate {
-                val channel = value
+			validate {
+				val channel = value
 
-                if (channel != null) {
-                    val kord = getKoin().get<Kord>()
+				if (channel != null) {
+					val kord = getKoin().get<Kord>()
 
-                    if (kord.getChannelOf<Category>(channel.id) == null) {
-                        fail("${channel.mention} isn't a category")
-                    }
-                }
-            }
-        }
+					if (kord.getChannelOf<Category>(channel.id) == null) {
+						fail("${channel.mention} isn't a category")
+					}
+				}
+			}
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class LadysnakeServerTypeArg : Arguments() {
-        val type by optionalEnumChoice<LadysnakeServerType> {
-            name = "type"
-            description = "Ladysnake server type"
+	inner class LadysnakeServerTypeArg : Arguments() {
+		val type by optionalEnumChoice<LadysnakeServerType> {
+			name = "type"
+			description = "Ladysnake server type"
 
-            typeName = "Server type"
-        }
+			typeName = "Server type"
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class ShouldLeaveArg : Arguments() {
-        val shouldLeave by boolean {
-            name = "should-leave"
-            description = "Whether Cozy should leave the server automatically"
-        }
+	inner class ShouldLeaveArg : Arguments() {
+		val shouldLeave by boolean {
+			name = "should-leave"
+			description = "Whether Cozy should leave the server automatically"
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class PrefixServerArg : Arguments() {
-        val prefix by string {
-            name = "prefix"
-            description = "Command prefix to set"
-        }
+	inner class PrefixServerArg : Arguments() {
+		val prefix by string {
+			name = "prefix"
+			description = "Command prefix to set"
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class RoleServerArg : Arguments() {
-        val role by role {
-            name = "role"
-            description = "Role to add/remove"
-        }
+	inner class RoleServerArg : Arguments() {
+		val role by role {
+			name = "role"
+			description = "Role to add/remove"
+		}
 
-        val serverId by optionalSnowflake {
-            name = "server"
-            description = "Server ID, if not the current one"
-        }
-    }
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
 
-    inner class ArchiveDurationArg : Arguments() {
+	inner class ArchiveDurationArg : Arguments() {
         val duration by sealedObjectChoice<ArchiveDuration> {
             name = "duration"
             description = "Length of time before threads automatically archive"
@@ -1192,9 +1192,9 @@ class SettingsExtension : Extension() {
             name = "server"
             description = "Server ID, if not the current one"
         }
-    }
+	}
 
-    inner class SuggestionAutoRemovalArg : Arguments() {
+	inner class SuggestionAutoRemovalArg : Arguments() {
         val id by string {
             name = "id"
             description = "ID of the auto-response object to add"
@@ -1215,9 +1215,9 @@ class SettingsExtension : Extension() {
             name = "reason"
             description = "Reason for the result"
         }
-    }
+	}
 
-    inner class SuggestionAutoRemovalEditArg : Arguments() {
+	inner class SuggestionAutoRemovalEditArg : Arguments() {
         val id by string {
             name = "id"
             description = "ID of the auto-response object to modify"
@@ -1262,9 +1262,9 @@ class SettingsExtension : Extension() {
             name = "reason"
             description = "Reason for the result"
         }
-    }
+	}
 
-    inner class SuggestionAutoRemovalDeleteArg : Arguments() {
+	inner class SuggestionAutoRemovalDeleteArg : Arguments() {
         val id by string {
             name = "id"
             description = "ID of the auto-response object to delete"
@@ -1293,5 +1293,5 @@ class SettingsExtension : Extension() {
                 suggestStringMap(map)
             }
         }
-    }
+	}
 }

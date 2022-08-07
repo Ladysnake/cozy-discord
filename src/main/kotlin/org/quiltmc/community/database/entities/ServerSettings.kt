@@ -27,127 +27,127 @@ import org.quiltmc.community.database.enums.LadysnakeServerType
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
 data class ServerSettings(
-    override val _id: Snowflake,
+	override val _id: Snowflake,
 
-    var commandPrefix: String? = "?",
-    val moderatorRoles: MutableSet<Snowflake> = mutableSetOf(),
+	var commandPrefix: String? = "?",
+	val moderatorRoles: MutableSet<Snowflake> = mutableSetOf(),
 
-    var cozyLogChannel: Snowflake? = null,
-    var filterLogChannel: Snowflake? = null,
-    var messageLogCategory: Snowflake? = null,
+	var cozyLogChannel: Snowflake? = null,
+	var filterLogChannel: Snowflake? = null,
+	var messageLogCategory: Snowflake? = null,
 
-    var ladysnakeServerType: LadysnakeServerType? = null,
-    var leaveServer: Boolean = false,
-    val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
-    var defaultThreadLength: ArchiveDuration? = null,
+	var ladysnakeServerType: LadysnakeServerType? = null,
+	var leaveServer: Boolean = false,
+	val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
+	var defaultThreadLength: ArchiveDuration? = null,
 ) : Entity<Snowflake> {
-    suspend fun save() {
-        val collection = getKoin().get<ServerSettingsCollection>()
+	suspend fun save() {
+		val collection = getKoin().get<ServerSettingsCollection>()
 
-        collection.set(this)
-    }
+		collection.set(this)
+	}
 
-    suspend fun getConfiguredLogChannel(): TopGuildMessageChannel? {
-        cozyLogChannel ?: return null
+	suspend fun getConfiguredLogChannel(): TopGuildMessageChannel? {
+		cozyLogChannel ?: return null
 
-        val kord = getKoin().get<Kord>()
-        val guild = kord.getGuildIgnoring403(_id)
+		val kord = getKoin().get<Kord>()
+		val guild = kord.getGuildIgnoring403(_id)
 
-        return guild?.getChannelOfOrNull(cozyLogChannel!!)
-    }
+		return guild?.getChannelOfOrNull(cozyLogChannel!!)
+	}
 
-    suspend fun getConfiguredMessageLogCategory(): Category? {
-        messageLogCategory ?: return null
+	suspend fun getConfiguredMessageLogCategory(): Category? {
+		messageLogCategory ?: return null
 
-        val kord = getKoin().get<Kord>()
-        val guild = kord.getGuildIgnoring403(_id)
+		val kord = getKoin().get<Kord>()
+		val guild = kord.getGuildIgnoring403(_id)
 
-        return guild?.getChannelOfOrNull(messageLogCategory!!)
-    }
+		return guild?.getChannelOfOrNull(messageLogCategory!!)
+	}
 
-    suspend fun apply(embedBuilder: EmbedBuilder, showQuiltSettings: Boolean) {
-        val kord = getKoin().get<Kord>()
-        val builder = StringBuilder()
-        val guild = kord.getGuildIgnoring403(_id)
+	suspend fun apply(embedBuilder: EmbedBuilder, showQuiltSettings: Boolean) {
+		val kord = getKoin().get<Kord>()
+		val builder = StringBuilder()
+		val guild = kord.getGuildIgnoring403(_id)
 
-        if (guild != null) {
-            builder.append("Guild ID:".bold() + ' ')
+		if (guild != null) {
+			builder.append("Guild ID:".bold() + ' ')
             builder.append(guild.id.toString().code())
             builder.append('\n')
-        }
+		}
 
-        builder.append("Command prefix:".bold() + ' ')
+		builder.append("Command prefix:".bold() + ' ')
         builder.append(commandPrefix)
         builder.append("\n\n")
 
         builder.append("Cozy Logs:".bold() + ' ')
 
-        if (cozyLogChannel != null) {
-            builder.append("<#${cozyLogChannel!!.value}>")
-        } else {
-            builder.append(":x: Not configured")
-        }
+		if (cozyLogChannel != null) {
+			builder.append("<#${cozyLogChannel!!.value}>")
+		} else {
+			builder.append(":x: Not configured")
+		}
 
-        if (showQuiltSettings) {
-            builder.append("\n")
-            builder.append("Filter Logs:".bold() + ' ')
+		if (showQuiltSettings) {
+			builder.append("\n")
+			builder.append("Filter Logs:".bold() + ' ')
 
-            if (filterLogChannel != null) {
-                builder.append("<#${filterLogChannel!!.value}>")
-            } else {
-                builder.append(":x: Not configured")
-            }
-        }
+			if (filterLogChannel != null) {
+				builder.append("<#${filterLogChannel!!.value}>")
+			} else {
+				builder.append(":x: Not configured")
+			}
+		}
 
-        builder.append("\n")
-        builder.append("Message Logs:".bold() + ' ')
+		builder.append("\n")
+		builder.append("Message Logs:".bold() + ' ')
 
-        if (messageLogCategory != null) {
-            builder.append("<#${messageLogCategory!!.value}>")
-        } else {
-            builder.append(":x: Not configured")
-        }
+		if (messageLogCategory != null) {
+			builder.append("<#${messageLogCategory!!.value}>")
+		} else {
+			builder.append(":x: Not configured")
+		}
 
-        builder.append("\n\n")
+		builder.append("\n\n")
 
-        if (showQuiltSettings) {
-            builder.append("LadySnake Server Type:".bold() + ' ')
+		if (showQuiltSettings) {
+			builder.append("LadySnake Server Type:".bold() + ' ')
 
-            if (ladysnakeServerType != null) {
-                builder.append(ladysnakeServerType!!.readableName)
-            } else {
-                builder.append(":x: Not configured")
-            }
+			if (ladysnakeServerType != null) {
+				builder.append(ladysnakeServerType!!.readableName)
+			} else {
+				builder.append(":x: Not configured")
+			}
 
-            builder.append("\n")
-        }
+			builder.append("\n")
+		}
 
-        builder.append("Leave Server Automatically:".bold() + ' ')
+		builder.append("Leave Server Automatically:".bold() + ' ')
 
-        if (leaveServer) {
-            builder.append("Yes")
-        } else {
-            builder.append("No")
-        }
+		if (leaveServer) {
+			builder.append("Yes")
+		} else {
+			builder.append("No")
+		}
 
-        builder.append("\n\n")
-        builder.append("Moderator Roles:".bold().underline() + '\n')
+		builder.append("\n\n")
+		builder.append("Moderator Roles:".bold().underline() + '\n')
 
-        if (moderatorRoles.isNotEmpty()) {
-            moderatorRoles.forEach {
-                val role = guild?.getRoleOrNull(it)
+		if (moderatorRoles.isNotEmpty()) {
+			moderatorRoles.forEach {
+				val role = guild?.getRoleOrNull(it)
 
-                if (role != null) {
-                    builder.append("**»** ${role.name.bold()} (${it.stringCode()})\n")
-                } else {
-                    builder.append("**»** ${it.stringCode()}\n")
-                }
-            }
-        } else {
-            builder.append(":x: No roles configured")
-        }
+				if (role != null) {
+					builder.append("**»** ${role.name.bold()} (${it.stringCode()})\n")
+				} else {
+					builder.append("**»** ${it.stringCode()}\n")
+				}
+			}
+		} else {
+			builder.append(":x: No roles configured")
+		}
 
-        builder.append("\n\n")
+		builder.append("\n\n")
         builder.append("Thread Only Channels:".bold().underline() + '\n')
 
         if (threadOnlyChannels.isNotEmpty()) {
@@ -185,11 +185,11 @@ data class ServerSettings(
             description = builder.toString()
             title = "Settings"
 
-            title += if (guild != null) {
+			title += if (guild != null) {
                 ": ${guild.name}"
             } else {
                 " (${_id.value})"
-            }
-        }
-    }
+			}
+		}
+	}
 }

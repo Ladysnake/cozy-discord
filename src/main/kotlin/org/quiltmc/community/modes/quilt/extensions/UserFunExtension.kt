@@ -59,15 +59,15 @@ private const val QUOTES_PER_PAGE = 5
  * and lottery/giveaway functionality.
  */
 class UserFunExtension : Extension() {
-    override val name = "user-fun"
+	override val name = "user-fun"
 
-    private var currentAssignable: AssignablesBuilder? = null
+	private var currentAssignable: AssignablesBuilder? = null
 
-    private val lotteryCollection: LotteryCollection by inject()
+	private val lotteryCollection: LotteryCollection by inject()
 
-    private val quoteCollection: QuoteCollection by inject()
+	private val quoteCollection: QuoteCollection by inject()
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         // region: User role assignment
 
         ephemeralSlashCommand {
@@ -728,9 +728,9 @@ class UserFunExtension : Extension() {
         }
 
         // endregion
-    }
+	}
 
-    private suspend fun addQuote(message: String, author: String?, guildId: Snowflake, user: UserBehavior): Int {
+	private suspend fun addQuote(message: String, author: String?, guildId: Snowflake, user: UserBehavior): Int {
         val id = quoteCollection.new(message, author ?: "Anonymous")
 
         bot.findExtension<MessageLogExtension>()?.getRotator(guildId)?.logOther {
@@ -756,9 +756,9 @@ class UserFunExtension : Extension() {
         }
 
         return id
-    }
+	}
 
-    class AssignableComplete : Arguments() {
+	class AssignableComplete : Arguments() {
         val channel by channel {
             name = "channel"
             description = "The channel to send the message to"
@@ -768,9 +768,9 @@ class UserFunExtension : Extension() {
                 failIf { value.type !in listOf(ChannelType.GuildText, ChannelType.GuildNews) }
             }
         }
-    }
+	}
 
-    class AssignableAdd : Arguments() {
+	class AssignableAdd : Arguments() {
         val role by role {
             name = "role"
             description = "The role to add"
@@ -780,9 +780,9 @@ class UserFunExtension : Extension() {
             name = "emoji"
             description = "The emoji to use for this role"
         }
-    }
+	}
 
-    class BeanArguments : Arguments() {
+	class BeanArguments : Arguments() {
         val user by user {
             name = "user"
             description = "The user to bean"
@@ -792,9 +792,9 @@ class UserFunExtension : Extension() {
             name = "reason"
             description = "The reason for the bean"
         }
-    }
+	}
 
-    class QuoteArguments : Arguments() {
+	class QuoteArguments : Arguments() {
         val quote by int {
             name = "id"
             description = "The ID of the quote (text will search for the quote)"
@@ -811,9 +811,9 @@ class UserFunExtension : Extension() {
                 suggestIntMap(quotes)
             }
         }
-    }
+	}
 
-    class QuoteAddArguments : Arguments() {
+	class QuoteAddArguments : Arguments() {
         val quote by string {
             name = "quote"
             description = "The quote to add"
@@ -823,9 +823,9 @@ class UserFunExtension : Extension() {
             name = "author"
             description = "The author of the quote, or Anonymous if not specified"
         }
-    }
+	}
 
-    class LotteryCreateArguments : Arguments() {
+	class LotteryCreateArguments : Arguments() {
         val description by string {
             name = "description"
             description = "The description of the lottery"
@@ -850,5 +850,5 @@ class UserFunExtension : Extension() {
                 failIf { value != null && value!!.type !in listOf(ChannelType.GuildText, ChannelType.GuildNews) }
             }
         }
-    }
+	}
 }

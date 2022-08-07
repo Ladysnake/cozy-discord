@@ -17,32 +17,32 @@ import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.enums.LadysnakeServerType
 
 class ServerSettingsCollection : KordExKoinComponent {
-    private val database: Database by inject()
-    private val col = database.mongo.getCollection<ServerSettings>(name)
+	private val database: Database by inject()
+	private val col = database.mongo.getCollection<ServerSettings>(name)
 
-    suspend fun get(id: Snowflake) =
-        col.findOne(ServerSettings::_id eq id)
+	suspend fun get(id: Snowflake) =
+		col.findOne(ServerSettings::_id eq id)
 
-    fun getByLadysnakeServers() =
-        col.find(ServerSettings::ladysnakeServerType ne null)
+	fun getByLadysnakeServers() =
+		col.find(ServerSettings::ladysnakeServerType ne null)
 
-    fun getByServerType(type: LadysnakeServerType?) =
-        col.find(ServerSettings::ladysnakeServerType eq type)
+	fun getByServerType(type: LadysnakeServerType?) =
+		col.find(ServerSettings::ladysnakeServerType eq type)
 
-    suspend fun getLadysnake() =
-        col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.LADYSNAKE)
+	suspend fun getLadysnake() =
+		col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.LADYSNAKE)
 
-    suspend fun getYoutube() =
-        col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.YOUTUBE)
+	suspend fun getYoutube() =
+		col.findOne(ServerSettings::ladysnakeServerType eq LadysnakeServerType.YOUTUBE)
 
-    suspend fun set(settings: ServerSettings) =
-        col.save(settings)
+	suspend fun set(settings: ServerSettings) =
+		col.save(settings)
 
-    suspend fun delete(id: Snowflake) =
-        col.deleteOne(ServerSettings::_id eq id)
+	suspend fun delete(id: Snowflake) =
+		col.deleteOne(ServerSettings::_id eq id)
 
-    suspend fun delete(settings: ServerSettings) =
-        delete(settings._id)
+	suspend fun delete(settings: ServerSettings) =
+		delete(settings._id)
 
-    companion object : Collection("server-settings")
+	companion object : Collection("server-settings")
 }

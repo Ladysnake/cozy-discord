@@ -11,24 +11,24 @@ import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
 internal fun <T : Any> KProperty<T>.comparator(other: T) =
-    ReadOnlyProperty<Any?, Optional<T>> { _, _ ->
+	ReadOnlyProperty<Any?, Optional<T>> { _, _ ->
         val old = getter.call()
         if (old == other) Optional() else Optional.Value(other)
-    }
+	}
 
 @JvmName("nullableComparator")
 internal fun <T : Any> KProperty<T?>.comparator(other: T?) =
-    ReadOnlyProperty<Any?, Optional<T?>> { _, _ ->
+	ReadOnlyProperty<Any?, Optional<T?>> { _, _ ->
         val old = getter.call()
         if (old == other) Optional() else Optional(other)
-    }
+	}
 
 internal fun List<Optional<*>>.allMissing() = all { it is Optional.Missing }
 
 internal fun allMissing(vararg optional: Optional<*>) = optional.all { it is Optional.Missing }
 
 internal fun <T : Any> T.allMissing(generator: T.() -> List<KProperty<Optional<*>>>): Boolean {
-    return generator()
+	return generator()
         .map { it.getter.call() }
         .allMissing()
 }

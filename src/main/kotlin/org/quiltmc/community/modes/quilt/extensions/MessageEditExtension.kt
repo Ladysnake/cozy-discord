@@ -31,9 +31,9 @@ import org.quiltmc.community.any
 import org.quiltmc.community.copyFrom
 
 class MessageEditExtension : Extension() {
-    override val name = "message-modification"
+	override val name = "message-modification"
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         GUILDS.forEach {
             ephemeralSlashCommand {
                 name = "edit"
@@ -228,25 +228,25 @@ class MessageEditExtension : Extension() {
                 }
             }
         }
-    }
+	}
 
-    private fun String.messageIds() = substringAfter(".com/channels/").split("/").map { Snowflake(it) }
+	private fun String.messageIds() = substringAfter(".com/channels/").split("/").map { Snowflake(it) }
 
-    open class MessageArguments : Arguments() {
+	open class MessageArguments : Arguments() {
         val messageLink by string {
             name = "link"
             description = "The link to the message to edit"
         }
-    }
+	}
 
-    class PlainMessageArguments : MessageArguments() {
+	class PlainMessageArguments : MessageArguments() {
         val content by string {
             name = "content"
             description = "The new content of the message"
         }
-    }
+	}
 
-    class EnumMessageArguments : MessageArguments() {
+	class EnumMessageArguments : MessageArguments() {
         val part by enumChoice<EmbedPart> {
             name = "part"
             description = "The part of the embed to edit"
@@ -263,9 +263,9 @@ class MessageEditExtension : Extension() {
             name = "index"
             description = "The index of the selected part (ex: fields)"
         }
-    }
+	}
 
-    enum class EmbedPart(override val readableName: String, val requiresIndex: Boolean = false) : ChoiceEnum {
+	enum class EmbedPart(override val readableName: String, val requiresIndex: Boolean = false) : ChoiceEnum {
         Title("Title"),
         Description("Description"),
         Color("Color"),
@@ -279,5 +279,5 @@ class MessageEditExtension : Extension() {
         EmbedThumbnail("Embed Thumbnail"),
         Field("Field Content", requiresIndex = true),
         FieldName("Field Name", requiresIndex = true),
-    }
+	}
 }

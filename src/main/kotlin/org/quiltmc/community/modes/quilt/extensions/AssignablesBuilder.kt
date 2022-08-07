@@ -19,10 +19,10 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 class AssignablesBuilder(val owner: Snowflake) {
-    val assignables = mutableListOf<Assignable>()
-    var lastChange: Instant = Clock.System.now()
+	val assignables = mutableListOf<Assignable>()
+	var lastChange: Instant = Clock.System.now()
 
-    suspend fun build(outputChannel: MessageChannel) {
+	suspend fun build(outputChannel: MessageChannel) {
         outputChannel.createMessage {
             embed {
                 title = "Role Assignment"
@@ -56,10 +56,10 @@ class AssignablesBuilder(val owner: Snowflake) {
                 }
             }
         }
-    }
+	}
 
-    data class Assignable(
+	data class Assignable(
         val role: Role,
         val emoji: ReactionEmoji?,
-    )
+	)
 }

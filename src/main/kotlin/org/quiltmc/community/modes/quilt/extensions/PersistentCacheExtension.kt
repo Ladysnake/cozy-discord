@@ -32,10 +32,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.*
 
 val JSON = Json {
-    encodeDefaults = false
-    ignoreUnknownKeys = true
-    prettyPrint = false
-    isLenient = true
+	encodeDefaults = false
+	ignoreUnknownKeys = true
+	prettyPrint = false
+	isLenient = true
 }
 
 /**
@@ -44,9 +44,9 @@ val JSON = Json {
  * are saved to a cache file.
  */
 class PersistentCacheExtension : Extension() {
-    override val name = "persistent-cache"
+	override val name = "persistent-cache"
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         event<DisconnectEvent> {
             action {
                 extension.bot.withLock {
@@ -105,9 +105,9 @@ class PersistentCacheExtension : Extension() {
                 }
             }
         }
-    }
+	}
 
-    private suspend fun saveJsonToFile(json: JsonElement, path: String) {
+	private suspend fun saveJsonToFile(json: JsonElement, path: String) {
         val vfsFile = localCurrentDirVfs[path]
 
         vfsFile.parent.mkdirs()
@@ -119,9 +119,9 @@ class PersistentCacheExtension : Extension() {
                 Lzma.compress(BitReader(input), output)
             }
         }
-    }
+	}
 
-    private suspend fun loadJsonFromFile(path: String): JsonElement {
+	private suspend fun loadJsonFromFile(path: String): JsonElement {
         val vfsFile = localCurrentDirVfs[path]
 
         val jsonString = vfsFile.open(VfsOpenMode.READ).useIt { input ->
@@ -131,5 +131,5 @@ class PersistentCacheExtension : Extension() {
         }
 
         return JSON.parseToJsonElement(jsonString)
-    }
+	}
 }

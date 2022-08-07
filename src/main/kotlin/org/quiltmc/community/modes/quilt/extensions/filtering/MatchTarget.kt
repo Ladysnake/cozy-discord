@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class MatchTarget(override val readableName: String) : ChoiceEnum {
-    MESSAGE("Message content"),
-    USER("Username, nickname or activities"),
-    ATTACHMENT("Attachment file name"),
+	MESSAGE("Message content"),
+	USER("Username, nickname or activities"),
+	ATTACHMENT("Attachment file name"),
 }

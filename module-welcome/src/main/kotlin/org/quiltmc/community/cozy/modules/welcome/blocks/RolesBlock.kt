@@ -18,6 +18,7 @@ import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.Role
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.interaction.SelectMenuInteractionCreateEvent
@@ -38,165 +39,170 @@ import org.koin.core.component.inject
 @Serializable
 @SerialName("roles")
 public data class RolesBlock(
-    val id: String,
-    val roles: Map<Snowflake, RoleItem>,
-    val title: String = "Role Assignment",
-    val description: String = "Click the button below to assign yourself any of the following roles.",
-    val color: Color = DISCORD_BLURPLE,
-    val template: String = "**»** {MENTION} {DESCRIPTION}"
+	val id: String,
+	val roles: Map<Snowflake, RoleItem>,
+	val title: String = "Role Assignment",
+	val description: String = "Click the button below to assign yourself any of the following roles.",
+	val color: Color = DISCORD_BLURPLE,
+	val template: String = "**»** {MENTION} {DESCRIPTION}"
 ) : Block(), InteractionBlock, KordExKoinComponent {
-    val kord: Kord by inject()
+	val kord: Kord by inject()
 
-    init {
-        if (roles.isEmpty() || roles.size > 25) {
-            error("Must provide up to 25 roles")
-        }
-    }
+	init {
+		if (roles.isEmpty() || roles.size > 25) {
+			error("Must provide up to 25 roles")
+		}
+	}
 
-    private suspend fun EmbedBuilder.setUp() {
-        val guildRoles = getGuildRoles()
+	private suspend fun EmbedBuilder.setUp() {
+		val guildRoles = getGuildRoles()
 
-        title = this@RolesBlock.title
-        color = this@RolesBlock.color
+		title = this@RolesBlock.title
+		color = this@RolesBlock.color
 
-        description = buildString {
-            append(this@RolesBlock.description)
+		description = buildString {
+			append(this@RolesBlock.description)
 
-            appendLine()
-            appendLine()
+			appendLine()
+			appendLine()
 
-            guildRoles.forEach { (id, role) ->
-                val roleItem = this@RolesBlock.roles[id]!!
+			guildRoles.forEach { (id, role) ->
+				val roleItem = this@RolesBlock.roles[id]!!
 
-                append(
-                    template
-                        .replace("{MENTION}", role.mention)
-                        .replace("{NAME}", role.name)
-                        .replace("{ID}", role.id.toString())
-                        .replace("{DESCRIPTION}", roleItem.description)
-                        .replace("{EMOJI}", roleItem.emoji ?: "❓")
-                )
+				append(
+					template
+						.replace("{MENTION}", role.mention)
+						.replace("{NAME}", role.name)
+						.replace("{ID}", role.id.toString())
+						.replace("{DESCRIPTION}", roleItem.description)
+						.replace("{EMOJI}", roleItem.emoji ?: "❓")
+				)
 
-                appendLine()
-            }
-        }
-    }
+				appendLine()
+			}
+		}
+	}
 
-    private suspend fun getGuildRoles() =
-        guild.roles
-            .filter { it.id in roles.keys }
-            .toList()
-            .associateBy { it.id }
+	private suspend fun getGuildRoles(): Map<Snowflake, Role> {
+		// Each role ID in the order they appear in the YAML
+		val sortedRoleIds = roles.toList().map { it.first }
 
-    private fun generateButtonId(): String =
-        "roles/button/${channel.id}/$id"
+		return guild.roles
+			.filter { it.id in roles.keys }
+			.toList()
+			.sortedBy { sortedRoleIds.indexOf(it.id) }
+			.associateBy { it.id }
+	}
 
-    private fun generateMenuId(): String =
-        "roles/menu/${channel.id}/$id"
+	private fun generateButtonId(): String =
+		"roles/button/${channel.id}/$id"
 
-    private suspend fun handleButton(event: ButtonInteractionCreateEvent) {
-        if (event.interaction.componentId != generateButtonId()) {
-            return
-        }
+	private fun generateMenuId(): String =
+		"roles/menu/${channel.id}/$id"
 
-        val response = event.interaction.deferEphemeralResponse()
+	private suspend fun handleButton(event: ButtonInteractionCreateEvent) {
+		if (event.interaction.componentId != generateButtonId()) {
+			return
+		}
 
-        val guildRoles = getGuildRoles()
-        val userRoles = event.interaction.user.asMember(guild.id).roleIds
+		val response = event.interaction.deferEphemeralResponse()
 
-        response.respond {
-            content = "Please select your roles using the menu below."
+		val guildRoles = getGuildRoles()
+		val userRoles = event.interaction.user.asMember(guild.id).roleIds
 
-            actionRow {
-                selectMenu(generateMenuId()) {
-                    guildRoles.forEach { (id, role) ->
-                        val emojiString = roles[id]!!.emoji
+		response.respond {
+			content = "Please select your roles using the menu below."
 
-                        option("@${role.name}", id.toString()) {
-                            default = id in userRoles
+			actionRow {
+				selectMenu(generateMenuId()) {
+					guildRoles.forEach { (id, role) ->
+						val emojiString = roles[id]!!.emoji
 
-                            if (emojiString != null) {
-                                emoji(emojiString.toReaction())
-                            }
-                        }
-                    }
+						option("@${role.name}", id.toString()) {
+							default = id in userRoles
 
-                    allowedValues = 0..guildRoles.size
-                }
-            }
-        }
-    }
+							if (emojiString != null) {
+								emoji(emojiString.toReaction())
+							}
+						}
+					}
 
-    private suspend fun handleMenu(event: SelectMenuInteractionCreateEvent) {
-        if (event.interaction.componentId != generateMenuId()) {
-            return
-        }
+					allowedValues = 0..guildRoles.size
+				}
+			}
+		}
+	}
 
-        val response = event.interaction.deferEphemeralResponse()
+	private suspend fun handleMenu(event: SelectMenuInteractionCreateEvent) {
+		if (event.interaction.componentId != generateMenuId()) {
+			return
+		}
 
-        val guildRoles = getGuildRoles()
-        val member = event.interaction.user.asMember(guild.id)
-        val userRoles = member.roleIds.filter { it in guildRoles.keys }
+		val response = event.interaction.deferEphemeralResponse()
 
-        val selectedRoles = event.interaction.values
-            .map { Snowflake(it) }
-            .filter { it in guildRoles.keys }
+		val guildRoles = getGuildRoles()
+		val member = event.interaction.user.asMember(guild.id)
+		val userRoles = member.roleIds.filter { it in guildRoles.keys }
 
-        val toAdd = selectedRoles.filterNot { it in userRoles }
-        val toRemove = userRoles.filterNot { it in selectedRoles }
+		val selectedRoles = event.interaction.values
+			.map { Snowflake(it) }
+			.filter { it in guildRoles.keys }
 
-        if (toAdd.isEmpty() && toRemove.isEmpty()) {
-            response.respond {
-                content = "It looks like you picked all the same roles, so no changes have been made."
-            }
+		val toAdd = selectedRoles.filterNot { it in userRoles }
+		val toRemove = userRoles.filterNot { it in selectedRoles }
 
-            return
-        }
+		if (toAdd.isEmpty() && toRemove.isEmpty()) {
+			response.respond {
+				content = "It looks like you picked all the same roles, so no changes have been made."
+			}
 
-        member.edit {
-            roles = member.roleIds.toMutableSet()
+			return
+		}
 
-            roles!!.addAll(toAdd)
-            roles!!.removeAll(toRemove)
-        }
+		member.edit {
+			roles = member.roleIds.toMutableSet()
 
-        response.respond {
-            content = "Your roles have been updated!"
-        }
-    }
+			roles!!.addAll(toAdd)
+			roles!!.removeAll(toRemove)
+		}
 
-    override suspend fun create(builder: MessageCreateBuilder) {
-        builder.embed { setUp() }
+		response.respond {
+			content = "Your roles have been updated!"
+		}
+	}
 
-        builder.actionRow {
-            interactionButton(ButtonStyle.Primary, generateButtonId()) {
-                label = "Pick roles"
-            }
-        }
-    }
+	override suspend fun create(builder: MessageCreateBuilder) {
+		builder.embed { setUp() }
 
-    override suspend fun edit(builder: MessageModifyBuilder) {
-        builder.embed { setUp() }
+		builder.actionRow {
+			interactionButton(ButtonStyle.Primary, generateButtonId()) {
+				label = "Pick roles"
+			}
+		}
+	}
 
-        builder.actionRow {
-            interactionButton(ButtonStyle.Primary, generateButtonId()) {
-                label = "Pick roles"
-            }
-        }
-    }
+	override suspend fun edit(builder: MessageModifyBuilder) {
+		builder.embed { setUp() }
 
-    override suspend fun handleInteraction(event: InteractionCreateEvent) {
-        when (event) {
-            is ButtonInteractionCreateEvent -> handleButton(event)
-            is SelectMenuInteractionCreateEvent -> handleMenu(event)
+		builder.actionRow {
+			interactionButton(ButtonStyle.Primary, generateButtonId()) {
+				label = "Pick roles"
+			}
+		}
+	}
 
-            else -> return
-        }
-    }
+	override suspend fun handleInteraction(event: InteractionCreateEvent) {
+		when (event) {
+			is ButtonInteractionCreateEvent -> handleButton(event)
+			is SelectMenuInteractionCreateEvent -> handleMenu(event)
+
+			else -> return
+		}
+	}
 }
 
 @Serializable
 public data class RoleItem(
-    val description: String,
-    val emoji: String? = null
+	val description: String,
+	val emoji: String? = null
 )

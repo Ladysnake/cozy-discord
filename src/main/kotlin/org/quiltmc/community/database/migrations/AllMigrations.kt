@@ -19,12 +19,12 @@ import org.quiltmc.community.modes.quilt.extensions.suggestions.defaultAutoRemov
 
 @Suppress("unused")
 object AllMigrations {
-    suspend fun v1(db: CoroutineDatabase) {
+	suspend fun v1(db: CoroutineDatabase) {
         db.createCollection(ServerSettingsCollection.name)
         db.createCollection(SuggestionsCollection.name)
-    }
+	}
 
-    suspend fun v2(db: CoroutineDatabase) {
+	suspend fun v2(db: CoroutineDatabase) {
         db.createCollection("collab-server-settings")
 
         with(db.getCollection<Suggestion>(SuggestionsCollection.name)) {
@@ -38,9 +38,9 @@ object AllMigrations {
                 setValue(Suggestion::threadButtons, null),
             )
         }
-    }
+	}
 
-    suspend fun v3(db: CoroutineDatabase) {
+	suspend fun v3(db: CoroutineDatabase) {
         db.createCollection(OwnedThreadCollection.name)
 
         val suggestions = db.getCollection<Suggestion>(SuggestionsCollection.name)
@@ -69,39 +69,39 @@ object AllMigrations {
         if (documents.isNotEmpty()) {
             ownedThreads.bulkWrite(requests = documents, BulkWriteOptions().ordered(false))
         }
-    }
+	}
 
-    suspend fun v4(db: CoroutineDatabase) {
+	suspend fun v4(db: CoroutineDatabase) {
         db.createCollection(TeamCollection.name)
-    }
+	}
 
-    suspend fun v5(db: CoroutineDatabase) {
+	suspend fun v5(db: CoroutineDatabase) {
         db.createCollection(FilterCollection.name)
-    }
+	}
 
-    suspend fun v6(db: CoroutineDatabase) {
+	suspend fun v6(db: CoroutineDatabase) {
         db.createCollection(FilterEventCollection.name)
-    }
+	}
 
-    suspend fun v7(db: CoroutineDatabase) {
+	suspend fun v7(db: CoroutineDatabase) {
         db.dropCollection("collab-server-settings")
         db.createCollection(GlobalSettingsCollection.name)
-    }
+	}
 
-    suspend fun v8(db: CoroutineDatabase) {
+	suspend fun v8(db: CoroutineDatabase) {
         with(db.getCollection<OwnedThread>(OwnedThreadCollection.name)) {
             updateMany(
                 OwnedThread::preventArchiving exists false,
                 setValue(OwnedThread::preventArchiving, false),
             )
         }
-    }
+	}
 
-    suspend fun v9(db: CoroutineDatabase) {
+	suspend fun v9(db: CoroutineDatabase) {
         db.createCollection(UserFlagsCollection.name)
-    }
+	}
 
-    suspend fun v10(db: CoroutineDatabase) {
+	suspend fun v10(db: CoroutineDatabase) {
         db.createCollection(InvalidMentionsCollection.name)
         db.createCollection(UserRestrictionsCollection.name)
 
@@ -116,9 +116,9 @@ object AllMigrations {
                 setValue(Suggestion::channelId, LADYSNAKE_SUGGESTION_CHANNEL)
             )
         }
-    }
+	}
 
-    suspend fun v11(db: CoroutineDatabase) {
+	suspend fun v11(db: CoroutineDatabase) {
         db.createCollection(LotteryCollection.name)
 
         with(db.getCollection<GlobalSettings>(GlobalSettingsCollection.name)) {
@@ -134,34 +134,34 @@ object AllMigrations {
                 setValue(ServerSettings::threadOnlyChannels, mutableSetOf())
             )
         }
-    }
+	}
 
-    /**
+	/**
      * An equivalent to upstream's v10 migration, but we already have a
      * v10 migration, so we have to add a new migration instead.
      */
-    suspend fun v12(db: CoroutineDatabase) {
+	suspend fun v12(db: CoroutineDatabase) {
         with(db.getCollection<FilterEntry>(FilterCollection.name)) {
             updateMany(
                 FilterEntry::note exists false,
                 setValue(FilterEntry::note, null),
             )
         }
-    }
+	}
 
-    /**
+	/**
      * Targets upstream's v11 migration.
      */
-    suspend fun v13(db: CoroutineDatabase) {
+	suspend fun v13(db: CoroutineDatabase) {
         with(db.getCollection<Suggestion>(SuggestionsCollection.name)) {
             updateMany(
                 Suggestion::githubIssue exists false,
                 setValue(Suggestion::githubIssue, null),
             )
         }
-    }
+	}
 
-    suspend fun v14(db: CoroutineDatabase) {
+	suspend fun v14(db: CoroutineDatabase) {
         val suggestions = db.getCollection<Suggestion>()
         suggestions.updateMany(
             Suggestion::problem exists false,
@@ -171,42 +171,42 @@ object AllMigrations {
             Suggestion::solution exists false,
             setValue(Suggestion::solution, null)
         )
-    }
+	}
 
-    /**
+	/**
      * Targets upstream's v12 migration.
      */
-    suspend fun v15(db: CoroutineDatabase) {
+	suspend fun v15(db: CoroutineDatabase) {
         with(db.getCollection<FilterEntry>(FilterCollection.name)) {
             updateMany(
                 FilterEntry::matchTarget exists false,
                 setValue(FilterEntry::matchTarget, MatchTarget.MESSAGE),
             )
         }
-    }
+	}
 
-    suspend fun v16(db: CoroutineDatabase) {
+	suspend fun v16(db: CoroutineDatabase) {
         with(db.getCollection<UserRestrictions>(UserRestrictionsCollection.name)) {
             updateMany(
                 UserRestrictions::lastProgressiveTimeoutLength exists false,
                 setValue(UserRestrictions::lastProgressiveTimeoutLength, 0)
             )
         }
-    }
+	}
 
-    suspend fun v17(db: CoroutineDatabase) {
+	suspend fun v17(db: CoroutineDatabase) {
         with(db.getCollection<InvalidMention>(InvalidMentionsCollection.name)) {
             updateMany(
                 InvalidMention::exceptions exists false,
                 setValue(InvalidMention::exceptions, mutableListOf())
             )
         }
-    }
+	}
 
-    /**
+	/**
      * Targets upstream's v13 and v14 migrations.
      */
-    suspend fun v18(db: CoroutineDatabase) {
+	suspend fun v18(db: CoroutineDatabase) {
         db.createCollection(TagsCollection.name)
 
         with(db.getCollection<TagEntity>(TagsCollection.name)) {
@@ -215,37 +215,37 @@ object AllMigrations {
                 setValue(TagEntity::image, null),
             )
         }
-    }
+	}
 
-    /**
+	/**
      * Targets upstream's v15 migration.
      */
-    suspend fun v19(db: CoroutineDatabase) {
+	suspend fun v19(db: CoroutineDatabase) {
         db.createCollection(WelcomeChannelCollection.name)
-    }
+	}
 
-    suspend fun v20(db: CoroutineDatabase) {
+	suspend fun v20(db: CoroutineDatabase) {
         db.createCollection(QuoteCollection.name)
-    }
+	}
 
-    /**
+	/**
      * Targets upstream's v16 migration.
      */
-    suspend fun v21(db: CoroutineDatabase) {
+	suspend fun v21(db: CoroutineDatabase) {
         with(db.getCollection<UserFlags>(UserFlagsCollection.name)) {
             updateMany(
                 UserFlags::syncNicks exists false,
                 setValue(UserFlags::syncNicks, true),
             )
         }
-    }
+	}
 
-    suspend fun v22(db: CoroutineDatabase) {
+	suspend fun v22(db: CoroutineDatabase) {
         with(db.getCollection<GlobalSettings>(GlobalSettingsCollection.name)) {
             updateMany(
                 GlobalSettings::suggestionAutoRemovals exists false,
                 setValue(GlobalSettings::suggestionAutoRemovals, defaultAutoRemovals.toMutableList())
             )
         }
-    }
+	}
 }

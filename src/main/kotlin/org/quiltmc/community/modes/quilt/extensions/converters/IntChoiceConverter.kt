@@ -19,23 +19,23 @@ import dev.kord.rest.builder.interaction.IntegerOptionBuilder
 import dev.kord.rest.builder.interaction.OptionsBuilder
 
 @Converter(
-    "int",
+	"int",
 
-    types = [ConverterType.CHOICE, ConverterType.DEFAULTING, ConverterType.OPTIONAL, ConverterType.SINGLE]
+	types = [ConverterType.CHOICE, ConverterType.DEFAULTING, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
 class IntChoiceConverter(
-    choices: Map<String, Int>,
-    override var validator: Validator<Int> = null
+	choices: Map<String, Int>,
+	override var validator: Validator<Int> = null
 ) : ChoiceConverter<Int>(choices) {
-    override val signatureTypeString = "converters.number.signatureType"
+	override val signatureTypeString = "converters.number.signatureType"
 
-    override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
+	override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         val arg = named ?: parser?.parseNext()?.data ?: return false
         parsed = arg.toIntOrNull() ?: return false
         return true
-    }
+	}
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+	override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
         IntegerOptionBuilder(arg.displayName, arg.description).apply {
             required = true
             this@IntChoiceConverter.choices.forEach {
@@ -43,9 +43,9 @@ class IntChoiceConverter(
             }
         }
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
+	override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
         val optionValue = (option as? IntegerOptionValue)?.value ?: return false
         parsed = optionValue.toInt()
         return true
-    }
+	}
 }

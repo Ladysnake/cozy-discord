@@ -12,9 +12,9 @@ import org.quiltmc.community.database.Entity
 
 @Serializable
 data class Lottery(
-    override val _id: Snowflake,
+	override val _id: Snowflake,
 
-    val participants: MutableSet<Snowflake>,
-    val winners: Int,
-    val autoMessage: String? = null,
+	val participants: MutableSet<Snowflake>,
+	val winners: Int,
+	val autoMessage: String? = null,
 ) : Entity<Snowflake>

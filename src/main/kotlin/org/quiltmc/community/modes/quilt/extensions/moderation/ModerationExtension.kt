@@ -62,24 +62,24 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 
 class ModerationExtension(
-    private val enabledModules: List<Module> = Module.allSupported,
-    private val modReportChannel: Snowflake? = null,
+	private val enabledModules: List<Module> = Module.allSupported,
+	private val modReportChannel: Snowflake? = null,
 ) : Extension() {
-    private val logger = KotlinLogging.logger {}
+	private val logger = KotlinLogging.logger {}
 
-    override val name = "moderation"
+	override val name = "moderation"
 
-    private val scheduler = Scheduler()
+	private val scheduler = Scheduler()
 
-    private val invalidMentions: InvalidMentionsCollection by inject()
+	private val invalidMentions: InvalidMentionsCollection by inject()
 
-    private val settings: ServerSettingsCollection by inject()
+	private val settings: ServerSettingsCollection by inject()
 
-    private val userRestrictions: UserRestrictionsCollection by inject()
+	private val userRestrictions: UserRestrictionsCollection by inject()
 
-    internal val recentlyBannedUsers: MutableMap<Snowflake, User> = mutableMapOf()
+	internal val recentlyBannedUsers: MutableMap<Snowflake, User> = mutableMapOf()
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         if (Module.PURGE in enabledModules) {
             ephemeralSlashCommand(::PurgeArguments) {
                 name = "purge"
@@ -472,7 +472,7 @@ class ModerationExtension(
                                         // field exists, append to it
                                         it.value = """
                                             $it
-                                            
+
                                             Note added by ${this@action.user.mention} at $currentTime:
                                             > $note
                                         """.trimIndent()
@@ -691,18 +691,18 @@ class ModerationExtension(
             "Loaded ${slashCommands.size} commands and " +
             "${slashCommands.flatMap { it.subCommands }.size} sub-commands."
         }
-    }
+	}
 
-    private suspend fun getReportingChannel(guild: Guild? = null) = modReportChannel
+	private suspend fun getReportingChannel(guild: Guild? = null) = modReportChannel
         ?: guild?.channels?.firstOrNull { it.name == "moderation-log" }?.id
         ?: guild?.id?.let { settings.get(it)?.getConfiguredLogChannel() }?.id
         ?: settings.getLadysnake()?.getConfiguredLogChannel()?.id
 
-    private suspend inline fun reportToModChannel(
+	private suspend inline fun reportToModChannel(
         guild: Guild?,
         text: String = "",
         embed: EmbedBuilder.() -> Unit = {}
-    ) {
+	) {
         val channel = getReportingChannel(guild) ?: return
 
         // weird hack to get around kmongo bug
@@ -730,9 +730,9 @@ class ModerationExtension(
                 }
             }
         }
-    }
+	}
 
-    private suspend inline fun slowmode(context: EphemeralSlashCommandContext<SlowModeArguments>) {
+	private suspend inline fun slowmode(context: EphemeralSlashCommandContext<SlowModeArguments>) {
         val channel = context.arguments.channel ?: context.channel.asChannel()
         if (channel !is GuildMessageChannel) {
             context.respond {
@@ -753,9 +753,9 @@ class ModerationExtension(
             description =
                 "Slowmode for ${channel.mention} was set to $slowmode seconds by ${context.user.softMention()}."
         }
-    }
+	}
 
-    private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments>) {
+	private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments>) {
         if (context.guild == null) {
             throw DiscordRelayedException("This command can only be used in a guild.")
         }
@@ -872,9 +872,9 @@ class ModerationExtension(
         context.respond {
             content = "Banned ${user.softMention()} (${user.id})."
         }
-    }
+	}
 
-    private suspend fun timeout(context: EphemeralSlashCommandContext<TimeoutArguments>) {
+	private suspend fun timeout(context: EphemeralSlashCommandContext<TimeoutArguments>) {
         val user = context.arguments.user
         val member = user.asMember(context.guild!!.id)
 
@@ -961,9 +961,9 @@ class ModerationExtension(
         context.respond {
             content = "Timed out ${user.softMention()} (${user.id})."
         }
-    }
+	}
 
-    private suspend fun User?.tryDM(guild: Guild? = null, builder: UserMessageCreateBuilder.() -> Unit) {
+	private suspend fun User?.tryDM(guild: Guild? = null, builder: UserMessageCreateBuilder.() -> Unit) {
         if (this != null) {
             try {
                 this.getDmChannel().createMessage(builder)
@@ -979,9 +979,9 @@ class ModerationExtension(
                 description = "Failed to send DM to null user."
             }
         }
-    }
+	}
 
-    private fun EmbedBuilder.note(noteText: String, modMention: String) {
+	private fun EmbedBuilder.note(noteText: String, modMention: String) {
         field {
             name = "Notes"
             value = """
@@ -989,10 +989,10 @@ class ModerationExtension(
                 > $noteText
             """.trimIndent()
         }
-    }
+	}
 
-    @Suppress("MagicNumber")
-    private suspend fun advanceTimeout(member: Member, reason: String?) {
+	@Suppress("MagicNumber")
+	private suspend fun advanceTimeout(member: Member, reason: String?) {
         val restrictions = userRestrictions.get(member.id) ?: UserRestrictions(member.id, member.guildId)
         val lengthOfRestriction = when (++restrictions.lastProgressiveTimeoutLength) {
             1 -> 1.minutes
@@ -1019,7 +1019,7 @@ class ModerationExtension(
             22 -> 30.days * 2 // 2 months
             23 -> 30.days * 3 // 3 months
             24 -> 30.days * 6 // 6 months
-            25 -> 365.days    // 1 year
+            25 -> 365.days	// 1 year
             else -> 365.days * 3 // 3 years, max tempban length because people shouldn't be banned forever usually
                                  // plus they already got bans for 5 years so i think that's enough
         }
@@ -1065,9 +1065,9 @@ class ModerationExtension(
                 inline = true
             }
         }
-    }
+	}
 
-    enum class Module {
+	enum class Module {
         PURGE,
         USER_MANAGEMENT,
         LIMIT_SPAM,
@@ -1081,5 +1081,5 @@ class ModerationExtension(
                 it in listOf(BAN_SHARING /* the only one that's not supported yet */)
             }
         }
-    }
+	}
 }

@@ -11,7 +11,7 @@ import org.quiltmc.community.database.Entity
 
 @Serializable
 data class Quote(
-    override val _id: Int,
-    val quote: String,
-    val author: String,
+	override val _id: Int,
+	val quote: String,
+	val author: String,
 ) : Entity<Int>

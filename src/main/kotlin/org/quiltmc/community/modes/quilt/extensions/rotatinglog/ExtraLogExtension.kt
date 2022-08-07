@@ -40,14 +40,14 @@ import java.util.*
 private val COLOR_IMAGE_TEMPLATE = ImmutableImage.create(256, 32)
 
 class ExtraLogExtension : Extension() {
-    override val name = "extra-logging"
-    private val logger = KotlinLogging.logger {}
+	override val name = "extra-logging"
+	private val logger = KotlinLogging.logger {}
 
-    private val messageLogExtension = bot.findExtension<MessageLogExtension>()
+	private val messageLogExtension = bot.findExtension<MessageLogExtension>()
 
-    private val globalSettings: GlobalSettingsCollection by inject()
+	private val globalSettings: GlobalSettingsCollection by inject()
 
-    override suspend fun setup() {
+	override suspend fun setup() {
         // this will just use MessageLog's rotators
 
         //region: Member join/leave/update
@@ -1130,5 +1130,5 @@ class ExtraLogExtension : Extension() {
         }
 
         //endregion
-    }
+	}
 }

@@ -20,26 +20,26 @@ import kotlin.reflect.full.findParameterByName
 const val FILE_TEMPLATE = "migrations/v{VERSION}.bson"
 
 object Migrations : KordExKoinComponent {
-    private val logger = KotlinLogging.logger { }
+	private val logger = KotlinLogging.logger { }
 
-    val db: Database by inject()
-    val metaColl: MetaCollection by inject()
+	val db: Database by inject()
+	val metaColl: MetaCollection by inject()
 
-    suspend fun migrate() {
-        var meta = metaColl.get()
+	suspend fun migrate() {
+		var meta = metaColl.get()
 
-        if (meta == null) {
-            meta = Meta(0)
+		if (meta == null) {
+			meta = Meta(0)
 
-            metaColl.set(meta)
-        }
+			metaColl.set(meta)
+		}
 
-        var currentVersion = meta.version
+		var currentVersion = meta.version
 
-        logger.info { "Current database version: v$currentVersion" }
+		logger.info { "Current database version: v$currentVersion" }
 
-        val migrations = AllMigrations::class.declaredFunctions
-            .filter { it.name.startsWith("v") } // make sure it's a migration
+		val migrations = AllMigrations::class.declaredFunctions
+			.filter { it.name.startsWith("v") } // make sure it's a migration
             .filter { it.name.substring(1).toInt() > currentVersion } // newer than current version
             .filter { it.findParameterByName("db") != null } // with a db parameter
             .sortedBy { it.name.substring(1).toInt() } // and sorted by version number
@@ -54,20 +54,20 @@ object Migrations : KordExKoinComponent {
                 }
 
                 logger.info { "Migrated to ${function.name}" }
-            } catch (t: Throwable) {
-                logger.error(t) { "Failed to migrate database to ${function.name}" }
+			} catch (t: Throwable) {
+				logger.error(t) { "Failed to migrate database to ${function.name}" }
 
                 throw t
             }
             currentVersion = function.name.substring(1).toInt() // remove 'v' prefix
-        }
+		}
 
-        if (currentVersion != meta.version) {
-            meta = meta.copy(version = currentVersion)
+		if (currentVersion != meta.version) {
+			meta = meta.copy(version = currentVersion)
 
-            metaColl.set(meta)
+			metaColl.set(meta)
 
-            logger.info { "Finished database migrations." }
-        }
-    }
+			logger.info { "Finished database migrations." }
+		}
+	}
 }

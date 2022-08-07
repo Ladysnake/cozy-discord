@@ -25,59 +25,59 @@ private const val MODRINTH_URL = "https://api.modrinth.com/v2/project/qsl/versio
 private val CACHE_TIMEOUT = 10.minutes
 
 class QSLVersionParser : BaseLogParser {
-    private var lastCheck: Instant? = null
-    private var latestVersion: ModrinthVersion? = null
+	private var lastCheck: Instant? = null
+	private var latestVersion: ModrinthVersion? = null
 
-    val client = HttpClient {
-        install(ContentNegotiation) {
-            json(
-                Json { ignoreUnknownKeys = true },
-                ContentType.Any
-            )
-        }
+	val client = HttpClient {
+		install(ContentNegotiation) {
+			json(
+				Json { ignoreUnknownKeys = true },
+				ContentType.Any
+			)
+		}
 
-        expectSuccess = true
-    }
+		expectSuccess = true
+	}
 
-    override suspend fun getMessages(logContent: String): List<String> {
-        val messages: MutableList<String> = mutableListOf()
-        val qslMatch = QSL_MATCH_REGEX.find(logContent)
-        val minecraftMatch = MINECRAFT_MATCH_REGEX.find(logContent)
+	override suspend fun getMessages(logContent: String): List<String> {
+		val messages: MutableList<String> = mutableListOf()
+		val qslMatch = QSL_MATCH_REGEX.find(logContent)
+		val minecraftMatch = MINECRAFT_MATCH_REGEX.find(logContent)
 
-        if (qslMatch != null && minecraftMatch != null) {
-            val providedVersion = qslMatch.groups[1]!!.value.trim().replace(" ", "+")
-            val minecraftVersion = minecraftMatch.groups[1]!!.value.trim()
+		if (qslMatch != null && minecraftMatch != null) {
+			val providedVersion = qslMatch.groups[1]!!.value.trim().replace(" ", "+")
+			val minecraftVersion = minecraftMatch.groups[1]!!.value.trim()
 
-            val (version, url) = getVersion(minecraftVersion) ?: return emptyList()
+			val (version, url) = getVersion(minecraftVersion) ?: return emptyList()
 
-            if (!providedVersion.equals(version, true)) {
-                messages.add(
-                    "You appear to be using version `$providedVersion` of QSL - please try updating to " +
-                            "[version `$version`]($url)."
-                )
-            }
-        }
+			if (!providedVersion.equals(version, true)) {
+				messages.add(
+					"You appear to be using version `$providedVersion` of QSL - please try updating to " +
+							"[version `$version`]($url)."
+				)
+			}
+		}
 
-        return messages
-    }
+		return messages
+	}
 
-    suspend fun getVersion(minecraftVersion: String): Pair<String, String>? {
-        val now = Clock.System.now()
+	suspend fun getVersion(minecraftVersion: String): Pair<String, String>? {
+		val now = Clock.System.now()
 
-        if (latestVersion == null || lastCheck == null || now - lastCheck!! > CACHE_TIMEOUT) {
-            val response: List<ModrinthVersion> = client.get(MODRINTH_URL) {
-                url {
-                    parameters.append("game_versions", "[\"${minecraftVersion}\"]")
-                }
-            }.body()
+		if (latestVersion == null || lastCheck == null || now - lastCheck!! > CACHE_TIMEOUT) {
+			val response: List<ModrinthVersion> = client.get(MODRINTH_URL) {
+				url {
+					parameters.append("game_versions", "[\"${minecraftVersion}\"]")
+				}
+			}.body()
 
-            val latest = response
-                .maxByOrNull { it.datePublished }
-                ?: return null
+			val latest = response
+				.maxByOrNull { it.datePublished }
+				?: return null
 
-            latestVersion = latest
-        }
+			latestVersion = latest
+		}
 
-        return latestVersion!!.versionNumber to latestVersion!!.files.first { it.primary }.url
-    }
+		return latestVersion!!.versionNumber to latestVersion!!.files.first { it.primary }.url
+	}
 }

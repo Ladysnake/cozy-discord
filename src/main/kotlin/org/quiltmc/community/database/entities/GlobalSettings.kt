@@ -28,85 +28,85 @@ import java.util.*
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
 data class GlobalSettings(
-    override val _id: UUID = UUID.randomUUID(),
+	override val _id: UUID = UUID.randomUUID(),
 
-    var appealsInvite: String? = null,
-    var githubToken: String? = null,
+	var appealsInvite: String? = null,
+	var githubToken: String? = null,
 
-    val ladysnakeGuilds: MutableSet<Snowflake> = mutableSetOf(
-        LADYSNAKE_GUILD,
+	val ladysnakeGuilds: MutableSet<Snowflake> = mutableSetOf(
+		LADYSNAKE_GUILD,
 //        YOUTUBE_GUILD,
-    ),
+	),
 
-    var suggestionChannel: Snowflake? = LADYSNAKE_SUGGESTION_CHANNEL,
-    var suggestionChannels: MutableSet<Snowflake> = mutableSetOf(
+	var suggestionChannel: Snowflake? = LADYSNAKE_SUGGESTION_CHANNEL,
+	var suggestionChannels: MutableSet<Snowflake> = mutableSetOf(
         LADYSNAKE_SUGGESTION_CHANNEL
-    ),
-    var githubLogChannel: Snowflake? = GITHUB_LOG_CHANNEL,
+	),
+	var githubLogChannel: Snowflake? = GITHUB_LOG_CHANNEL,
 
-    var suggestionAutoRemovals: MutableList<AutoRemoval> = defaultAutoRemovals.toMutableList(),
+	var suggestionAutoRemovals: MutableList<AutoRemoval> = defaultAutoRemovals.toMutableList(),
 ) : Entity<UUID> {
-    suspend fun save() {
-        val collection = getKoin().get<GlobalSettingsCollection>()
+	suspend fun save() {
+		val collection = getKoin().get<GlobalSettingsCollection>()
 
-        collection.set(this)
-    }
+		collection.set(this)
+	}
 
-    suspend fun apply(embedBuilder: EmbedBuilder) {
-        val kord = getKoin().get<Kord>()
-        val builder = StringBuilder()
+	suspend fun apply(embedBuilder: EmbedBuilder) {
+		val kord = getKoin().get<Kord>()
+		val builder = StringBuilder()
 
-        builder.append("Appeals Invite:".bold() + ' ')
+		builder.append("Appeals Invite:".bold() + ' ')
 
-        if (appealsInvite != null) {
-            builder.append("https://discord.gg/$appealsInvite")
-        } else {
-            builder.append(":x: Not configured")
-        }
+		if (appealsInvite != null) {
+			builder.append("https://discord.gg/$appealsInvite")
+		} else {
+			builder.append(":x: Not configured")
+		}
 
-        builder.append("\n")
-        builder.append("GitHub Token:".bold() + ' ')
+		builder.append("\n")
+		builder.append("GitHub Token:".bold() + ' ')
 
-        if (githubToken != null) {
-            builder.append("Configured")
-        } else {
-            builder.append(":x: Not configured")
-        }
+		if (githubToken != null) {
+			builder.append("Configured")
+		} else {
+			builder.append(":x: Not configured")
+		}
 
-        builder.append("\n\n")
-        builder.append("Suggestion Channels:".bold() + '\n')
+		builder.append("\n\n")
+		builder.append("Suggestion Channels:".bold() + '\n')
 
-        builder.append(
-            suggestionChannels.joinToString("\n") { "**»** <#$it>" }
-        )
+		builder.append(
+			suggestionChannels.joinToString("\n") { "**»** <#$it>" }
+		)
 
-        builder.append("\n")
-        builder.append("/github Log Channel:".bold() + ' ')
+		builder.append("\n")
+		builder.append("/github Log Channel:".bold() + ' ')
 
-        if (githubLogChannel != null) {
-            builder.append("<#${githubLogChannel!!.value}>")
-        } else {
-            builder.append(":x: Not configured")
-        }
+		if (githubLogChannel != null) {
+			builder.append("<#${githubLogChannel!!.value}>")
+		} else {
+			builder.append(":x: Not configured")
+		}
 
-        builder.append("\n\n")
-        builder.append("Ladysnake Servers".bold().underline() + '\n')
+		builder.append("\n\n")
+		builder.append("Ladysnake Servers".bold().underline() + '\n')
 
-        if (ladysnakeGuilds.isNotEmpty()) {
-            ladysnakeGuilds.forEach {
-                val guild = kord.getGuildIgnoring403(it)
+		if (ladysnakeGuilds.isNotEmpty()) {
+			ladysnakeGuilds.forEach {
+				val guild = kord.getGuildIgnoring403(it)
 
-                if (guild == null) {
-                    builder.append("**»** ${it.stringCode()}\n")
-                } else {
-                    builder.append("**»** ${guild.name} (${it.stringCode()})\n")
-                }
-            }
-        } else {
-            builder.append(":x: No servers configured")
-        }
+				if (guild == null) {
+					builder.append("**»** ${it.stringCode()}\n")
+				} else {
+					builder.append("**»** ${guild.name} (${it.stringCode()})\n")
+				}
+			}
+		} else {
+			builder.append(":x: No servers configured")
+		}
 
-        builder.append("\n\n")
+		builder.append("\n\n")
 
         builder.append("Suggestion Auto Removals:".bold() + '\n')
 
@@ -118,7 +118,7 @@ data class GlobalSettings(
             title = "Global Settings"
             color = DISCORD_BLURPLE
 
-            description = builder.toString()
-        }
-    }
+			description = builder.toString()
+		}
+	}
 }

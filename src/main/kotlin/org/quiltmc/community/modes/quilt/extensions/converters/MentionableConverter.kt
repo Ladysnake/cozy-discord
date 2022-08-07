@@ -27,17 +27,17 @@ import dev.kord.rest.builder.interaction.OptionsBuilder
 import kotlinx.coroutines.flow.firstOrNull
 
 @Converter(
-    "mentionable",
+	"mentionable",
 
-    types = [ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE]
+	types = [ConverterType.LIST, ConverterType.OPTIONAL, ConverterType.SINGLE]
 )
 class MentionableConverter(
-    private var useReply: Boolean = true,
-    override var validator: Validator<KordEntity> = null
+	private var useReply: Boolean = true,
+	override var validator: Validator<KordEntity> = null
 ) : SingleConverter<KordEntity>() {
-    override val signatureTypeString = "converters.member.signatureType"
+	override val signatureTypeString = "converters.member.signatureType"
 
-    override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
+	override suspend fun parse(parser: StringParser?, context: CommandContext, named: String?): Boolean {
         if (useReply && context is ChatCommandContext<*>) {
             val messageReference = context.message.asMessage().messageReference
 
@@ -58,9 +58,9 @@ class MentionableConverter(
             ?: throw DiscordRelayedException("Could not find member or role with name $arg")
 
         return true
-    }
+	}
 
-    private suspend fun findMember(arg: String, context: CommandContext): Member? {
+	private suspend fun findMember(arg: String, context: CommandContext): Member? {
         val user = if (arg.startsWith("<@") && arg.endsWith(">")) {
             val id = arg.substring(2, arg.length - 1).replace("!", "")
 
@@ -86,9 +86,9 @@ class MentionableConverter(
         }
 
         return user?.asMember(context.getGuild()?.id ?: return null)
-    }
+	}
 
-    private suspend fun findRole(arg: String, context: CommandContext): Role? {
+	private suspend fun findRole(arg: String, context: CommandContext): Role? {
         return if (arg.startsWith("<@&") && arg.endsWith(">")) {
             @Suppress("MagicNumber")
             val id = arg.substring(3, arg.length - 1).replace("!", "")
@@ -111,9 +111,9 @@ class MentionableConverter(
                 }
             }
         }
-    }
+	}
 
-    override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
+	override suspend fun parseOption(context: CommandContext, option: OptionValue<*>): Boolean {
         val optionValue = (option as? MentionableOptionValue)?.value ?: return false
 
         // optionValue has become a snowflake at some point in recent versions of kord,
@@ -124,8 +124,8 @@ class MentionableConverter(
             ?: return false
 
         return true
-    }
+	}
 
-    override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
+	override suspend fun toSlashOption(arg: Argument<*>): OptionsBuilder =
         MentionableBuilder(arg.displayName, arg.description).apply { required = true }
 }

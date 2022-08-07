@@ -48,107 +48,107 @@ private val TIMEOUT_PERMS: Array<Permission> = arrayOf(Permission.ModerateMember
 private val ROLE_PERMS: Array<Permission> = arrayOf(Permission.ManageRoles, Permission.Administrator)
 
 class SyncExtension : Extension() {
-    override val name: String = "sync"
+	override val name: String = "sync"
 
-    private val logger = KotlinLogging.logger {}
+	private val logger = KotlinLogging.logger {}
 
-    private suspend fun <T : Event> CheckContext<T>.hasBanPerms() {
-        fail(
-            "Must have at least one of these permissions: " + BAN_PERMS.joinToString {
-                "**${it.translate(locale)}**"
-            }
-        )
+	private suspend fun <T : Event> CheckContext<T>.hasBanPerms() {
+		fail(
+			"Must have at least one of these permissions: " + BAN_PERMS.joinToString {
+				"**${it.translate(locale)}**"
+			}
+		)
 
-        BAN_PERMS.forEach {
-            val innerCheck = CheckContext(event, locale)
-            innerCheck.hasPermission(it)
+		BAN_PERMS.forEach {
+			val innerCheck = CheckContext(event, locale)
+			innerCheck.hasPermission(it)
 
-            if (innerCheck.passed) {
-                pass()
+			if (innerCheck.passed) {
+				pass()
 
-                return
-            }
-        }
-    }
+				return
+			}
+		}
+	}
 
-    private suspend fun <T : Event> CheckContext<T>.hasBanOrRolePerms() {
-        val requiredPerms = (BAN_PERMS + ROLE_PERMS).toSet()
+	private suspend fun <T : Event> CheckContext<T>.hasBanOrRolePerms() {
+		val requiredPerms = (BAN_PERMS + ROLE_PERMS).toSet()
 
-        fail(
-            "Must have at least one of these permissions: " + requiredPerms.joinToString { perm ->
-                "**${perm.translate(locale)}**"
-            }
-        )
+		fail(
+			"Must have at least one of these permissions: " + requiredPerms.joinToString { perm ->
+				"**${perm.translate(locale)}**"
+			}
+		)
 
-        requiredPerms.forEach {
-            val innerCheck = CheckContext(event, locale)
-            innerCheck.hasPermission(it)
+		requiredPerms.forEach {
+			val innerCheck = CheckContext(event, locale)
+			innerCheck.hasPermission(it)
 
-            if (innerCheck.passed) {
-                pass()
+			if (innerCheck.passed) {
+				pass()
 
-                return
-            }
-        }
-    }
+				return
+			}
+		}
+	}
 
-    @Suppress("SpreadOperator")  // No better way atm, and performance impact is negligible
-    override suspend fun setup() {
-        ephemeralSlashCommand {
-            name = "sync"
-            description = "Synchronisation commands."
+	@Suppress("SpreadOperator")  // No better way atm, and performance impact is negligible
+	override suspend fun setup() {
+		ephemeralSlashCommand {
+			name = "sync"
+			description = "Synchronisation commands."
 
-            check { inLadysnakeGuild() }
-            check { hasBanOrRolePerms() }
+			check { inLadysnakeGuild() }
+			check { hasBanOrRolePerms() }
 
-            ephemeralSubCommand {
-                name = "bans"
-                description = "Additively sync bans between all servers, so that everything matches."
+			ephemeralSubCommand {
+				name = "bans"
+				description = "Additively sync bans between all servers, so that everything matches."
 
-                check { inLadysnakeGuild() }
-                check { hasBanPerms() }
+				check { inLadysnakeGuild() }
+				check { hasBanPerms() }
 
-                requireBotPermissions(Permission.BanMembers)
+				requireBotPermissions(Permission.BanMembers)
 
-                action {
-                    val guilds = getGuilds()
+				action {
+					val guilds = getGuilds()
 
-                    logger.info { "Syncing bans for ${guilds.size} guilds." }
+					logger.info { "Syncing bans for ${guilds.size} guilds." }
 
-                    guilds.forEach {
-                        logger.debug { "${it.id.value} -> ${it.name}" }
+					guilds.forEach {
+						logger.debug { "${it.id.value} -> ${it.name}" }
 
-                        val member = it.getMember(this@SyncExtension.kord.selfId)
+						val member = it.getMember(this@SyncExtension.kord.selfId)
 
-                        if (!BAN_PERMS.any { perm -> member.hasPermission(perm) }) {
-                            respond {
-                                content = "I don't have permission to ban members on ${it.name} (`${it.id.value}`)"
-                            }
+						if (!BAN_PERMS.any { perm -> member.hasPermission(perm) }) {
+							respond {
+								content = "I don't have permission to ban members on ${it.name} (`${it.id.value}`)"
+							}
 
-                            return@action
-                        }
-                    }
+							return@action
+						}
+					}
 
-                    val allBans: MutableMap<Snowflake, String?> = mutableMapOf()
-                    val syncedBans: MutableMap<Guild, Int> = mutableMapOf()
+					val allBans: MutableMap<Snowflake, String?> = mutableMapOf()
+					val syncedBans: MutableMap<Guild, Int> = mutableMapOf()
 
-                    guilds.forEach { guild ->
-                        guild.bans.toList().forEach { ban ->
-                            if (allBans[ban.userId] == null || ban.reason?.startsWith("Synced:") == false) {
-                                // If it's null/not present or the given ban entry doesn't start with "Synced:"
-                                allBans[ban.userId] = ban.reason
-                            }
-                        }
-                    }
+					guilds.forEach { guild ->
+						guild.bans.toList().forEach { ban ->
+							if (allBans[ban.userId] == null || ban.reason?.startsWith("Synced:") == false) {
+								// If it's null/not present or the given ban entry doesn't start with "Synced:"
+								allBans[ban.userId] = ban.reason
+							}
+						}
+					}
 
-                    guilds.forEach { guild ->
-                        val newBans = mutableListOf<Pair<Snowflake, String>>()
+					guilds.forEach { guild ->
+						val newBans = mutableListOf<Pair<Snowflake, String>>()
 
                             allBans.forEach { (userId, reason) ->
                                 if (guild.getBanOrNull(userId) == null) {
                                     syncedBans[guild] = (syncedBans[guild] ?: 0) + 1
 
-                                val newReason = "Synced: ${reason ?: "No reason given"}"
+								val newReason = "Synced: ${reason ?: "No reason given"}"
 
                                     guild.ban(userId) {
                                         this.reason = newReason
@@ -162,123 +162,123 @@ class SyncExtension : Extension() {
                                 title = "Synced bans"
                                 description = "**Added bans:**\n" + newBans.joinToString("\n") { (id, reason) ->
                                     "`$id` (<@!$id>) - $reason"
-                            }
-                        }
-                    }
+							}
+						}
+					}
 
-                    respond {
-                        embed {
-                            title = "Bans synced"
+					respond {
+						embed {
+							title = "Bans synced"
 
-                            description = syncedBans.map { "**${it.key.name}**: ${it.value} added" }
-                                .joinToString("\n")
-                        }
-                    }
-                }
-            }
+							description = syncedBans.map { "**${it.key.name}**: ${it.value} added" }
+								.joinToString("\n")
+						}
+					}
+				}
+			}
 
-            ephemeralSubCommand {
-                name = "timeouts"
-                description = "Additively sync timeouts between all servers, so that everything matches."
+			ephemeralSubCommand {
+				name = "timeouts"
+				description = "Additively sync timeouts between all servers, so that everything matches."
 
-                check { inLadysnakeGuild() }
-                check { hasBanPerms() }
+				check { inLadysnakeGuild() }
+				check { hasBanPerms() }
 
-                requireBotPermissions(Permission.ModerateMembers)
+				requireBotPermissions(Permission.ModerateMembers)
 
-                action {
-                    val guilds = getGuilds()
+				action {
+					val guilds = getGuilds()
 
-                    sentry.breadcrumb(BreadcrumbType.Info) {
-                        message = "Syncing timeouts for ${guilds.size} guilds."
-                    }
+					sentry.breadcrumb(BreadcrumbType.Info) {
+						message = "Syncing timeouts for ${guilds.size} guilds."
+					}
 
-                    logger.info { "Syncing timeouts for ${guilds.size} guilds." }
+					logger.info { "Syncing timeouts for ${guilds.size} guilds." }
 
-                    guilds.forEach {
-                        logger.debug { "${it.id.value} -> ${it.name}" }
+					guilds.forEach {
+						logger.debug { "${it.id.value} -> ${it.name}" }
 
-                        val member = it.getMember(this@SyncExtension.kord.selfId)
+						val member = it.getMember(this@SyncExtension.kord.selfId)
 
-                        if (!TIMEOUT_PERMS.any { perm -> member.hasPermission(perm) }) {
-                            respond {
-                                content = "I don't have permission to timeout members on ${it.name} (`${it.id.value}`)"
-                            }
+						if (!TIMEOUT_PERMS.any { perm -> member.hasPermission(perm) }) {
+							respond {
+								content = "I don't have permission to timeout members on ${it.name} (`${it.id.value}`)"
+							}
 
-                            return@action
-                        }
-                    }
+							return@action
+						}
+					}
 
-                    sentry.breadcrumb(BreadcrumbType.Info) {
-                        message = "Ensured that the bot has adequate permissions on all servers."
-                    }
+					sentry.breadcrumb(BreadcrumbType.Info) {
+						message = "Ensured that the bot has adequate permissions on all servers."
+					}
 
-                    val allTimeouts: MutableMap<Snowflake, Instant> = mutableMapOf()
-                    val syncedTimeouts: MutableMap<Guild, Int> = mutableMapOf()
+					val allTimeouts: MutableMap<Snowflake, Instant> = mutableMapOf()
+					val syncedTimeouts: MutableMap<Guild, Int> = mutableMapOf()
 
-                    guilds.forEach { guild ->
-                        sentry.breadcrumb(BreadcrumbType.Info) {
-                            message = "Collecting timed-out members for guild: ${guild.name} (${guild.id})"
-                        }
+					guilds.forEach { guild ->
+						sentry.breadcrumb(BreadcrumbType.Info) {
+							message = "Collecting timed-out members for guild: ${guild.name} (${guild.id})"
+						}
 
-                        guild.members
-                            .filter { it.timeoutUntil != null }
-                            .collect {
-                                val current = allTimeouts[it.id]
+						guild.members
+							.filter { it.timeoutUntil != null }
+							.collect {
+								val current = allTimeouts[it.id]
 
-                                if (current == null || current < it.timeoutUntil!!) {
-                                    allTimeouts[it.id] = it.timeoutUntil!!
-                                }
-                            }
-                    }
+								if (current == null || current < it.timeoutUntil!!) {
+									allTimeouts[it.id] = it.timeoutUntil!!
+								}
+							}
+					}
 
-                    sentry.breadcrumb(BreadcrumbType.Info) {
-                        message = "Collected ${allTimeouts.size} timeouts."
-                    }
+					sentry.breadcrumb(BreadcrumbType.Info) {
+						message = "Collected ${allTimeouts.size} timeouts."
+					}
 
-                    guilds.forEach { guild ->
-                        sentry.breadcrumb(BreadcrumbType.Info) {
-                            message = "Applying up to ${allTimeouts.size} timeouts for guild: ${guild.name} " +
-                                    "(${guild.id})"
-                        }
+					guilds.forEach { guild ->
+						sentry.breadcrumb(BreadcrumbType.Info) {
+							message = "Applying up to ${allTimeouts.size} timeouts for guild: ${guild.name} " +
+									"(${guild.id})"
+						}
 
-                        for ((userId, expiry) in allTimeouts) {
-                            val member = guild.getMemberOrNull(userId) ?: continue
+						for ((userId, expiry) in allTimeouts) {
+							val member = guild.getMemberOrNull(userId) ?: continue
 
-                            if (member.timeoutUntil != expiry) {
-                                member.edit {
-                                    timeoutUntil = expiry
+							if (member.timeoutUntil != expiry) {
+								member.edit {
+									timeoutUntil = expiry
 
-                                    reason = "Synced automatically"
-                                }
+									reason = "Synced automatically"
+								}
 
-                                syncedTimeouts[guild] = (syncedTimeouts[guild] ?: 0) + 1
-                            }
-                        }
-                    }
+								syncedTimeouts[guild] = (syncedTimeouts[guild] ?: 0) + 1
+							}
+						}
+					}
 
-                    respond {
-                        embed {
-                            title = "Timeouts synced"
+					respond {
+						embed {
+							title = "Timeouts synced"
 
-                            description = syncedTimeouts.map { "**${it.key.name}**: ${it.value} added" }
-                                .joinToString("\n")
-                        }
-                    }
-                }
-            }
-        }
+							description = syncedTimeouts.map { "**${it.key.name}**: ${it.value} added" }
+								.joinToString("\n")
+						}
+					}
+				}
+			}
+		}
 
-        event<BanAddEvent> {
-            check { inLadysnakeGuild() }
+		event<BanAddEvent> {
+			check { inLadysnakeGuild() }
 
-            action {
-                val guilds = getGuilds().filter { it.id != event.guildId }
-                val ban = event.getBan()
+			action {
+				val guilds = getGuilds().filter { it.id != event.guildId }
+				val ban = event.getBan()
 
                 guilds.forEach { guild ->
-                    if (guild.getBanOrNull(ban.userId) == null) {
-                        guild.ban(ban.userId) {
+					if (guild.getBanOrNull(ban.userId) == null) {
+						guild.ban(ban.userId) {
                             this.reason = "Synced: " + (ban.reason ?: "No reason given")
                         }
 
@@ -335,19 +335,19 @@ class SyncExtension : Extension() {
                                     inline = true
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        }
+						}
+					}
+				}
+			}
+		}
 
-        event<BanRemoveEvent> {
-            check { inLadysnakeGuild() }
+		event<BanRemoveEvent> {
+			check { inLadysnakeGuild() }
 
-            action {
-                val guilds = getGuilds().filter { it.id != event.guildId }
+			action {
+				val guilds = getGuilds().filter { it.id != event.guildId }
 
-                guilds.forEach { guild ->
+				guilds.forEach { guild ->
                     if (guild.getBanOrNull(event.user.id) != null) {
                         guild.unban(event.user.id)
 
@@ -415,7 +415,7 @@ class SyncExtension : Extension() {
 //                }
 //            }
 //        }
-    }
+	}
 
-    private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuild(it) }
+	private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuild(it) }
 }

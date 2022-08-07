@@ -11,6 +11,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class LadysnakeServerType(override val readableName: String) : ChoiceEnum {
-    LADYSNAKE("Ladysnake"),
-    YOUTUBE("Rat's YouTube"),
+	LADYSNAKE("Ladysnake"),
+	YOUTUBE("Rat's YouTube"),
 }

@@ -15,20 +15,20 @@ import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.entities.UserRestrictions
 
 class UserRestrictionsCollection : KordExKoinComponent {
-    val database: Database by inject()
-    val collection = database.mongo.getCollection<UserRestrictions>(name)
+	val database: Database by inject()
+	val collection = database.mongo.getCollection<UserRestrictions>(name)
 
-    suspend fun get(id: Snowflake) =
+	suspend fun get(id: Snowflake) =
         collection.findOne(UserRestrictions::_id eq id)
 
-    suspend fun getAll() =
+	suspend fun getAll() =
         collection.find().toList()
 
-    suspend fun set(restrictions: UserRestrictions) =
+	suspend fun set(restrictions: UserRestrictions) =
         collection.save(restrictions)
 
-    suspend fun remove(id: Snowflake) =
+	suspend fun remove(id: Snowflake) =
         collection.deleteOne(UserRestrictions::_id eq id)
 
-    companion object : Collection("user-restrictions")
+	companion object : Collection("user-restrictions")
 }

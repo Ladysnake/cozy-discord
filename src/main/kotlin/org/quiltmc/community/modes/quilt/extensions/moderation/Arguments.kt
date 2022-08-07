@@ -24,41 +24,41 @@ import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
 // This is just to clean up ModerationExtension.kt a bit more.
 
 interface ChannelTargetArguments {
-    val channel: Channel?
+	val channel: Channel?
 }
 
 open class RequiredUser(mentionableDesc: String, validator: Validator<KordEntity> = null) : Arguments() {
-    val user by user {
+	val user by user {
         name = "user"
         description = mentionableDesc
         validate(validator)
-    }
+	}
 }
 
 class PurgeArguments : Arguments(), ChannelTargetArguments {
-    val amount by int {
+	val amount by int {
         name = "amount"
         description = "The amount of messages to delete"
 
         validate {
             failIf("You must specify some amount of messages!") { value < 0 }
         }
-    }
+	}
 
-    val user by optionalUser {
+	val user by optionalUser {
         name = "user"
         description = "The user to purge messages from (all if omitted)"
-    }
+	}
 
-    override val channel by optionalChannel {
+	override val channel by optionalChannel {
         name = "channel"
         description = "The channel to purge messages from (current if omitted)"
-    }
+	}
 }
 
 class SlowModeArguments : Arguments(), ChannelTargetArguments {
-    @Suppress("MagicNumber")
-    val waitTime by int {
+	@Suppress("MagicNumber")
+	val waitTime by int {
         name = "wait-time"
         description = "The minimum time to wait between messages in seconds"
 
@@ -85,16 +85,16 @@ class SlowModeArguments : Arguments(), ChannelTargetArguments {
         validate {
             failIf("You must specify a positive length!") { value < 0 }
         }
-    }
+	}
 
-    override val channel by optionalChannel {
+	override val channel by optionalChannel {
         name = "channel"
         description = "The channel to set slowmode for (current if omitted)"
-    }
+	}
 }
 
 class MentionArguments : Arguments() {
-    val mentionable by mentionable {
+	val mentionable by mentionable {
         name = "entity"
         description = "The role or user to warn people about when mentioning them"
 
@@ -103,21 +103,21 @@ class MentionArguments : Arguments() {
                 value is RoleBehavior && (value as RoleBehavior).guildId == value.id
             }
         }
-    }
+	}
 
-    val allowDirectMentions by optionalBoolean {
+	val allowDirectMentions by optionalBoolean {
         name = "allow-direct-mentions"
         description = "Whether to allow the role or user to be mentioned directly in a message"
-    }
+	}
 
-    val allowReplyMentions by optionalBoolean {
+	val allowReplyMentions by optionalBoolean {
         name = "allow-reply-mentions"
         description = "Whether to allow the user (role not supported) to be mentioned in a reply to a message"
-    }
+	}
 }
 
 class RemoveMentionsArguments : Arguments() {
-    val mentionable by mentionable {
+	val mentionable by mentionable {
         name = "entity"
         description = "The role or user to remove restrictions on when mentioning them"
 
@@ -126,16 +126,16 @@ class RemoveMentionsArguments : Arguments() {
                 value is RoleBehavior && (value as RoleBehavior).guildId == value.id
             }
         }
-    }
+	}
 }
 
 enum class MentionResult(override val readableName: String) : ChoiceEnum {
-    ADD("Add user to exception list"),
-    REMOVE("Remove user from exception list"),
+	ADD("Add user to exception list"),
+	REMOVE("Remove user from exception list"),
 }
 
 class MentionExceptionArguments : Arguments() {
-    val mentionable by mentionable {
+	val mentionable by mentionable {
         name = "entity"
         description = "The role or user to change exceptions of"
 
@@ -144,34 +144,34 @@ class MentionExceptionArguments : Arguments() {
                 value is RoleBehavior && (value as RoleBehavior).guildId == value.id
             }
         }
-    }
+	}
 
-    val action by enumChoice<MentionResult> {
+	val action by enumChoice<MentionResult> {
         name = "action"
         description = "The action to perform on the role or user"
 
         typeName = "idk why this is still required, this only is ever used in slash commands, not chat commands"
-    }
+	}
 
-    val user by user {
+	val user by user {
         name = "user"
         description = "The user to update the exception for"
-    }
+	}
 }
 
 open class RequiresReason(
-    mentionableDesc: String,
-    validator: Validator<KordEntity> = null
+	mentionableDesc: String,
+	validator: Validator<KordEntity> = null
 ) : RequiredUser(mentionableDesc, validator) {
-    val reason by string {
+	val reason by string {
         name = "reason"
         description = "The reason for the action"
-    }
+	}
 }
 
 class BanArguments : RequiresReason("The user to ban") {
-    @Suppress("MagicNumber")
-    val length by defaultingLong {
+	@Suppress("MagicNumber")
+	val length by defaultingLong {
         name = "length"
         description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default indefinite)"
         defaultValue = 0L
@@ -212,14 +212,14 @@ class BanArguments : RequiresReason("The user to ban") {
 
             suggestLongMap(map)
         }
-    }
+	}
 
-    val daysToDelete by banDeleteDaySelector()
+	val daysToDelete by banDeleteDaySelector()
 }
 
 class TimeoutArguments : RequiresReason("The user to timeout") {
-    @Suppress("MagicNumber")
-    val length by defaultingLong {
+	@Suppress("MagicNumber")
+	val length by defaultingLong {
         name = "length"
         description = "The length of the timeout (default 5 minutes)"
         defaultValue = 300
@@ -259,30 +259,30 @@ class TimeoutArguments : RequiresReason("The user to timeout") {
                 value in -1..86_400 * 28
             }
         }
-    }
+	}
 }
 
 class ActionArguments : Arguments() {
-    val user by snowflake {
+	val user by snowflake {
         name = "user"
         description = "The user to perform the action on, as their user ID"
-    }
+	}
 
-    val action by stringChoice {
+	val action by stringChoice {
         name = "action"
         description = "The action to take on the user"
 
         choices["ban"] = "ban"
         choices["timeout"] = "timeout"
-    }
+	}
 
-    val reason by string {
+	val reason by string {
         name = "reason"
         description = "The reason for the action"
-    }
+	}
 
-    @Suppress("MagicNumber")
-    val length by defaultingLong {
+	@Suppress("MagicNumber")
+	val length by defaultingLong {
         name = "length"
         description = "The length of the action (default 1 month)"
         defaultValue = 2_629_746
@@ -323,36 +323,36 @@ class ActionArguments : Arguments() {
 
             suggestLongMap(map)
         }
-    }
+	}
 
-    val banDeleteDays by banDeleteDaySelector()
+	val banDeleteDays by banDeleteDaySelector()
 }
 
 class NoteArguments : Arguments() {
-    val note by string {
+	val note by string {
         name = "note"
         description = "The note to add"
-    }
+	}
 
-    val messageId by optionalSnowflake {
+	val messageId by optionalSnowflake {
         name = "message-id"
         description = "An optional log message to add the note to"
-    }
+	}
 
-    val user by optionalUser {
+	val user by optionalUser {
         name = "user"
         description = "An optional user to add the note to, if message-id is not specified"
-    }
+	}
 }
 
 class AdvanceTimeoutArguments : RequiresReason("The user to advance timeout on") // no extra arguments
 
 @Suppress("MagicNumber")
 internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice {
-    name = "delete-days"
-    description = "The amount of days to delete messages from the user's history"
-    defaultValue = 0
-    choices = buildMap<String, Int> {
+	name = "delete-days"
+	description = "The amount of days to delete messages from the user's history"
+	defaultValue = 0
+	choices = buildMap<String, Int> {
         for (i in 0..6) {
             put("$i days", i)
         }
@@ -363,22 +363,22 @@ internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice {
         remove("1 days")
         // 7 days
         put("1 week", 7)
-    }.toMutableMap() // kordex requires a mutable map
+	}.toMutableMap() // kordex requires a mutable map
 }
 
 internal fun AutoCompleteInteraction.mapFrom(
-    vararg conversions: Pair<String, Long>,
-    defaultMap: Map<String, Long> = mapOf(),
+	vararg conversions: Pair<String, Long>,
+	defaultMap: Map<String, Long> = mapOf(),
 ): Map<String, Long> {
-    val specifiedLength = focusedOption.value.substringBefore(' ').toLongOrNull()
-    return if (specifiedLength != null) {
+	val specifiedLength = focusedOption.value.substringBefore(' ').toLongOrNull()
+	return if (specifiedLength != null) {
         buildMap {
             val pluralModifier = if (specifiedLength == 1L) "" else "s"
             for ((str, length) in conversions) {
                 put("$specifiedLength $str$pluralModifier", length * specifiedLength)
             }
         }
-    } else {
+	} else {
         defaultMap
-    }
+	}
 }

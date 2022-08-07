@@ -10,23 +10,23 @@ import dev.kord.common.entity.optional.Optional
 import dev.kord.core.entity.Member
 
 class MemberDiff(new: Member, private val old: Member) {
-    // user data (not member data)
-    val username by old.data::username.comparator(new.data.username)
-    val discriminator by old.data::discriminator.comparator(new.data.discriminator)
-    val avatar by old.data::avatar.comparator(new.data.avatar)
-    val publicFlags by old.data::publicFlags.comparator(new.data.publicFlags)
-    val banner by old.data::banner.comparator(new.data.banner)
-    val accentColor by old.data::accentColor.comparator(new.data.accentColor)
+	// user data (not member data)
+	val username by old.data::username.comparator(new.data.username)
+	val discriminator by old.data::discriminator.comparator(new.data.discriminator)
+	val avatar by old.data::avatar.comparator(new.data.avatar)
+	val publicFlags by old.data::publicFlags.comparator(new.data.publicFlags)
+	val banner by old.data::banner.comparator(new.data.banner)
+	val accentColor by old.data::accentColor.comparator(new.data.accentColor)
 
-    // member data
-    val nickname by old.memberData::nick.comparator(new.memberData.nick)
-    val roles by old.memberData::roles.comparator(new.memberData.roles)
-    val premiumSince by old.memberData::premiumSince.comparator(new.memberData.premiumSince)
-    val pending by old.memberData::pending.comparator(new.memberData.pending)
-    val serverAvatar by old.memberData::avatar.comparator(new.memberData.avatar)
-    val timeoutTime by old.memberData::communicationDisabledUntil.comparator(new.memberData.communicationDisabledUntil)
+	// member data
+	val nickname by old.memberData::nick.comparator(new.memberData.nick)
+	val roles by old.memberData::roles.comparator(new.memberData.roles)
+	val premiumSince by old.memberData::premiumSince.comparator(new.memberData.premiumSince)
+	val pending by old.memberData::pending.comparator(new.memberData.pending)
+	val serverAvatar by old.memberData::avatar.comparator(new.memberData.avatar)
+	val timeoutTime by old.memberData::communicationDisabledUntil.comparator(new.memberData.communicationDisabledUntil)
 
-    val isIdentical: Boolean
+	val isIdentical: Boolean
         get() =
             username is Optional.Missing &&
             discriminator is Optional.Missing &&

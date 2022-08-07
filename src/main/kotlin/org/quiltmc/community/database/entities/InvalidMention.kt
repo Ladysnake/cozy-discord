@@ -14,25 +14,25 @@ import org.quiltmc.community.database.Entity
 
 @Serializable
 data class InvalidMention(
-    override val _id: Snowflake,
-    val type: Type,
+	override val _id: Snowflake,
+	val type: Type,
 
-    var allowsDirectMentions: Boolean = false,
-    var allowsReplyMentions: Boolean = false,
+	var allowsDirectMentions: Boolean = false,
+	var allowsReplyMentions: Boolean = false,
 
-    val exceptions: List<Snowflake> = mutableListOf()
+	val exceptions: List<Snowflake> = mutableListOf()
 ) : Entity<Snowflake> {
-    fun addException(id: Snowflake) {
+	fun addException(id: Snowflake) {
         (exceptions as MutableList<Snowflake>).add(id)
-    }
+	}
 
-    fun removeException(id: Snowflake) {
+	fun removeException(id: Snowflake) {
         (exceptions as MutableList<Snowflake>).remove(id)
-    }
+	}
 
-    enum class Type {
+	enum class Type {
         USER,
         ROLE,
         EVERYONE,
-    }
+	}
 }

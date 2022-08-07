@@ -37,13 +37,13 @@ private const val CRASHY_FALLBACK = "https://europe-west1-crashy-9dd87.cloudfunc
  *   be a solution until Crashy changes where they store their logs.
  */
 class CrashyLogRetriever : BaseLogRetriever {
-    private val crashyRegex = CRASHY_REGEX.toRegex()
-    private val httpClient = HttpClient {}
-    private val logger = KotlinLogging.logger {}
-    private var hasInitialized = false // Don't do unnecessary work
-    private lateinit var crashyUrl: String // The real template
+	private val crashyRegex = CRASHY_REGEX.toRegex()
+	private val httpClient = HttpClient {}
+	private val logger = KotlinLogging.logger {}
+	private var hasInitialized = false // Don't do unnecessary work
+	private lateinit var crashyUrl: String // The real template
 
-    private suspend fun initialize(partialUrl: String) {
+	private suspend fun initialize(partialUrl: String) {
         // First, find a `<script url="...">` tag and load its data
         val url = "https://$partialUrl?raw"
         val soup = Jsoup.connect(url).get()
@@ -70,9 +70,9 @@ class CrashyLogRetriever : BaseLogRetriever {
         crashyUrl = CRASHY_URL_TEMPLATE.format(search2.groupValues[1])
 
         hasInitialized = true // initialization successful
-    }
+	}
 
-    override suspend fun getLogContent(message: Message): List<String> {
+	override suspend fun getLogContent(message: Message): List<String> {
         val results = mutableListOf<String>()
 
         // Find all Crashy links in the message
@@ -100,5 +100,5 @@ class CrashyLogRetriever : BaseLogRetriever {
         }
 
         return results
-    }
+	}
 }

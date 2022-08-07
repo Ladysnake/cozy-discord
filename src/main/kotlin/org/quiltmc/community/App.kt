@@ -16,6 +16,7 @@ import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.DetectionAction
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.extPluralKit
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import dev.kord.common.entity.Permission
@@ -44,21 +45,21 @@ import kotlin.time.Duration.Companion.minutes
 val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
 
 suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
-    common()
-    database(true)
-    settings()
+	common()
+	database(true)
+	settings()
 
-    intents {
-        +Intents.all
-    }
+	intents {
+		+Intents.all
+	}
 
-    members {
-        all()
+	members {
+		all()
 
-        fillPresences = true
-    }
+		fillPresences = true
+	}
 
-    extensions {
+	extensions {
         add(::FilterExtension)
         add(::LogParsingExtension)
         add(::MessageLogExtension)
@@ -81,71 +82,73 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
         extMappings { }
 
-        welcomeChannel(getKoin().get<WelcomeChannelCollection>()) {
-            staffCommandCheck {
-                hasBaseModeratorRole()
-            }
+		extPluralKit()
 
-            getLogChannel { _, guild ->
-                guild.getSettings()?.getConfiguredLogChannel()
-            }
+		welcomeChannel(getKoin().get<WelcomeChannelCollection>()) {
+			staffCommandCheck {
+				hasBaseModeratorRole()
+			}
 
-            refreshDuration = 5.minutes
-        }
+			getLogChannel { _, guild ->
+				guild.getSettings()?.getConfiguredLogChannel()
+			}
 
-        tags(getKoin().get<TagsCollection>()) {
-            loggingChannelName = "rtuuy-message-log"
+			refreshDuration = 5.minutes
+		}
 
-            userCommandCheck {
-                inLadysnakeGuild()
-            }
+		tags(getKoin().get<TagsCollection>()) {
+			loggingChannelName = "rtuuy-message-log"
 
-            staffCommandCheck {
-                hasBaseModeratorRole()
-            }
-        }
+			userCommandCheck {
+				inLadysnakeGuild()
+			}
 
-        extPhishing {
-            appName = "Ladysnake's Modification of Quilt's Cozy Bot"
-            detectionAction = DetectionAction.Kick
-            logChannelName = "rtuuy-message-log"
-            requiredCommandPermission = null
+			staffCommandCheck {
+				hasBaseModeratorRole()
+			}
+		}
 
-            check { inLadysnakeGuild() }
-            check { notHasBaseModeratorRole() }
-        }
+		extPhishing {
+			appName = "Ladysnake's Modification of Quilt's Cozy Bot"
+			detectionAction = DetectionAction.Kick
+			logChannelName = "rtuuy-message-log"
+			requiredCommandPermission = null
 
-        userCleanup {
-            maxPendingDuration = 3.days
-            taskDelay = 1.days
-            loggingChannelName = "rtuuy-message-log"
+			check { inLadysnakeGuild() }
+			check { notHasBaseModeratorRole() }
+		}
 
-            runAutomatically = true
+		userCleanup {
+			maxPendingDuration = 3.days
+			taskDelay = 1.days
+			loggingChannelName = "rtuuy-message-log"
 
-            guildPredicate {
-                val servers = getKoin().get<ServerSettingsCollection>()
-                val serverEntry = servers.get(it.id)
+			runAutomatically = true
 
-                serverEntry?.ladysnakeServerType != null
-            }
+			guildPredicate {
+				val servers = getKoin().get<ServerSettingsCollection>()
+				val serverEntry = servers.get(it.id)
 
-            commandCheck { hasPermission(Permission.Administrator) }
-        }
+				serverEntry?.ladysnakeServerType != null
+			}
 
-        sentry {
+			commandCheck { hasPermission(Permission.Administrator) }
+		}
+
+		sentry {
             distribution = "ladysnake"
             dsn = envOrNull("SENTRY_DSN")
-        }
-    }
+		}
+	}
 }
 
 @Suppress("UseIfInsteadOfWhen") // currently only one mode but that could change
 suspend fun main() {
-    val bot = when (MODE) {
-        "ladysnake" -> setupLadysnake()
+	val bot = when (MODE) {
+		"ladysnake" -> setupLadysnake()
 
-        else -> error("Invalid mode: $MODE")
-    }
+		else -> error("Invalid mode: $MODE")
+	}
 
-    bot.start()
+	bot.start()
 }

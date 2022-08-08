@@ -248,4 +248,15 @@ object AllMigrations {
             )
         }
 	}
+
+	/**
+	 * Targets upstream's v19 migration.
+	 * (v17 and v18 canceled each other out - I skipped them)
+	 */
+	suspend fun v23(db: CoroutineDatabase) {
+		db.getCollection<Suggestion>("suggestions").updateMany(
+			"{}",
+			"{\$rename: {isTupper: \"isPluralkit\"}}"
+		)
+	}
 }

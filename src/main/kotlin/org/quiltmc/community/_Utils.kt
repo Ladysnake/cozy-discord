@@ -71,9 +71,12 @@ suspend fun Member.timeout(length: Duration) {
  * Time out a user. This is an extension function at this time
  * because it is not currently implemented in Kord or elsewhere in Kordex
  */
-suspend fun Member.timeoutUntil(time: Instant) {
+suspend fun Member.timeoutUntil(time: Instant, reason: String? = null) {
 	edit {
         communicationDisabledUntil = time
+		if (reason != null) {
+			this.reason = reason
+		}
 	}
 }
 

@@ -26,17 +26,17 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.time.TimestampType
+import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.edit
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.dm
+import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.setNickname
 import dev.kord.common.annotation.KordPreview
-import dev.kord.common.entity.ChannelType
-import dev.kord.common.entity.MessageType
-import dev.kord.common.entity.Permission
-import dev.kord.common.entity.Permissions
+import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.*
 import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.edit
@@ -45,6 +45,7 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.channel.thread.TextChannelThreadCreateEvent
 import dev.kord.core.event.channel.thread.ThreadUpdateEvent
+import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
@@ -97,6 +98,7 @@ val TEXT_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
 	ChannelType.GuildNews,
 )
 
+val STATUS_CHANNEL_ID = envOrNull("STATUS_CHANNEL")
 val DELETE_DELAY = 10.seconds
 val MESSAGE_EDIT_DELAY = 3.seconds
 val PIN_DELETE_DELAY = 10.seconds
@@ -123,6 +125,24 @@ class UtilityExtension : Extension() {
 	}
 
 	override suspend fun setup() {
+		if (STATUS_CHANNEL_ID != null) {
+			event<ReadyEvent> {
+				action {
+					val channel = kord.getChannelOf<TextChannel>(Snowflake(STATUS_CHANNEL_ID))
+
+					channel?.createMessage {
+						content = buildString {
+							append("**Bot connected:** ")
+							append(Clock.System.now().toDiscord(TimestampType.LongDateTime))
+							append(" (")
+							append(Clock.System.now().toDiscord(TimestampType.RelativeTime))
+							append(")")
+						}
+					}
+				}
+			}
+		}
+
 		event<MemberUpdateEvent> {
 			check { inLadysnakeGuild() }
 			check { isNotBot() }
@@ -219,6 +239,7 @@ class UtilityExtension : Extension() {
             check { inLadysnakeGuild() }
 			check { failIf(event.channel.ownerId == kord.selfId) }
 			check { failIf(event.channel.member != null) }  // We only want thread creation, not join
+			check { failIf(event.channel.owner.asUserOrNull()?.isBot == true) }
 
 			action {
 				val owner = event.channel.owner.asUser()
@@ -277,6 +298,8 @@ class UtilityExtension : Extension() {
 			ephemeralMessageCommand {
 				name = "Raw JSON"
 
+				allowInDms = false
+
 				guild(guildId)
 
 				check { hasBaseModeratorRole() }
@@ -295,6 +318,8 @@ class UtilityExtension : Extension() {
 
 			ephemeralMessageCommand {
 				name = "Pin in thread"
+
+				allowInDms = false
 
 				guild(guildId)
 
@@ -327,6 +352,8 @@ class UtilityExtension : Extension() {
 			ephemeralMessageCommand {
 				name = "Unpin in thread"
 
+				allowInDms = false
+
 				guild(guildId)
 
 				check { isInThread() }
@@ -358,6 +385,8 @@ class UtilityExtension : Extension() {
 			ephemeralSlashCommand {
 				name = "thread"
 				description = "Thread management commands"
+
+				allowInDms = false
 
 				guild(guildId)
 
@@ -885,6 +914,8 @@ class UtilityExtension : Extension() {
 				name = "say"
 				description = "Send a message."
 
+				allowInDms = false
+
 				guild(guildId)
 
 				check { hasBaseModeratorRole() }
@@ -950,6 +981,8 @@ class UtilityExtension : Extension() {
 			ephemeralSlashCommand(::MuteRoleArguments) {
 				name = "fix-mute-role"
 				description = "Fix the permissions for the mute role on this server."
+
+				allowInDms = false
 
 				guild(guildId)
 
@@ -1056,6 +1089,8 @@ class UtilityExtension : Extension() {
 				name = "lock-server"
 				description = "Lock the server, preventing anyone but staff from talking"
 
+				allowInDms = false
+
 				guild(guildId)
 
 				check { isAdminOrHasOverride() }
@@ -1111,6 +1146,8 @@ class UtilityExtension : Extension() {
 				name = "unlock-server"
 				description = "Unlock the server, allowing users to talk again"
 
+				allowInDms = false
+
 				guild(guildId)
 
 				check { isAdminOrHasOverride() }
@@ -1165,6 +1202,8 @@ class UtilityExtension : Extension() {
 			ephemeralSlashCommand(::LockArguments) {
 				name = "lock"
 				description = "Lock a channel, so only moderators can interact in it"
+
+				allowInDms = false
 
 				guild(guildId)
 
@@ -1227,6 +1266,8 @@ class UtilityExtension : Extension() {
 			ephemeralSlashCommand(::LockArguments) {
 				name = "unlock"
 				description = "Unlock a previously locked channel"
+
+				allowInDms = false
 
 				guild(guildId)
 

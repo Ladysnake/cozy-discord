@@ -324,6 +324,8 @@ class SuggestionsExtension : Extension() {
 			name = "edit-suggestion"
 			description = "Edit one of your suggestions"
 
+			allowInDms = false
+
 //			guild(LADYSNAKE_GUILD)
 
 			action {
@@ -365,6 +367,8 @@ class SuggestionsExtension : Extension() {
 			ephemeralSubCommand(::SuggestionStateArguments) {
 				name = "state"
 				description = "Suggestion state change command; \"clear\" to remove comment"
+
+				allowInDms = false
 
 //			guild(LADYSNAKE_GUILD)
 

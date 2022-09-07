@@ -168,6 +168,8 @@ class FilterExtension : Extension() {
 				name = "filters"
 				description = "Filter management commands"
 
+				allowInDms = false
+
 				check { hasBaseModeratorRole() }
 
 				guild(guildId)

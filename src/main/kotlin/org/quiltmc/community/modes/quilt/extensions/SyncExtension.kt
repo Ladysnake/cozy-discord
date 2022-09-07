@@ -98,6 +98,8 @@ class SyncExtension : Extension() {
 			name = "sync"
 			description = "Synchronisation commands."
 
+			allowInDms = false
+
 			check { inLadysnakeGuild() }
 			check { hasBanOrRolePerms() }
 

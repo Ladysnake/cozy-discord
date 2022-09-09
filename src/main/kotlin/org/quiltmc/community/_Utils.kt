@@ -20,6 +20,7 @@ import dev.kord.common.Color
 import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.DiscordEmbed
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.TextInputStyle
 import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
@@ -30,6 +31,10 @@ import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.component.ActionRowComponent
+import dev.kord.rest.builder.component.SelectMenuBuilder
+import dev.kord.rest.builder.component.TextInputBuilder
+import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
 import kotlinx.coroutines.flow.firstOrNull
@@ -368,6 +373,30 @@ inline fun EmbedBuilder.copyFrom(embed: DiscordEmbed) {
             value = it.value
             inline = it.inline.value
         }
+	}
+}
+
+// If an action row has a text input or select menu, that's the only thing it has
+val ActionRowComponent.textInput get() = textInputs.entries.first().value
+val ActionRowComponent.selectMenu get() = selectMenus.entries.first().value
+
+fun ModalBuilder.textInput(
+	style: TextInputStyle,
+	customId: String,
+	label: String,
+	builder: TextInputBuilder.() -> Unit
+) {
+	actionRow {
+		textInput(style, customId, label, builder)
+	}
+}
+
+fun ModalBuilder.selectMenu(
+	customId: String,
+	builder: SelectMenuBuilder.() -> Unit
+) {
+	actionRow {
+		selectMenu(customId, builder)
 	}
 }
 

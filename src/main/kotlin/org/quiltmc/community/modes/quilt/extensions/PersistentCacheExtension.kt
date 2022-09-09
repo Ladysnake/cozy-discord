@@ -8,9 +8,12 @@
 
 package org.quiltmc.community.modes.quilt.extensions
 
+import com.kotlindiscord.kord.extensions.events.EventContext
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.sentry.BreadcrumbType
+import com.soywiz.klock.seconds
+import com.soywiz.korio.async.delay
 import com.soywiz.korio.async.useIt
 import com.soywiz.korio.compression.lzma.Lzma
 import com.soywiz.korio.compression.uncompressStream
@@ -28,8 +31,11 @@ import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ConnectEvent
 import dev.kord.core.event.gateway.DisconnectEvent
 import io.sentry.Breadcrumb
+import io.sentry.SentryLevel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.*
+
+private const val MAX_RETRY_COUNT = 10
 
 val JSON = Json {
 	encodeDefaults = false
@@ -45,6 +51,8 @@ val JSON = Json {
  */
 class PersistentCacheExtension : Extension() {
 	override val name = "persistent-cache"
+	private val cacheFile = localCurrentDirVfs["cache.json.lzma"]
+	private val lock = localCurrentDirVfs["cache.lock"]
 
 	override suspend fun setup() {
         event<DisconnectEvent> {
@@ -64,7 +72,7 @@ class PersistentCacheExtension : Extension() {
 
                     val jsonArray = JsonArray(messagesListJsonified)
 
-                    saveJsonToFile(jsonArray, "cache/messages.json.gz")
+                    saveJsonToFile(jsonArray)
                     sentry.breadcrumb(BreadcrumbType.Info) {
                         message = "Finished caching messages"
                         data["count"] = messagesListJsonified.size
@@ -83,7 +91,7 @@ class PersistentCacheExtension : Extension() {
                         val messageSerializer = MessageData.serializer()
                         val messagesList = mutableListOf<MessageData>()
 
-                        val jsonArray = loadJsonFromFile("cache/messages.json.gz")
+                        val jsonArray = loadJsonFromFile()
 
                         jsonArray.jsonArray.forEach {
                             val deserialized = Json.decodeFromJsonElement(messageSerializer, it)
@@ -107,28 +115,64 @@ class PersistentCacheExtension : Extension() {
         }
 	}
 
-	private suspend fun saveJsonToFile(json: JsonElement, path: String) {
-        val vfsFile = localCurrentDirVfs[path]
+	private suspend fun EventContext<*>.saveJsonToFile(json: JsonElement) {
+        cacheFile.parent.mkdirs()
 
-        vfsFile.parent.mkdirs()
+		var tries = 0
+		while (lock.exists() && tries++ < MAX_RETRY_COUNT) {
+			delay(1.seconds)
+		}
+
+		if (lock.exists()) {
+			sentry.captureMessage("Failed to acquire lock for cache file") {
+				level = SentryLevel.WARNING
+				setExtra("action", "saveJsonToFile")
+			}
+		}
+
+		lock.openUse(VfsOpenMode.CREATE_NEW) {
+			write(0)
+		}
 
         val bytes = json.toString().encodeToByteArray()
 
         bytes.inputStream().toAsync(bytes.size.toLong()).toAsyncStream().useIt { input ->
-            vfsFile.open(VfsOpenMode.CREATE_OR_TRUNCATE).useIt { output ->
-                Lzma.compress(BitReader(input), output)
+            cacheFile.open(VfsOpenMode.CREATE_OR_TRUNCATE).useIt { output ->
+                Lzma.compress(BitReader.forInput(input), output)
             }
         }
+
+		lock.delete()
 	}
 
-	private suspend fun loadJsonFromFile(path: String): JsonElement {
-        val vfsFile = localCurrentDirVfs[path]
+	private suspend fun EventContext<*>.loadJsonFromFile(): JsonElement {
+		if (!cacheFile.exists()) {
+			throw FileNotFoundException("Cache file does not exist")
+		}
 
-        val jsonString = vfsFile.open(VfsOpenMode.READ).useIt { input ->
+		var tries = 0
+		while (lock.exists() && tries++ < MAX_RETRY_COUNT) {
+			delay(1.seconds)
+		}
+
+		if (lock.exists()) {
+			sentry.captureMessage("Failed to acquire lock for cache file") {
+				level = SentryLevel.WARNING
+				setExtra("action", "loadJsonFromFile")
+			}
+		}
+
+		lock.openUse(VfsOpenMode.CREATE_NEW) {
+			write(0)
+		}
+
+        val jsonString = cacheFile.open(VfsOpenMode.READ).useIt { input ->
             Lzma.uncompressStream(input).useIt { output ->
                 output.readAll().toString(Charsets.UTF_8)
             }
         }
+
+		lock.delete()
 
         return JSON.parseToJsonElement(jsonString)
 	}

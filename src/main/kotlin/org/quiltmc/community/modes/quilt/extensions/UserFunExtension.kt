@@ -22,6 +22,7 @@ import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.asChannelOf
+import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.withTyping
 import dev.kord.core.behavior.edit
@@ -353,7 +354,8 @@ class UserFunExtension : Extension() {
 				val winnerCount = arguments.winners
 				val autoResponse = arguments.autoMessage
 				val desc = arguments.description
-				val channel = arguments.channel as? TopGuildMessageChannel ?: getChannel().asChannelOf()
+				val channel: TopGuildMessageChannel =
+					arguments.channel?.asChannelOfOrNull() ?: getChannel().asChannelOf()
 
 				val message = channel.createMessage("Drawing!")
 

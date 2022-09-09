@@ -4,9 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(ExperimentalTime::class, KordPreview::class)
-
-@file:Suppress("MagicNumber")  // Yep. I'm done.
+@file:Suppress("MagicNumber", "OPT_IN_USAGE_ERROR")  // Yep. I'm done. (╯°□°）╯︵ ┻━┻
 
 package org.quiltmc.community.modes.quilt.extensions.suggestions
 
@@ -20,27 +18,35 @@ import com.kotlindiscord.kord.extensions.events.interfaces.MessageEvent
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.api.PKMember
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.ProxiedMessageCreateEvent
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.UnProxiedMessageCreateEvent
+import com.kotlindiscord.kord.extensions.modules.unsafe.extensions.unsafeSlashCommand
+import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialSlashCommandResponse
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
-import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.MessageType
 import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.TextInputStyle
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
+import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.response.createEphemeralFollowup
+import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.behavior.reply
 import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
+import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.entity.interaction.ButtonInteraction
 import dev.kord.core.event.channel.thread.ThreadChannelCreateEvent
+import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
+import dev.kord.core.event.interaction.GuildModalSubmitInteractionCreateEvent
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder.Companion.ZERO_WIDTH_SPACE
@@ -50,10 +56,17 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.MessageModifyBuilder
 import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.json.JsonErrorCode
+import dev.kord.rest.request.KtorRequestException
+import io.ktor.client.*
 import io.ktor.client.plugins.*
+import io.ktor.client.request.*
+import io.ktor.client.statement.*
+import io.ktor.http.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.collect
+import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.litote.kmongo.and
@@ -67,7 +80,6 @@ import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.Suggestion
 import org.quiltmc.community.database.getSettings
 import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 
 private const val ACTION_DOWN = "down"
 private const val ACTION_REMOVE = "remove"
@@ -81,10 +93,13 @@ private const val THREAD_INTRO = "This message is at the top of the thread.\n\n"
 
 private const val COMMENT_SIZE_LIMIT: Long = 800
 private const val SUGGESTION_SIZE_LIMIT: Long = 1000
-private const val FIELD_SIZE_LIMIT: Long = 1024
+private const val FIELD_SIZE_LIMIT: Int = 1024
+private const val TEXT_SIZE_LIMIT: Int = 4000
 private const val THIRTY_SECONDS: Long = 30_000
 
 private const val GITHUB_EMOJI: String = "<:github:864972399111569468>"
+
+private const val PK_BASE_URL = "https://api.pluralkit.me/v2"
 
 private val EMOTE_DOWNVOTE = ReactionEmoji.Unicode("⬇️")
 private val EMOTE_REMOVE = ReactionEmoji.Unicode("\uD83D\uDDD1️")
@@ -99,6 +114,8 @@ class SuggestionsExtension : Extension() {
 	val suggestions: SuggestionsCollection by inject()
 	private val threads: OwnedThreadCollection by inject()
 
+	private val httpClient = HttpClient {}
+
 	override suspend fun setup() {
 		// region: Events
 
@@ -108,6 +125,9 @@ class SuggestionsExtension : Extension() {
 					event.message.type == MessageType.Default ||
 							event.message.type == MessageType.Reply
 				}
+
+				// Outdated now
+				fail()
 			}
 
 			check { failIf(event.message.content.trim().isEmpty()) }
@@ -157,6 +177,9 @@ class SuggestionsExtension : Extension() {
 					event.message.type == MessageType.Default ||
 							event.message.type == MessageType.Reply
 				}
+
+				// Outdated now
+				fail()
 			}
 
 			check { failIf(event.message.content.trim().isEmpty()) }
@@ -316,6 +339,178 @@ class SuggestionsExtension : Extension() {
 			}
 		}
 
+		event<GuildModalSubmitInteractionCreateEvent> {
+			check { failIf(event.interaction.modalId != "suggestions:submit") }
+
+			action {
+				val resp = event.interaction.deferEphemeralResponse()
+
+				val interactionId = event.interaction.id
+				val guildId = event.interaction.data.guildId.value!!
+				val channelId = event.interaction.channelId
+
+				var currentText = 0
+				fun nextRow() = event.interaction.actionRows[currentText++]
+
+				val title = nextRow().textInput.value!!
+				val text = nextRow().textInput.value!!
+				val problem = nextRow().textInput.value
+				val solution = nextRow().textInput.value
+
+				val pkMemberId = nextRow().textInput.value
+				val pkMember = if (!pkMemberId.isNullOrBlank()) {
+					val url = "$PK_BASE_URL/members/$pkMemberId"
+					val response = httpClient.get(url).bodyAsText()
+					Json.decodeFromString(PKMember.serializer(), response)
+				} else null
+
+				val owner = event.interaction.user
+				val ownerAvatar = pkMember?.avatarUrl ?: owner.avatar?.url
+				val ownerName = if (pkMember != null) {
+					"${pkMember.displayName ?: pkMember.name} (${owner.tag})"
+				} else {
+					owner.tag
+				}
+
+				val suggestion = Suggestion(
+					_id = interactionId,
+					guildId = guildId,
+					channelId = channelId,
+
+					status = SuggestionStatus.Open,
+					text = text,
+					problem = problem?.ifBlank { null },
+					solution = solution?.ifBlank { null },
+
+					owner = owner.id,
+					ownerAvatar = ownerAvatar,
+					ownerName = ownerName,
+
+					isPluralkit = pkMember != null,
+				)
+
+				val autoRemovals = getKoin().get<GlobalSettingsCollection>().get()?.suggestionAutoRemovals
+					?: defaultAutoRemovals
+
+				for (autoRemoval in autoRemovals) {
+					if (autoRemoval.regex.containsMatchIn(suggestion.text)) {
+						suggestion.status = autoRemoval.status
+						suggestion.comment = "(Automatic response) " + autoRemoval.reason
+						break
+					}
+				}
+
+				if (checkSuggestionLength(suggestion, null)) {
+					suggestions.set(suggestion)
+					sendSuggestion(suggestion, title)
+
+					val threadId = suggestion.thread
+					if (threadId != null) {
+						val thread = kord.getChannelOf<ThreadChannel>(threadId)
+						thread?.edit {
+							name = title
+						}
+					}
+
+					resp.respond {
+						content = "Suggestion submitted!"
+					}
+
+					// shh i'm totally not just hiding extra data
+					val lastSuggestionMessageId = event.interaction.actionRows.first()
+						.textInput.customId.let { if (it.isNotEmpty()) Snowflake(it) else null }
+
+					resendSuggestionMessage(kord.getChannelOf(channelId)!!, lastSuggestionMessageId)
+				} else {
+					resp.respond {
+						content = "Your suggestion is too long. Please shorten it and try again."
+					}
+				}
+			}
+		}
+
+		event<GuildModalSubmitInteractionCreateEvent> {
+			check { failIf(event.interaction.modalId != "suggestions:initial-message") }
+
+			action {
+				val resp = event.interaction.deferEphemeralResponse()
+
+				var currentObj = 0
+				fun nextRow() = event.interaction.actionRows[currentObj++]
+
+				val channel = kord.getChannelOf<TopGuildMessageChannel>(Snowflake(nextRow().textInput.value!!))!!
+				val title = nextRow().textInput.value
+				val description = nextRow().textInput.value
+
+				channel.createMessage {
+					embed {
+						this.title = title
+						this.description = description
+					}
+
+					actionRow {
+						interactionButton(ButtonStyle.Primary, "suggestions:create") {
+							label = "Create a suggestion"
+							emoji(ReactionEmoji.Unicode("\uD83D\uDCDD"))
+						}
+					}
+				}
+
+				resp.respond {
+					content = "Done"
+				}
+			}
+		}
+
+		event<ButtonInteractionCreateEvent> {
+			check { failIf(topChannelFor(event)!!.id !in SUGGESTION_CHANNELS) }
+			check { failIfNot(event.interaction.componentId == "suggestions:create") }
+
+			action {
+				try {
+					event.interaction.modal("Submit a suggestion!", "suggestions:submit") {
+						// the custom id for the first input is used to store the last suggestion message id
+						val lastSuggestionMessageId = event.interaction.message.id.toString()
+						textInput(TextInputStyle.Short, lastSuggestionMessageId, "Title") {
+							placeholder = "My amazing suggestion"
+							allowedLength = 1..50
+							required = true
+						}
+
+						textInput(TextInputStyle.Paragraph, "text", "Main text") {
+							placeholder =
+								"This is absolutely a great idea, and I think it should be implemented because..."
+							required = true
+						}
+
+						textInput(TextInputStyle.Paragraph, "problem", "Problem") {
+							placeholder = "The issue is..."
+							allowedLength = 0..FIELD_SIZE_LIMIT
+							required = false
+						}
+
+						textInput(TextInputStyle.Paragraph, "solution", "Solution") {
+							placeholder = "My proposed solution is..."
+							allowedLength = 0..FIELD_SIZE_LIMIT
+							required = false
+						}
+
+						textInput(TextInputStyle.Short, "pkid", "PluralKit Member ID") {
+							placeholder = "Only used if you're part of a system on PluralKit"
+							allowedLength = 5..5
+							required = false
+						}
+					}
+				} catch (e: KtorRequestException) {
+					if (e.error?.code != JsonErrorCode.InteractionAlreadyAcknowledged) {
+						// "Interaction already acknowledged" is an issue with modals - no real way to fix it
+						// but all other errors should be reported
+						throw e
+					}
+				}
+			}
+		}
+
 		// endregion
 
 		// region: Commands
@@ -432,6 +627,50 @@ class SuggestionsExtension : Extension() {
 			}
 		}
 
+		unsafeSlashCommand {
+			name = "refresh-suggestion-channel"
+			description = "Create a new message to allow creation of suggestions"
+			// "Warning: you may not be able to respond in time!"
+			initialResponse = InitialSlashCommandResponse.None
+
+			check { hasBaseModeratorRole() }
+
+			action {
+				val channel = if (channel.id in SUGGESTION_CHANNELS) {
+					channel.id
+				} else {
+					SUGGESTION_CHANNELS.first {
+						getGuild()!!.getChannelOrNull(it) != null
+					}
+				}
+
+				event.interaction.modal("Refresh suggestion channel", "suggestions:initial-message") {
+					textInput(TextInputStyle.Short, "channel", "Channel snowflake") {
+						placeholder = "Snowflake"
+						value = channel.toString()
+						allowedLength = 18..20
+						required = true
+					}
+
+					textInput(TextInputStyle.Short, "message", "Title") {
+						placeholder = "A short, descriptive title"
+						value = "Suggestion channel"
+						allowedLength = 1..128
+						required = true
+					}
+
+					textInput(TextInputStyle.Paragraph, "description", "Description") {
+						placeholder = "A longer description"
+						value = "This channel is used to submit suggestions. " +
+								"Click the button below to submit a suggestion."
+
+						allowedLength = 1..TEXT_SIZE_LIMIT
+						required = true
+					}
+				}
+			}
+		}
+
 		// TODO: Searching command?
 //			subCommand(::SuggestionSearchArguments) {
 //				name = "search"
@@ -447,7 +686,7 @@ class SuggestionsExtension : Extension() {
 		// endregion
 	}
 
-	suspend fun checkSuggestionLength(suggestion: Suggestion, event: MessageEvent): Boolean {
+	private suspend fun checkSuggestionLength(suggestion: Suggestion, event: MessageEvent?): Boolean {
 		if (suggestion.text.length > SUGGESTION_SIZE_LIMIT) {
 			val user = kord.getUser(suggestion.owner)
 
@@ -464,6 +703,8 @@ class SuggestionsExtension : Extension() {
 				content = errorMessage
 			}
 
+			if (event == null) return false
+
 			if (dm != null) {
 				event.message?.delete()
 			} else {
@@ -479,7 +720,7 @@ class SuggestionsExtension : Extension() {
 		return true
 	}
 
-	suspend fun sendSuggestion(suggestion: Suggestion) {
+	suspend fun sendSuggestion(suggestion: Suggestion, name: String? = null) {
 		val channel = kord.getChannelOf<GuildMessageChannel>(suggestion.channelId)!!
 
 		// interpret the text to see if it has a problem/solution word pair
@@ -514,7 +755,7 @@ class SuggestionsExtension : Extension() {
 
 			val thread = (channel as? TextChannel)?.startPublicThreadWithMessage(
 				message.id,
-				name = suggestion._id.toString(),
+				name = name ?: suggestion._id.toString(),
 				archiveDuration = channel.getArchiveDuration(channel.getGuild().getSettings())
 			)
 
@@ -669,6 +910,30 @@ class SuggestionsExtension : Extension() {
 				}
 			}
 		}
+	}
+
+	suspend fun resendSuggestionMessage(channel: TopGuildMessageChannel, prevMessageId: Snowflake?) {
+		val prevMessage = prevMessageId?.let { channel.getMessageOrNull(it) }
+
+		channel.createMessage {
+			embed {
+				if (prevMessage != null) {
+					prevMessage.embeds.first().apply(this)
+				} else {
+					title = "Suggestion"
+					description = "Suggest something by clicking the button below."
+				}
+			}
+
+			actionRow {
+				interactionButton(ButtonStyle.Primary, "suggestions:create") {
+					label = "Create a suggestion"
+					emoji(ReactionEmoji.Unicode("\uD83D\uDCDD"))
+				}
+			}
+		}
+
+		prevMessage?.delete()
 	}
 
 	fun MessageCreateBuilder.suggestion(suggestion: Suggestion, sendEmbed: Boolean = true) {

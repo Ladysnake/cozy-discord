@@ -128,6 +128,7 @@ class PersistentCacheExtension : Extension() {
 				level = SentryLevel.WARNING
 				setExtra("action", "saveJsonToFile")
 			}
+			return
 		}
 
 		lock.openUse(VfsOpenMode.CREATE_NEW) {
@@ -160,6 +161,7 @@ class PersistentCacheExtension : Extension() {
 				level = SentryLevel.WARNING
 				setExtra("action", "loadJsonFromFile")
 			}
+			return JsonArray(emptyList())
 		}
 
 		lock.openUse(VfsOpenMode.CREATE_NEW) {

@@ -86,10 +86,10 @@ private const val ACTION_REMOVE = "remove"
 private const val ACTION_UP = "up"
 
 private const val THREAD_INTRO = "This message is at the top of the thread.\n\n" +
-		"If this is your suggestion, **please** use `/thread rename` to change the " +
-		"name of the thread! You're also welcome to use the other `/thread` commands to manage " +
-		"your suggestion thread as needed. You can edit your suggestion at any time using the `/edit-suggestion`" +
-		" command."
+		"If this is your suggestion, you're welcome to use the various `/thread` commands to manage your suggestion " +
+		"thread as needed. You can edit your suggestion at any time using the `/edit-suggestion` command.\n\n" +
+		"The thread is automatically archived to reduce clutter for mods, but anyone can un-archive it by sending a " +
+		"message in the thread."
 
 private const val COMMENT_SIZE_LIMIT: Long = 800
 private const val SUGGESTION_SIZE_LIMIT: Long = 1000
@@ -802,13 +802,7 @@ class SuggestionsExtension : Extension() {
 
 					delay(3.seconds)
 
-					pingMessage.edit {
-						content = "Reminder <@!${suggestion.owner}>, please use " +
-								"`/thread rename <name>` to enable voting on your suggestion. " +
-								"As soon as you do, your vote will automatically be counted as an upvote. " +
-								"This thread is automatically archived to reduce clutter for our precious " +
-								"moderators. Anyone can un-archive it by sending a message in the thread."
-					}
+					pingMessage.delete("Removing ping message")
 
 					delay(1.seconds)
 

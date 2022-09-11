@@ -804,7 +804,7 @@ class SuggestionsExtension : Extension() {
 
 					pingMessage.delete("Removing ping message")
 
-					delay(1.seconds)
+					delay(5.seconds)
 
 					thread.edit {
 						archived = true

@@ -36,6 +36,7 @@ import dev.kord.core.behavior.interaction.response.createEphemeralFollowup
 import dev.kord.core.behavior.interaction.response.respond
 import dev.kord.core.behavior.reply
 import dev.kord.core.builder.components.emoji
+import dev.kord.core.entity.PermissionOverwrite
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
@@ -441,7 +442,9 @@ class SuggestionsExtension : Extension() {
 				val description = nextRow().textInput.value
 
 				// Setup channel permissions
-				val currentPerms = channel.permissionOverwrites.first { it.target == channel.guildId }
+				val currentPerms = channel.permissionOverwrites.firstOrNull { it.target == channel.guildId }
+					?: PermissionOverwrite.forEveryone(channel.guildId)
+
 				channel.editRolePermission(channel.guildId) {
 					allowed = currentPerms.allowed.copy {
 						-Permission.SendMessages
@@ -452,6 +455,13 @@ class SuggestionsExtension : Extension() {
 						+Permission.SendMessages
 						+Permission.AddReactions
 						-Permission.SendMessagesInThreads
+					}
+				}
+
+				for (role in MODERATOR_ROLES.filter { it in channel.getGuild().roleIds }) {
+					channel.editRolePermission(role) {
+						allowed += Permission.SendMessages
+						denied -= Permission.SendMessages
 					}
 				}
 

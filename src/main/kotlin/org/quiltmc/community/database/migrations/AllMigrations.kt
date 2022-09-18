@@ -8,6 +8,7 @@ package org.quiltmc.community.database.migrations
 
 import com.mongodb.client.model.BulkWriteOptions
 import com.mongodb.client.model.ReplaceOneModel
+import kotlinx.datetime.Clock
 import org.litote.kmongo.*
 import org.litote.kmongo.coroutine.CoroutineDatabase
 import org.quiltmc.community.LADYSNAKE_GUILD
@@ -258,5 +259,25 @@ object AllMigrations {
 			"{}",
 			"{\$rename: {isTupper: \"isPluralkit\"}}"
 		)
+	}
+
+	// finally, a non-upstream migration
+	@Suppress("DEPRECATION")
+	suspend fun v24(db: CoroutineDatabase) {
+		db.getCollection<UserRestrictions>(UserRestrictionsCollection.name).updateMany(
+			UserRestrictions::previousTimeouts exists false,
+			setValue(UserRestrictions::previousTimeouts, mutableListOf())
+		)
+
+		val now = Clock.System.now()
+		val restrictions = mutableListOf<UserRestrictions>()
+		db.getCollection<UserRestrictions>(UserRestrictionsCollection.name)
+			.find("{}")
+			.consumeEach(restrictions::add)
+
+		restrictions.forEach {
+			it.previousTimeouts = (1..it.lastProgressiveTimeoutLength).map { now }.toMutableList()
+			it.save()
+		}
 	}
 }

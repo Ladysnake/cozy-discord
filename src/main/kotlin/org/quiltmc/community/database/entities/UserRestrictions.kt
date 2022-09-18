@@ -23,6 +23,9 @@ data class UserRestrictions(
 	var isBanned: Boolean = false,
 	var returningBanTime: Instant? = null,
 
+	var previousTimeouts: MutableList<Instant> = mutableListOf(),
+
+	@Deprecated("No longer used, kept for migration purposes")
 	var lastProgressiveTimeoutLength: Int = 0,
 ) : Entity<Snowflake> {
 	suspend fun save() {

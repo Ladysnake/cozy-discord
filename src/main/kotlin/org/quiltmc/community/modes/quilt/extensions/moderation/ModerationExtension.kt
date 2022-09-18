@@ -56,6 +56,7 @@ import org.quiltmc.community.database.entities.InvalidMention.Type.ROLE
 import org.quiltmc.community.database.entities.InvalidMention.Type.USER
 import org.quiltmc.community.database.entities.UserRestrictions
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
+import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -1028,7 +1029,10 @@ class ModerationExtension(
 	@Suppress("MagicNumber")
 	private suspend fun advanceTimeout(member: Member, reason: String?) {
 		val restrictions = userRestrictions.get(member.id) ?: UserRestrictions(member.id, member.guildId)
-		val lengthOfRestriction = when (++restrictions.lastProgressiveTimeoutLength) {
+		restrictions.previousTimeouts.add(Clock.System.now())
+		restrictions.previousTimeouts.removeIf { it < (Clock.System.now() - 90.days) }
+		val count = restrictions.previousTimeouts.size
+		val lengthOfRestriction = when (count) {
 			1 -> 1.minutes
 			2 -> 2.minutes
 			3 -> 5.minutes
@@ -1058,7 +1062,7 @@ class ModerationExtension(
 								 // plus they already got bans for 5 years so i think that's enough
 		}
 		val returnTime = Clock.System.now() + lengthOfRestriction
-		if (restrictions.lastProgressiveTimeoutLength <= 15) {
+		if (count <= 15) {
 			member.edit {
 				this.reason = reason
 
@@ -1072,15 +1076,15 @@ class ModerationExtension(
 
 			member.ban {
 				this.reason = reason
-				deleteMessagesDays = 0
+				deleteMessageDuration = ZERO
 			}
 		}
 
-		userRestrictions.set(restrictions)
+		restrictions.save()
 
 		reportToModChannel(member.getGuild()) {
-			title = if (restrictions.lastProgressiveTimeoutLength <= 15) "Timeout" else "Tempban"
-			description = if (restrictions.lastProgressiveTimeoutLength <= 15)  {
+			title = if (count <= 15) "Timeout" else "Tempban"
+			description = if (count <= 15)  {
 				"Timed out ${member.mention} (${member.id})."
 			} else {
 				"Temporarily Banned ${member.mention} (${member.id})."

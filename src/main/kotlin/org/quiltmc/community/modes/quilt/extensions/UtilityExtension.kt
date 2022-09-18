@@ -203,16 +203,16 @@ class UtilityExtension : Extension() {
 			}
 		}
 
-		event<MessageCreateEvent> {
-			check { inLadysnakeGuild() }
-			check { failIf { event.message.type != MessageType.ThreadCreated } }
-
-			action {
-				delay(THREAD_CREATE_DELETE_DELAY)
-
-				event.message.deleteIgnoringNotFound()
-			}
-		}
+//		event<MessageCreateEvent> {
+//			check { inLadysnakeGuild() }
+//			check { failIf { event.message.type != MessageType.ThreadCreated } }
+//
+//			action {
+//				delay(THREAD_CREATE_DELETE_DELAY)
+//
+//				event.message.deleteIgnoringNotFound()
+//			}
+//		}
 
 		event<MessageCreateEvent> {
             check { failIf { event.message.type != MessageType.ThreadCreated } }

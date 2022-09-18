@@ -367,7 +367,7 @@ class UserFunExtension : Extension() {
 
 						field {
 							name = "Host"
-							value = message.author?.mention ?: "N/A"
+							value = user.mention
 							inline = true
 						}
 

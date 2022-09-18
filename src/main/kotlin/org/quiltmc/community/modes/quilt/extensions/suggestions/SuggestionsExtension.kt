@@ -25,11 +25,9 @@ import com.kotlindiscord.kord.extensions.modules.unsafe.extensions.unsafeSlashCo
 import com.kotlindiscord.kord.extensions.modules.unsafe.types.InitialSlashCommandResponse
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
-import dev.kord.common.entity.ButtonStyle
-import dev.kord.common.entity.MessageType
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.TextInputStyle
+import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.createMessage
+import dev.kord.core.behavior.channel.editRolePermission
 import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOf
@@ -442,6 +440,22 @@ class SuggestionsExtension : Extension() {
 				val title = nextRow().textInput.value
 				val description = nextRow().textInput.value
 
+				// Setup channel permissions
+				val currentPerms = channel.permissionOverwrites.first { it.target == channel.guildId }
+				channel.editRolePermission(channel.guildId) {
+					allowed = currentPerms.allowed.copy {
+						-Permission.SendMessages
+						-Permission.AddReactions
+						+Permission.SendMessagesInThreads
+					}
+					denied = currentPerms.denied.copy {
+						+Permission.SendMessages
+						+Permission.AddReactions
+						-Permission.SendMessagesInThreads
+					}
+				}
+
+				// Create initial message
 				channel.createMessage {
 					embed {
 						this.title = title
@@ -639,7 +653,7 @@ class SuggestionsExtension : Extension() {
 				val channel = if (channel.id in SUGGESTION_CHANNELS) {
 					channel.id
 				} else {
-					SUGGESTION_CHANNELS.first {
+					SUGGESTION_CHANNELS.firstOrNull {
 						getGuild()!!.getChannelOrNull(it) != null
 					}
 				}
@@ -647,7 +661,7 @@ class SuggestionsExtension : Extension() {
 				event.interaction.modal("Refresh suggestion channel", "suggestions:initial-message") {
 					textInput(TextInputStyle.Short, "channel", "Channel snowflake") {
 						placeholder = "Snowflake"
-						value = channel.toString()
+						value = channel?.toString()
 						allowedLength = 18..20
 						required = true
 					}

@@ -12,13 +12,13 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.i
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
+import com.kotlindiscord.kord.extensions.utils.suggestDoubleMap
 import com.kotlindiscord.kord.extensions.utils.suggestIntMap
 import com.kotlindiscord.kord.extensions.utils.suggestLongMap
 import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.interaction.AutoCompleteInteraction
-import org.quiltmc.community.modes.quilt.extensions.converters.defaultingIntChoice
 import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
 
 // This is just to clean up ModerationExtension.kt a bit more.
@@ -153,7 +153,7 @@ class MentionExceptionArguments : Arguments() {
         typeName = "idk why this is still required, this only is ever used in slash commands, not chat commands"
 	}
 
-	val user by user {
+	val user by mentionable {
         name = "user"
         description = "The user to update the exception for"
 	}
@@ -348,22 +348,26 @@ class NoteArguments : Arguments() {
 class AdvanceTimeoutArguments : RequiresReason("The user to advance timeout on") // no extra arguments
 
 @Suppress("MagicNumber")
-internal fun Arguments.banDeleteDaySelector() = defaultingIntChoice {
+internal fun Arguments.banDeleteDaySelector() = defaultingDecimal {
 	name = "delete-days"
 	description = "The amount of days to delete messages from the user's history"
-	defaultValue = 0
-	choices = buildMap<String, Int> {
-        for (i in 0..6) {
-            put("$i days", i)
-        }
+	defaultValue = 0.0
+	autoComplete {
+		val map = buildMap {
+			for (i in 0..6) {
+				put("$i days", i.toDouble())
+			}
 
-        // two special cases for displayed names
-        // 1 day
-        put("1 day", 1)
-        remove("1 days")
-        // 7 days
-        put("1 week", 7)
-	}.toMutableMap() // kordex requires a mutable map
+			// two special cases for displayed names
+			// 1 day
+			put("1 day", 1.0)
+			remove("1 days")
+			// 7 days
+			put("1 week", 7.0)
+		}
+
+		suggestDoubleMap(map)
+	}
 }
 
 internal fun AutoCompleteInteraction.mapFrom(

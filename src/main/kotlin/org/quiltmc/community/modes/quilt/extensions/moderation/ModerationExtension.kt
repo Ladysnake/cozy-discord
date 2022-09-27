@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:OptIn(ExperimentalTime::class)
+@file:OptIn(ExperimentalTime::class, DoNotChain::class)
 
 package org.quiltmc.community.modes.quilt.extensions.moderation
 
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
+import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
@@ -38,6 +39,7 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
+import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
@@ -227,7 +229,8 @@ class ModerationExtension(
 					for (snowflake in event.message.mentionedRoleIds) {
 						val mention = invalidMentions.get(snowflake)
 						if (mention != null && !mention.allowsDirectMentions &&
-							mention.type == ROLE && event.member?.id !in mention.exceptions
+							mention.type == ROLE && event.member?.id !in mention.exceptions &&
+							event.member?.roleIds?.any { it in mention.exceptions } != true
 						) {
 							event.message.author.tryDM(event.getGuild()) {
 								content = "You have mentioned a role that is not allowed to be mentioned. " +
@@ -239,7 +242,8 @@ class ModerationExtension(
 					for (snowflake in event.message.mentionedUserIds) {
 						val mention = invalidMentions.get(snowflake)
 						if (mention != null && !mention.allowsDirectMentions &&
-							mention.type == USER && event.member?.id !in mention.exceptions
+							mention.type == USER && event.member?.id !in mention.exceptions &&
+							event.member?.roleIds?.any { it in mention.exceptions } != true
 						) {
 							event.message.author.tryDM(event.getGuild()) {
 								content = "You have mentioned a user that is not allowed to be mentioned. " +
@@ -341,11 +345,18 @@ class ModerationExtension(
 
 				ephemeralSubCommand(::MentionExceptionArguments) {
 					name = "change-exception"
-					description = "Add/remove a user from a mention exception list."
+					description = "Add/remove a user or role from a mention exception list."
 
 					check { hasBaseModeratorRole() }
 
 					action {
+						if (arguments.user.id == guild?.id) {
+							respond {
+								content = "**Error**: You cannot allow @everyone to be exempt from a rule."
+								allowedMentions {  }
+							}
+							return@action
+						}
 						val invalidMention = invalidMentions.get(arguments.mentionable.id) ?: InvalidMention(
 							arguments.mentionable.id,
 								when (arguments.mentionable) {
@@ -577,7 +588,7 @@ class ModerationExtension(
 
 							guild!!.ban(arguments.user) {
 								reason = arguments.reason
-								deleteMessagesDays = arguments.banDeleteDays
+								deleteMessageDuration = arguments.banDeleteDays.days
 							}
 
 							reportToModChannel(guild?.asGuild()) {
@@ -897,7 +908,7 @@ class ModerationExtension(
 			// ban the user (the restriction just was created)
 			member.ban {
 				this.reason = reason
-				deleteMessagesDays = context.arguments.daysToDelete
+				deleteMessageDuration = context.arguments.daysToDelete.days
 			}
 		}
 

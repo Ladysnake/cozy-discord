@@ -75,6 +75,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         add(::MessageEditExtension)
         add(::ExtraLogExtension)
         add(::ForcedPermissionExtension)
+		add(::ConsoleLogExtension)
 
         if (GITHUB_TOKEN != null) {
             add(::GithubExtension)

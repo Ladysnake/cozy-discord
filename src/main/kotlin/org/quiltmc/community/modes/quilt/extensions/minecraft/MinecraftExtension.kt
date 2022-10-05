@@ -9,7 +9,6 @@ package org.quiltmc.community.modes.quilt.extensions.minecraft
 import com.kotlindiscord.kord.extensions.DISCORD_FUCHSIA
 import com.kotlindiscord.kord.extensions.DISCORD_GREEN
 import com.kotlindiscord.kord.extensions.checks.hasPermission
-import com.kotlindiscord.kord.extensions.checks.hasRole
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
@@ -156,10 +155,7 @@ class MinecraftExtension : Extension() {
 					name = "forget"
 					description = "Forget a version (the last one by default), allowing it to be relayed again."
 
-					when (guildId) {
-						LADYSNAKE_GUILD -> check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
-						YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
-					}
+					check { hasBaseModeratorRole() }
 
 					check {
                         any(
@@ -197,10 +193,7 @@ class MinecraftExtension : Extension() {
 					name = "run"
 					description = "Run the check task now, without waiting for it."
 
-					when (guildId) {
-						LADYSNAKE_GUILD -> check { hasRole(LADYSNAKE_MODERATOR_ROLE) }
-						YOUTUBE_GUILD -> check { hasRole(YOUTUBE_MODERATOR_ROLE) }
-					}
+					check { hasBaseModeratorRole() }
 
 					action {
 						respond { content = "Checking now..." }

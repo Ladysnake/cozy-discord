@@ -22,10 +22,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCom
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.ephemeralButton
-import com.kotlindiscord.kord.extensions.extensions.Extension
-import com.kotlindiscord.kord.extensions.extensions.ephemeralMessageCommand
-import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
-import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.edit
@@ -39,6 +36,7 @@ import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.*
 import dev.kord.core.behavior.channel.threads.edit
+import dev.kord.core.behavior.createRole
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
@@ -52,6 +50,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
@@ -114,6 +113,7 @@ class UtilityExtension : Extension() {
 
 	private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
 	private val suggestions: SuggestionsCollection? = suggestionsExtension?.suggestions
+	private val threadIds = mutableMapOf<Snowflake, Snowflake>()
 
 	@OptIn(ExperimentalSerializationApi::class)
 	private val json = Json {
@@ -270,9 +270,16 @@ class UtilityExtension : Extension() {
 					delay(3.seconds)
 				}
 
+				val threadId = threadIds.getOrPut(event.channel.guildId) {
+					event.channel.guild
+						.getApplicationCommands()
+						.first { it.name == "thread" }
+						.id
+				}
+
 				message.edit {
-					content = "Welcome to your new thread, ${owner.mention}! This message is at the " +
-							"start of the thread. Remember, you're welcome to use the `/thread` commands to manage " +
+					content = "Welcome to your new thread, ${owner.mention}! This message is at the start of the " +
+							"thread. Remember, you're welcome to use the </thread:$threadId> commands to manage " +
 							"your thread as needed."
 				}
 
@@ -1471,6 +1478,30 @@ class UtilityExtension : Extension() {
                 }
             }
         }
+
+		ephemeralUserCommand {
+			name = "Force verify"
+
+			check { hasBaseModeratorRole() }
+			check { inLadysnakeGuild() }
+
+			action {
+				val message = "Temp role for force verify"
+				val tempRole = guild!!.createRole {
+					name = "Temp role"
+					reason = message
+				}
+
+				member!!.addRole(tempRole.id, message)
+				member!!.removeRole(tempRole.id, message)
+
+				tempRole.delete(message)
+
+				respond {
+					content = "Force verified ${user.mention}"
+				}
+			}
+		}
 	}
 
 	inner class PinMessageArguments : Arguments() {

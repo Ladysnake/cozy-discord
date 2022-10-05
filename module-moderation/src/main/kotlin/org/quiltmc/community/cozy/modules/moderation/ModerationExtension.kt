@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("MagicNumber")
+
 package org.quiltmc.community.cozy.modules.moderation
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
@@ -14,6 +16,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSub
 import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
 import com.kotlindiscord.kord.extensions.commands.converters.impl.member
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalDuration
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
@@ -39,7 +42,9 @@ public const val MAX_TIMEOUT_SECS: Int = 60 * 60 * 24 * 28
  * Moderation, extension, provides different moderation related tools.
  *
  * Currently includes:
- * - Slowmode command
+ * - Slowmode
+ * - Timeout
+ * - Force verify
  */
 public class ModerationExtension(
 	private val config: ModerationConfig
@@ -57,10 +62,12 @@ public class ModerationExtension(
 			config.getCommandChecks().forEach(::check)
 
 			action {
+				val reason = arguments.reason ?: "No reason given"
+
 				if (arguments.duration != null) {
 					arguments.user.timeout(
 						arguments.duration!!,
-						reason = "Timed out by ${user.asUser().tag}"
+						reason = "Timed out by ${user.asUser().tag}: $reason"
 					)
 
 					respond {
@@ -68,7 +75,7 @@ public class ModerationExtension(
 					}
 				} else {
 					arguments.user.removeTimeout(
-						"Timeout removed by ${user.asUser().tag}"
+						reason = "Timeout removed by ${user.asUser().tag}: $reason"
 					)
 
 					respond {
@@ -163,6 +170,54 @@ public class ModerationExtension(
 				}
 			}
 		}
+
+		ephemeralSlashCommand(::ForceVerifyArguments) {
+			name = "force-verify"
+			description = "Make a user bypass Discord's verification process"
+
+			allowInDms = false
+
+			check { anyGuild() }
+
+			config.getCommandChecks().forEach(::check)
+
+			action {
+				val member = guild!!.getMemberOrNull(arguments.user.id)
+
+				if (member == null) {
+					respond {
+						content = "User is not in this guild."
+					}
+				} else {
+					member.addRole(
+						config.getTemporaryRole(guild!!.asGuild()).id,
+						"Force verified by ${user.asUser().tag}"
+					)
+					member.removeRole(config.getTemporaryRole(guild!!.asGuild()).id)
+
+					config.getLoggingChannelOrNull(guild!!.asGuild())?.createEmbed {
+						title = "User force verified"
+						color = DISCORD_BLURPLE
+
+						field {
+							inline = true
+							name = "Moderator"
+							value = "${user.asUser().tag} (${user.mention})"
+						}
+
+						field {
+							inline = true
+							name = "User"
+							value = "${member.tag} (${member.mention})"
+						}
+					}
+
+					respond {
+						content = "User ${member.mention} has been force verified."
+					}
+				}
+			}
+		}
 	}
 
 	public inner class SlowmodeEditArguments : Arguments() {
@@ -193,6 +248,19 @@ public class ModerationExtension(
 					"Timeouts must be for less than 28 days"
 				) { value != null && value!!.toTotalSeconds() >= MAX_TIMEOUT_SECS }
 			}
+		}
+
+		public val reason: String? by optionalString {
+			name = "reason"
+			description = "Optional reason for applying this timeout"
+			maxLength = 50
+		}
+	}
+
+	public inner class ForceVerifyArguments : Arguments() {
+		public val user: Member by member {
+			name = "member"
+			description = "Member to verify"
 		}
 	}
 }

@@ -29,6 +29,7 @@ import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
 import dev.kord.core.entity.*
+import dev.kord.core.entity.application.ApplicationCommand
 import dev.kord.core.entity.channel.GuildChannel
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.component.ActionRowComponent
@@ -420,9 +421,9 @@ fun Snowflake.stringCode() = toString().code()
 
 val KordEntity.mention get() = when (this) {
 	is UserBehavior -> mention
-	is MemberBehavior -> mention
 	is ChannelBehavior -> "<#$id>"
 	is RoleBehavior -> mention
+	is ApplicationCommand -> "</$name:$id>"
 	else -> error("Cannot mention $this")
 }
 

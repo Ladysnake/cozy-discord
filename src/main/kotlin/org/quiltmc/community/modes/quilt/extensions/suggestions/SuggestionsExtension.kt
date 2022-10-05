@@ -57,19 +57,26 @@ import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.JsonErrorCode
 import dev.kord.rest.request.KtorRequestException
+import io.github.evanrupert.excelkt.Sheet
+import io.github.evanrupert.excelkt.workbook
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.collect
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
+import org.apache.poi.ss.usermodel.FillPatternType
+import org.apache.poi.ss.usermodel.IndexedColors
+import org.apache.poi.xssf.usermodel.XSSFColor
 import org.koin.core.component.inject
 import org.litote.kmongo.and
 import org.litote.kmongo.eq
+import org.litote.kmongo.exists
 import org.litote.kmongo.`in`
 import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
@@ -78,6 +85,8 @@ import org.quiltmc.community.database.collections.SuggestionsCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.Suggestion
 import org.quiltmc.community.database.getSettings
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import kotlin.time.Duration.Companion.seconds
 
 private const val ACTION_DOWN = "down"
@@ -85,8 +94,8 @@ private const val ACTION_REMOVE = "remove"
 private const val ACTION_UP = "up"
 
 private const val THREAD_INTRO = "This message is at the top of the thread.\n\n" +
-		"If this is your suggestion, you're welcome to use the various `/thread` commands to manage your suggestion " +
-		"thread as needed. You can edit your suggestion at any time using the `/edit-suggestion` command.\n\n" +
+		"If this is your suggestion, you're welcome to use the various %s commands to manage your suggestion " +
+		"thread as needed. You can edit your suggestion at any time using the </edit-suggestion:%s> command.\n\n" +
 		"The thread is automatically archived to reduce clutter for mods, but anyone can un-archive it by sending a " +
 		"message in the thread."
 
@@ -114,6 +123,26 @@ class SuggestionsExtension : Extension() {
 	private val threads: OwnedThreadCollection by inject()
 
 	private val httpClient = HttpClient {}
+
+	private lateinit var threadIntroGlobal: String
+	private val threadIds = mutableMapOf<Snowflake, Snowflake>()
+
+	private suspend fun threadIntro(guildId: Snowflake): String {
+		if (!::threadIntroGlobal.isInitialized) {
+			val editSuggestion = kord.getGlobalApplicationCommands()
+				.first { it.name == "edit-suggestion" }
+				.id
+
+			threadIntroGlobal = THREAD_INTRO.format("</thread:%s>", editSuggestion)
+		}
+		val threadId = threadIds.getOrPut(guildId) {
+			kord.getGuild(guildId)!!
+				.getApplicationCommands()
+				.first { it.name == "thread" }
+				.id
+		}
+		return threadIntroGlobal.format(threadId)
+	}
 
 	override suspend fun setup() {
 		// region: Events
@@ -539,6 +568,36 @@ class SuggestionsExtension : Extension() {
 
 		// region: Commands
 
+		ephemeralSlashCommand {
+			name = "suggestion-spreadsheet"
+			description = "Download a copy of the suggestions as a spreadsheet."
+
+			allowInDms = false
+
+			check { hasBaseModeratorRole() }
+
+			action {
+				val suggestions = suggestions.find(Suggestion::_id exists true).toList()
+				val outputStream = ByteArrayOutputStream()
+
+				val book = workbook {
+					sheet("Suggestions") {
+						suggestionHeader()
+
+						suggestions.forEach { suggestionRow(it) }
+					}
+				}
+
+				book.xssfWorkbook.write(outputStream)
+
+				respond {
+					content = "Wrote ${suggestions.size} suggestions to an Excel spreadsheet."
+
+					addFile("suggestions.xlsx", ByteArrayInputStream(outputStream.toByteArray()))
+				}
+			}
+		}
+
 		ephemeralSlashCommand(::SuggestionEditArguments) {
 			name = "edit-suggestion"
 			description = "Edit one of your suggestions"
@@ -710,7 +769,55 @@ class SuggestionsExtension : Extension() {
 		// endregion
 	}
 
-	private suspend fun checkSuggestionLength(suggestion: Suggestion, event: MessageEvent?): Boolean {
+	private fun Sheet.suggestionHeader() {
+		val headings = listOf("ID", "Status", "Text", "+", "-", "=", "Staff Comment")
+
+		val style = createCellStyle {
+			setFont(
+				createFont {
+					color = IndexedColors.WHITE.index
+					bold = true
+				}
+			)
+
+			fillPattern = FillPatternType.SOLID_FOREGROUND
+			fillForegroundColor = IndexedColors.BLACK.index
+		}
+
+		row(style) {
+			headings.forEach(::cell)
+		}
+	}
+
+	private fun Sheet.suggestionRow(suggestion: Suggestion) {
+		val statusStyle = createCellStyle {
+			setFont(
+				createFont {
+					val color = XSSFColor(
+						byteArrayOf(
+							suggestion.status.color.red.toByte(),
+							suggestion.status.color.green.toByte(),
+							suggestion.status.color.blue.toByte()
+						)
+					)
+
+					setColor(color)
+				}
+			)
+		}
+
+		row {
+			cell(suggestion._id.toString())
+			cell(suggestion.status.readableName, statusStyle)
+			cell(suggestion.text)
+			cell(suggestion.positiveVotes)
+			cell(suggestion.negativeVotes)
+			cell(suggestion.voteDifference)
+			cell(suggestion.comment ?: "")
+		}
+	}
+
+	suspend fun checkSuggestionLength(suggestion: Suggestion, event: MessageEvent?): Boolean {
 		if (suggestion.text.length > SUGGESTION_SIZE_LIMIT) {
 			val user = kord.getUser(suggestion.owner)
 
@@ -789,7 +896,7 @@ class SuggestionsExtension : Extension() {
 					val threadMessage = thread.createMessage {
 						suggestion(suggestion, sendEmbed = false)
 
-						content = THREAD_INTRO
+						content = threadIntro(suggestion.guildId)
 					}
 
 					threadMessage.pin()
@@ -857,7 +964,7 @@ class SuggestionsExtension : Extension() {
 				threadMessage?.edit {
 					suggestion(suggestion, false)
 
-					content = THREAD_INTRO
+					content = threadIntro(suggestion.guildId)
 				}
 			}
 		}

@@ -6,7 +6,7 @@
 
 package org.quiltmc.community.modes.quilt.extensions
 
-import com.kotlindiscord.kord.extensions.checks.hasRole
+import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
@@ -15,12 +15,12 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.role
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.types.respond
+import dev.kord.common.entity.Permission
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Role
 import dev.kord.rest.builder.message.create.allowedMentions
 import org.koin.core.component.inject
 import org.quiltmc.community.YOUTUBE_GUILD
-import org.quiltmc.community.YOUTUBE_MODERATOR_ROLE
 import org.quiltmc.community.database.collections.TeamCollection
 import org.quiltmc.community.database.entities.Team
 
@@ -101,7 +101,7 @@ class SubteamsExtension : Extension() {
 
 			guild(YOUTUBE_GUILD)
 
-			check { hasRole(YOUTUBE_MODERATOR_ROLE) }
+			check { hasPermission(Permission.Administrator) }
 
 			ephemeralSubCommand(::ManageTeamAllowArguments) {
 				name = "allow"
@@ -134,6 +134,17 @@ class SubteamsExtension : Extension() {
 						content = "${arguments.role.mention} can no longer be managed using /team."
 
 						allowedMentions { }
+					}
+				}
+			}
+
+			ephemeralSubCommand {
+				name = "list-relationships"
+				description = "List all the relationships between roles"
+
+				action {
+					respond {
+						content = teamColl.getAll().joinToString("\n") { "<@&${it._id.value}> is managed by <@&${it.parent.value}>" }
 					}
 				}
 			}

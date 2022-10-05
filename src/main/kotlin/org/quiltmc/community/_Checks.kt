@@ -116,7 +116,8 @@ suspend fun CheckContext<*>.inLadysnakeGuild() {
 	}
 }
 
-suspend fun CheckContext<*>.hasBaseModeratorRole() {
+@Suppress("UnusedPrivateMember") // keep upstream mostly in sync
+suspend fun CheckContext<*>.hasBaseModeratorRole(includeCommunityManagers: Boolean = true) {
 	if (!passed) {
 		return
 	}
@@ -141,7 +142,8 @@ suspend fun CheckContext<*>.hasBaseModeratorRole() {
 	}
 }
 
-suspend fun CheckContext<*>.notHasBaseModeratorRole() {
+@Suppress("UnusedPrivateMember") // keep upstream mostly in sync
+suspend fun CheckContext<*>.notHasBaseModeratorRole(includeCommunityManagers: Boolean = true) {
 	if (!passed) {
 		return
 	}

@@ -1492,7 +1492,7 @@ class UtilityExtension : Extension() {
 					reason = message
 				}
 
-				val member = event.interaction.user.asMember(guild!!.id)
+				val member = event.interaction.target.asMember(guild!!.id)
 
 				member.addRole(tempRole.id, message)
 

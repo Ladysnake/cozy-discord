@@ -31,6 +31,7 @@ import com.kotlindiscord.kord.extensions.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.dm
 import com.kotlindiscord.kord.extensions.utils.envOrNull
+import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.kotlindiscord.kord.extensions.utils.setNickname
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
@@ -50,10 +51,7 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
@@ -114,6 +112,8 @@ class UtilityExtension : Extension() {
 	private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
 	private val suggestions: SuggestionsCollection? = suggestionsExtension?.suggestions
 	private val threadIds = mutableMapOf<Snowflake, Snowflake>()
+
+	private val scheduler = Scheduler()
 
 	@OptIn(ExperimentalSerializationApi::class)
 	private val json = Json {
@@ -1496,15 +1496,20 @@ class UtilityExtension : Extension() {
 
 				member.addRole(tempRole.id, message)
 
-				delay(2.seconds)
-
-				member.removeRole(tempRole.id, message)
-
-				tempRole.delete(message)
-
 				respond {
 					content = "Force verified ${user.mention}"
 				}
+			}
+		}
+
+		scheduler.schedule(5.minutes, repeat = true) {
+			val tenMinutesAgo = Clock.System.now() - 10.minutes
+			kord.guilds.collect { guild ->
+				guild.roles.filter { it.name == "Temp verification role" }
+					.filter { it.id.timestamp < tenMinutesAgo }
+					.collect {
+						it.delete("Temp role for force verify (>=10 minutes old)")
+					}
 			}
 		}
 	}

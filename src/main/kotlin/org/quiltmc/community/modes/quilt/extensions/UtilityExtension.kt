@@ -1488,12 +1488,17 @@ class UtilityExtension : Extension() {
 			action {
 				val message = "Temp role for force verify"
 				val tempRole = guild!!.createRole {
-					name = "Temp role"
+					name = "Temp verification role"
 					reason = message
 				}
 
-				member!!.addRole(tempRole.id, message)
-				member!!.removeRole(tempRole.id, message)
+				val member = event.interaction.user.asMember(guild!!.id)
+
+				member.addRole(tempRole.id, message)
+
+				delay(2.seconds)
+
+				member.removeRole(tempRole.id, message)
 
 				tempRole.delete(message)
 

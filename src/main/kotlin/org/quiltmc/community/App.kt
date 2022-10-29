@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
 @file:OptIn(PrivilegedIntent::class)
 
 /*
@@ -13,20 +14,29 @@ package org.quiltmc.community
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.hasPermission
+import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.DetectionAction
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import dev.kord.common.entity.Permission
+import dev.kord.core.entity.Guild
+import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
+import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEvent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
+import dev.kord.rest.builder.message.create.embed
 import org.quiltmc.community.cozy.modules.cleanup.userCleanup
+import org.quiltmc.community.cozy.modules.tags.TagFormatter
+import org.quiltmc.community.cozy.modules.tags.config.TagsConfig
 import org.quiltmc.community.cozy.modules.tags.tags
 import org.quiltmc.community.cozy.modules.welcome.welcomeChannel
+import org.quiltmc.community.database.collections.InvalidMentionsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
+import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
@@ -95,17 +105,63 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 			refreshDuration = 5.minutes
 		}
 
-		tags(getKoin().get<TagsCollection>()) {
-			loggingChannelName = "rtuuy-message-log"
+		tags(
+			object : TagsConfig {
+				override suspend fun getTagFormatter(): TagFormatter = { tag ->
+					embed {
+						title = tag.title
+						description = tag.description
+						color = tag.color
 
-			userCommandCheck {
-				inLadysnakeGuild()
-			}
+						footer {
+							text = "${tag.category}/${tag.key}"
+						}
 
-			staffCommandCheck {
-				hasBaseModeratorRole()
-			}
-		}
+						image = tag.image
+					}
+				}
+
+				override suspend fun getUserCommandChecks(): List<Check<*>> {
+					return listOf {
+						val event = event as? ChatInputCommandInteractionCreateEvent ?: return@listOf
+						val cmd = event.interaction.command
+
+						if (cmd.data.name.value == "tag") {
+							cmd.members["user"]?.let { user ->
+								val mention = getKoin().get<InvalidMentionsCollection>().get(user.id) ?: return@listOf
+								if (mention.type != InvalidMention.Type.USER) return@listOf
+								if (event.interaction.user.id in mention.exceptions) return@listOf
+								if (event !is GuildChatInputCommandInteractionCreateEvent) {
+									fail("You can't mention that user.")
+								} else {
+									val guild = event.interaction.guild
+									val member = guild.getMemberOrNull(user.id)
+									if (member == null) {
+										fail("You can't mention that user.")
+									} else {
+										if (member.roleIds.none { it in mention.exceptions }) {
+											hasBaseModeratorRole()
+											if (!passed) {
+												fail("You can't mention that user.")
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+
+				override suspend fun getStaffCommandChecks(): List<Check<*>> {
+					return listOf {
+						hasBaseModeratorRole()
+					}
+				}
+
+				override suspend fun getLoggingChannelOrNull(guild: Guild) = guild.getCozyLogChannel()
+			},
+			getKoin().get<TagsCollection>()
+		)
 
 		extPhishing {
 			appName = "Ladysnake's Modification of Quilt's Cozy Bot"

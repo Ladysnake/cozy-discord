@@ -226,8 +226,10 @@ class SuggestionsExtension : Extension() {
 					text = event.message.content,
 
 					owner = event.pkMessage.sender,
-					ownerAvatar = event.pkMessage.member.avatarUrl,
-					ownerName = event.pkMessage.member.name,
+					ownerAvatar = event.pkMessage.member?.avatarUrl,
+					ownerName = event.pkMessage.member?.name
+						?: event.pkMessage.system?.name
+						?: "${event.pkMessage.sender} (Unknown)",
 
 					positiveVoters = mutableListOf(event.pkMessage.sender),
 

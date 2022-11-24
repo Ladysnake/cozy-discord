@@ -419,5 +419,5 @@ class SyncExtension : Extension() {
 //        }
 	}
 
-	private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuild(it) }
+	private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuildOrNull(it) }
 }

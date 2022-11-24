@@ -73,7 +73,7 @@ suspend fun CheckContext<*>.hasPermissionInMainGuild(perm: Permission) {
 		return
 	}
 
-	val guild = event.kord.getGuild(MAIN_GUILD)!!
+	val guild = event.kord.getGuildOrNull(MAIN_GUILD)!!
 	val member = guild.getMemberOrNull(user.id)
 
 	if (member == null) {

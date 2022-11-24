@@ -60,7 +60,7 @@ class MessageEditExtension : Extension() {
 
                         var response = ""
 
-                        getKoin().get<Kord>().getGuild(guildId)
+                        getKoin().get<Kord>().getGuildOrNull(guildId)
                             ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
                             ?.getMessageOrNull(messageId)
                             ?.edit {
@@ -108,7 +108,7 @@ class MessageEditExtension : Extension() {
                         val newContent = if (arguments.content.matches(urlRegex)) {
                             val (guildId, channelId, messageId) = messageLink.messageIds()
 
-                            getKoin().get<Kord>().getGuild(guildId)
+                            getKoin().get<Kord>().getGuildOrNull(guildId)
                                 ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
                                 ?.getMessageOrNull(messageId)
                                 ?.data?.content
@@ -128,7 +128,7 @@ class MessageEditExtension : Extension() {
 
                         val (guildId, channelId, messageId) = messageLink.messageIds()
 
-                        val message = getKoin().get<Kord>().getGuild(guildId)
+                        val message = getKoin().get<Kord>().getGuildOrNull(guildId)
                             ?.getChannelOfOrNull<GuildMessageChannel>(channelId)
                             ?.getMessageOrNull(messageId)
 

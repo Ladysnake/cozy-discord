@@ -26,7 +26,7 @@ class ForcedPermissionExtension : Extension() {
         val guilds = (envGuilds + settingsGuilds).toSet()
 
         guilds.forEach { guildId ->
-            val guild = kord.getGuild(guildId)
+            val guild = kord.getGuildOrNull(guildId)
 
             val everyone = guild?.getEveryoneRole()
 

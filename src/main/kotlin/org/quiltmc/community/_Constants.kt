@@ -105,3 +105,5 @@ internal val ABSOLUTE_MAX_PER_MINUTE = ceil(MAX_MESSAGES_PER_MINUTE * 1.5).toInt
 internal val GALLERY_CHANNEL = Snowflake(
 	envOrNull("GALLERY_CHANNEL_ID")?.toLong() ?: 832348385997619300
 )
+
+internal val BAN_SHARING_WEBHOOK_URL = envOrNull("BAN_SHARING_WEBHOOK_URL")

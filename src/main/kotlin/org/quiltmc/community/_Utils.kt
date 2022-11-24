@@ -17,10 +17,7 @@ import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.common.Color
-import dev.kord.common.entity.ArchiveDuration
-import dev.kord.common.entity.DiscordEmbed
-import dev.kord.common.entity.Snowflake
-import dev.kord.common.entity.TextInputStyle
+import dev.kord.common.entity.*
 import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
@@ -38,6 +35,8 @@ import dev.kord.rest.builder.component.TextInputBuilder
 import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
+import io.ktor.client.request.forms.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -54,7 +53,7 @@ import kotlin.time.ExperimentalTime
 @Suppress("MagicNumber")  // It's the status code...
 suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
 	try {
-		getGuild(id)
+		getGuildOrNull(id)
 	} catch (e: RestRequestException) {
 		if (e.status.code != 403) {
 			throw (e)
@@ -280,7 +279,7 @@ fun EmbedBuilder.channelField(channel: MessageChannelBehavior, title: String, in
 
 suspend inline fun UserBehavior.softMention() = "@${asUser().tag}"
 
-suspend inline fun Snowflake.asGuild(): Guild? = getKoin().get<Kord>().getGuild(this)
+suspend inline fun Snowflake.asGuild(): Guild? = getKoin().get<Kord>().getGuildOrNull(this)
 
 suspend inline fun Snowflake.asChannel(guild: Snowflake): GuildChannel? = guild.asGuild()?.getChannelOrNull(this)
 

@@ -19,26 +19,25 @@ import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.authorId
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.removeTimeout
+import com.kotlindiscord.kord.extensions.utils.*
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.soywiz.korio.async.toChannel
-import dev.kord.common.entity.MessageFlag
-import dev.kord.common.entity.MessageType
-import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.*
 import dev.kord.common.entity.optional.optional
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
-import dev.kord.core.entity.Guild
-import dev.kord.core.entity.Member
-import dev.kord.core.entity.Role
-import dev.kord.core.entity.User
+import dev.kord.core.behavior.interaction.modal
+import dev.kord.core.behavior.interaction.response.respond
+import dev.kord.core.entity.*
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.event.gateway.ReadyEvent
+import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
+import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
+import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
@@ -82,6 +81,8 @@ class ModerationExtension(
 	private val userRestrictions: UserRestrictionsCollection by inject()
 
 	internal val recentlyBannedUsers: MutableMap<Snowflake, User> = mutableMapOf()
+
+	private var idActionCommand = "`/id-action`"
 
 	override suspend fun setup() {
 		if (Module.PURGE in enabledModules) {
@@ -683,11 +684,119 @@ class ModerationExtension(
 				}
 			}
 
+			event<ButtonInteractionCreateEvent> {
+				check {
+					failIfNot { event.interaction.componentId.startsWith("mod:ban-sharing:") }
+				}
+
+				action {
+					val (_, _, infractionId) = event.interaction.componentId.split(":")
+
+					event.interaction.modal("Ban sharing", "mod:ban:$infractionId") {
+						actionRow {
+							textInput(TextInputStyle.Paragraph, "desc", "Description") {
+								placeholder =
+									"What did this user do? You have 4000 characters and markdown formatting available."
+								required = true
+							}
+
+							textInput(TextInputStyle.Short, "img", "Image URL") {
+								placeholder = "This is optional, but it can help explain the situation."
+								required = false
+							}
+						}
+					}
+				}
+			}
+
+			event<ModalSubmitInteractionCreateEvent> {
+				check {
+					failIfNot { event.interaction.modalId.startsWith("mod:ban:") }
+				}
+
+				action {
+					val deferred = event.interaction.deferEphemeralResponse()
+					val (_, infractionId) = event.interaction.modalId.split(":")
+					val restriction = userRestrictions.get(Snowflake(infractionId))!!
+					val description = event.interaction.textInputs["desc"]!!.value!!
+					val image = event.interaction.textInputs["img"]?.value
+
+					val (id, token) = BAN_SHARING_WEBHOOK_URL!!.split("/")
+						.takeLast(2)
+
+					val user = kord.getUser(restriction._id)!!
+					val guild = kord.getGuildOrThrow(restriction.guildId)
+
+					if (restriction.returningBanTime == null) {
+						deferred.respond {
+							content = "There was an issue with this ban. Please contact a developer."
+						}
+						return@action
+					}
+
+					kord.rest.webhook.executeWebhook(Snowflake(id), token) {
+						embed {
+							author {
+								name = "(Sent by ${event.interaction.user.mention}, via Rtuuy)"
+							}
+							title = "${guild.name} (via Rtuuy)"
+							this.description = description
+
+							field {
+								name = "User ID"
+								value = user.id.toString().code()
+								inline = true
+							}
+
+							field {
+								name = "User Tag"
+								value = user.mention.code()
+								inline = true
+							}
+
+							field {
+								name = "Ban Duration"
+								value = if (restriction.returningBanTime == Instant.DISTANT_FUTURE) {
+									"Permanent"
+								} else {
+									(restriction.returningBanTime!! - Clock.System.now()).toString()
+								}
+								inline = true
+							}
+
+							timestamp = Clock.System.now()
+
+							footer {
+								text = "Rtuuy is the Ladysnake and Rattiest Gang bot"
+							}
+
+							if (image != null) {
+								this.image = image
+							}
+						}
+					}
+
+					deferred.respond {
+						content = "Ban report sent."
+					}
+				}
+			}
+
+			event<ReadyEvent> {
+				action {
+					kord.getGlobalApplicationCommands(false).collect {
+						if (it.name == "id-action") {
+							idActionCommand = "</id-action:${it.id}>"
+						}
+					}
+				}
+			}
+
 			@Suppress("MagicNumber")
 			scheduler.schedule(5, repeat = true) {
 				val timedOutIds = userRestrictions.getAll()
 					.filter { !it.isBanned && it.returningBanTime != null }
-					.map { it to kord.getGuild(it.guildId)?.getMemberOrNull(it._id) }
+					.map { it to kord.getGuildOrNull(it.guildId)?.getMemberOrNull(it._id) }
 					.filter { it.second != null }
 					.map { it.first to it.second!! }
 
@@ -718,7 +827,7 @@ class ModerationExtension(
 
 				bannedUsers.forEach {
 					val userId = it._id
-					val guild = kord.getGuild(it.guildId)!!
+					val guild = kord.getGuildOrNull(it.guildId)!!
 
 					// sanity check
 					if (guild.getBanOrNull(userId) == null) {
@@ -735,7 +844,7 @@ class ModerationExtension(
 
 		logger.info {
 			"Loaded ${slashCommands.size} commands and " +
-			"${slashCommands.flatMap { it.subCommands }.size} sub-commands."
+			"${slashCommands.sumOf { it.subCommands.size }} sub-commands."
 		}
 	}
 
@@ -812,6 +921,8 @@ class ModerationExtension(
 		val reason = context.arguments.reason
 		val length = context.arguments.length
 
+		val webhookUrl = BAN_SHARING_WEBHOOK_URL
+
 		if (member == null) {
 			if (length == -1L) {
 				// Unban
@@ -824,17 +935,20 @@ class ModerationExtension(
 					restriction.returningBanTime = Clock.System.now()
 					restriction.save()
 				}
-			}
 
-			reportToModChannel(context.guild?.asGuild()) {
-				title = "User unbanned"
-				description = "User ${user.mention} was unbanned by ${context.user.softMention()}."
-			}
+				reportToModChannel(context.guild?.asGuild()) {
+					title = "User unbanned"
+					description = "User ${user.mention} was unbanned by ${context.user.softMention()}."
+				}
 
-			context.respond {
-				content = "User ${user.mention} was unbanned."
+				context.respond {
+					content = "User ${user.mention} was unbanned."
+				}
+			} else {
+				context.respond {
+					content = "User ${user.mention} is not in this guild. Try again with the $idActionCommand command."
+				}
 			}
-
 			return
 		}
 
@@ -917,6 +1031,13 @@ class ModerationExtension(
 
 		context.respond {
 			content = "Banned ${user.softMention()} (${user.id})."
+			if (webhookUrl != null) {
+				actionRow {
+					interactionButton(ButtonStyle.Primary, "mod:ban-sharing:${restriction._id}") {
+						label = "Report to Community Collab"
+					}
+				}
+			}
 		}
 	}
 
@@ -1123,6 +1244,7 @@ class ModerationExtension(
 		BAN_SHARING, // TODO implement
 		CHANNEL_SLOWMODE,
 		LIMIT_MENTIONING,
+		AUDIT_LOG_WATCHER,
 		;
 
 		companion object {

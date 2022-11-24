@@ -62,8 +62,10 @@ import io.github.evanrupert.excelkt.workbook
 import io.ktor.client.*
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
@@ -136,7 +138,7 @@ class SuggestionsExtension : Extension() {
 			threadIntroGlobal = THREAD_INTRO.format("</thread:%s>", editSuggestion)
 		}
 		val threadId = threadIds.getOrPut(guildId) {
-			kord.getGuild(guildId)!!
+			kord.getGuildOrNull(guildId)!!
 				.getApplicationCommands()
 				.first { it.name == "thread" }
 				.id
@@ -595,7 +597,10 @@ class SuggestionsExtension : Extension() {
 				respond {
 					content = "Wrote ${suggestions.size} suggestions to an Excel spreadsheet."
 
-					addFile("suggestions.xlsx", ByteArrayInputStream(outputStream.toByteArray()))
+					addFile(
+						"suggestions.xlsx",
+						ChannelProvider { ByteArrayInputStream(outputStream.toByteArray()).toByteReadChannel() }
+					)
 				}
 			}
 		}
@@ -976,7 +981,7 @@ class SuggestionsExtension : Extension() {
 		val user = kord.getUser(suggestion.owner) ?: return
 
 		val suggestionMessage = if (suggestion.message != null) {
-			kord.getGuild(suggestion.guildId)
+			kord.getGuildOrNull(suggestion.guildId)
 				?.getChannelOf<GuildMessageChannel>(suggestion.channelId)
 				?.getMessageOrNull(suggestion.message!!)
 		} else {

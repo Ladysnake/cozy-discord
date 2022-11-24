@@ -13,6 +13,7 @@
 package org.quiltmc.community
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
@@ -129,7 +130,13 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 						if (cmd.data.name.value == "tag") {
 							cmd.members["user"]?.let { user ->
 								val mention = getKoin().get<InvalidMentionsCollection>().get(user.id) ?: return@listOf
-								if (mention.type != InvalidMention.Type.USER) return@listOf
+								if (mention.type != InvalidMention.Type.USER) {
+									val guild = guildFor(event) ?: return@listOf
+									if (mention._id in event.interaction.user.asMember(guild.id).roleIds) {
+										fail("You can't mention that user.")
+									}
+									return@listOf
+								}
 								if (event.interaction.user.id in mention.exceptions) return@listOf
 								if (event !is GuildChatInputCommandInteractionCreateEvent) {
 									fail("You can't mention that user.")

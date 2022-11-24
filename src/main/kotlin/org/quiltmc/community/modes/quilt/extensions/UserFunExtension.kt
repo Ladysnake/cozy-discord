@@ -38,6 +38,8 @@ import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
+import io.ktor.client.request.forms.*
+import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
@@ -242,7 +244,7 @@ class UserFunExtension : Extension() {
 					return@action
 				}
 
-				val guild = kord.getGuild(event.interaction.data.guildId.value!!)!!
+				val guild = kord.getGuildOrNull(event.interaction.data.guildId.value!!)!!
 				val member = guild.getMember(event.interaction.user.id)
 				val role = Snowflake(roleId)
 
@@ -293,7 +295,7 @@ class UserFunExtension : Extension() {
 					}
 
 					for ((name, attachment) in attachments) {
-						addFile(name, ByteArrayInputStream(attachment))
+						addFile(name, ChannelProvider { ByteArrayInputStream(attachment).toByteReadChannel() })
 					}
 
 					actionRow {

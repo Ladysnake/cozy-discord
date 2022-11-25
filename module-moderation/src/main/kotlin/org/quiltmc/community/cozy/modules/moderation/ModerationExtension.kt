@@ -9,6 +9,7 @@
 package org.quiltmc.community.cozy.modules.moderation
 
 import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
+import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.Arguments
@@ -19,17 +20,23 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalDurati
 import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.PKMessageCreateEvent
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.ProxiedMessageCreateEvent
 import com.kotlindiscord.kord.extensions.types.respond
+import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.removeTimeout
 import com.kotlindiscord.kord.extensions.utils.timeout
-import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.behavior.channel.createEmbed
-import dev.kord.core.behavior.channel.edit
+import dev.kord.common.Color
+import dev.kord.core.behavior.channel.*
 import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
+import dev.kord.rest.builder.message.create.embed
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DateTimePeriod
 import org.quiltmc.community.cozy.modules.moderation.config.ModerationConfig
 import kotlin.time.Duration
@@ -37,6 +44,8 @@ import kotlin.time.Duration.Companion.seconds
 
 public val MAXIMUM_SLOWMODE_DURATION: DateTimePeriod = DateTimePeriod(hours = 6)
 public const val MAX_TIMEOUT_SECS: Int = 60 * 60 * 24 * 28
+public val MOD_MODE_DELAY: Duration = 25.seconds
+public val MOD_COLOUR: Color = Color(0xe68675)
 
 /**
  * Moderation, extension, provides different moderation related tools.
@@ -45,6 +54,7 @@ public const val MAX_TIMEOUT_SECS: Int = 60 * 60 * 24 * 28
  * - Slowmode
  * - Timeout
  * - Force verify
+ * - Mod mode
  */
 public class ModerationExtension(
 	private val config: ModerationConfig
@@ -53,6 +63,93 @@ public class ModerationExtension(
 
 	@OptIn(DoNotChain::class)
 	override suspend fun setup() {
+		ephemeralSlashCommand {
+			name = "mod-mode"
+			description = "Repost your next message with official styling; waits for 20s"
+
+			allowInDms = false
+
+			config.getCommandChecks().forEach(::check)
+
+			action {
+				respond {
+					content = "Waiting for you to send a message for the next 20 seconds. Say " +
+							"`cancel` to cancel your message.\n\n" +
+
+							"**Note:** This will repost your next message in any channel, not this one " +
+							"specifically. Additionally, **uploaded files will be lost!**"
+				}
+
+				val event = channel.withTyping {
+					bot.waitFor<PKMessageCreateEvent>(MOD_MODE_DELAY) {
+						this.author != null &&
+								this.author!!.id == this@action.member!!.id &&
+
+								this.guildId != null &&
+								this.guildId == this@action.guild!!.id
+					}
+				}
+
+				if (event == null) {
+					respond {
+						content = "It looks like you're taking too long to send a message, so I've stopped " +
+								"waiting for one."
+					}
+
+					return@action
+				}
+
+				event.message.deleteIgnoringNotFound()
+
+				if (event.message.content == "cancel") {
+					respond {
+						content = "Alright, cancelling message."
+					}
+
+					return@action
+				}
+
+				event.message.channel.createMessage {
+					embed {
+						color = MOD_COLOUR
+						description = event.message.content
+
+						footer {
+							text = "Moderator message"
+							icon = "https://github.com/QuiltMC/art/raw/master/emoji/lil-pineapple/rendered/" +
+									"lil-pineapple.png"
+						}
+
+						author {
+							name = if (event is ProxiedMessageCreateEvent && event.pkMessage.member != null) {
+								buildString {
+									append(event.pkMessage.member?.displayName ?: event.pkMessage.member?.name)
+									append(" ")
+
+									if (event.pkMessage.system != null) {
+										append(event.pkMessage.system?.tag ?: "(${event.pkMessage.system?.id})")
+									} else {
+										append("(${event.author.displayName})")
+									}
+								}
+							} else {
+								event.author!!.displayName
+							}
+
+							icon = if (event is ProxiedMessageCreateEvent && event.pkMessage.member != null) {
+								event.pkMessage.member?.avatarUrl
+									?: event.author.memberAvatar?.url
+									?: event.author.avatar?.url
+							} else {
+								event.author?.memberAvatar?.url
+									?: event.author?.avatar?.url
+							}
+						}
+					}
+				}
+			}
+		}
+
 		ephemeralSlashCommand(::TimeoutArguments) {
 			name = "timeout"
 			description = "Remove or apply a timeout to a user"
@@ -262,5 +359,16 @@ public class ModerationExtension(
 			name = "member"
 			description = "Member to verify"
 		}
+	}
+}
+
+public suspend inline fun <reified T : Any> ExtensibleBot.waitFor(
+	timeout: Duration? = null,
+	noinline condition: (suspend T.() -> Boolean) = { true }
+): T? = if (timeout == null) {
+	events.filterIsInstance<T>().firstOrNull(condition)
+} else {
+	withTimeoutOrNull(timeout) {
+		events.filterIsInstance<T>().firstOrNull(condition)
 	}
 }

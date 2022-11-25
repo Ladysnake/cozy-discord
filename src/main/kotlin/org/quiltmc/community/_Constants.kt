@@ -38,10 +38,10 @@ internal val LADYSNAKE_MODERATOR_ROLE = envOrNull("LADYSNAKE_MODERATOR_ROLE")?.l
 internal val YOUTUBE_MODERATOR_ROLE = envOrNull("YOUTUBE_MODERATOR_ROLE")?.let { Snowflake(it) }
 	?: Snowflake(863767485609541632)
 
-internal val COMMUNITY_MANAGER_ROLE = envOrNull("COMMUNITY_MODERATOR_ROLE")?.let { Snowflake(it) }
+internal val COMMUNITY_MANAGER_ROLE = envOrNull("COMMUNITY_MANAGER_ROLE")?.let { Snowflake(it) }
 	?: Snowflake(832332800551813141)
 
-internal val TOOLCHAIN_MANAGER_ROLE = envOrNull("TOOLCHAIN_MODERATOR_ROLE")?.let { Snowflake(it) }
+internal val TOOLCHAIN_MANAGER_ROLE = envOrNull("TOOLCHAIN_MANAGER_ROLE")?.let { Snowflake(it) }
 	?: Snowflake(833877938000494602)
 
 internal val COMMUNITY_DEVELOPER_ROLE = envOrNull("COMMUNITY_DEVELOPER_ROLE")?.let { Snowflake(it) }

@@ -176,7 +176,10 @@ class MessageLogExtension : Extension() {
 					LogMessage(event.guild!!.asGuild()) {
 						allowedMentions { }
 
-						addFile("messages.md", ChannelProvider { messages.byteInputStream().toByteReadChannel() })
+						addFile(
+							"messages.md",
+							ChannelProvider { messages.byteInputStream().toByteReadChannel() }
+						)
 					}
 				)
 

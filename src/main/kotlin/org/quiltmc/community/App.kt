@@ -19,6 +19,7 @@ import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.DetectionAction
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.extPluralKit
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import dev.kord.common.entity.Permission
@@ -92,7 +93,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
         extMappings { }
 
-//		extPluralKit()
+		extPluralKit()
 
 		welcomeChannel(getKoin().get<WelcomeChannelCollection>()) {
 			staffCommandCheck {

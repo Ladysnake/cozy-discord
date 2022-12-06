@@ -10,6 +10,7 @@ package org.quiltmc.community.modes.quilt.extensions.rotatinglog
 
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
+import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.UnProxiedMessageDeleteEvent
 import com.kotlindiscord.kord.extensions.utils.deltas.MessageDelta
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.isEphemeral
@@ -24,7 +25,6 @@ import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.core.event.message.MessageBulkDeleteEvent
-import dev.kord.core.event.message.MessageDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
@@ -43,6 +43,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.quiltmc.community.*
+import org.quiltmc.community.database.collections.UserFlagsCollection
 import org.quiltmc.community.database.getSettings
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -230,7 +231,7 @@ class MessageLogExtension : Extension() {
 			}
 		}
 
-		event<MessageDeleteEvent> {
+		event<UnProxiedMessageDeleteEvent> {
 			check { inLadysnakeGuild() }
 
 			check {
@@ -241,10 +242,10 @@ class MessageLogExtension : Extension() {
 
 			action {
 				// Wait here in case we get a bulk deletion event
-				delay(1.seconds)
+				delay(3.seconds)
 
-				if (event.messageId in bulkDeletedMessages) {
-					bulkDeletedMessages.remove(event.messageId)
+				if (event.getMessage().id in bulkDeletedMessages) {
+					bulkDeletedMessages.remove(event.getMessage().id)
 
 					return@action  // Don't log this if it was already bulk-deleted
 				}
@@ -295,7 +296,7 @@ class MessageLogExtension : Extension() {
 
 								field {
 									name = "Created"
-									value = "${event.messageId.timestamp.format()} (UTC)\n"
+									value = "${event.getMessage().id.timestamp.format()} (UTC)\n"
 									inline = true
 								}
 							}
@@ -504,6 +505,13 @@ class MessageLogExtension : Extension() {
 		val messageType = message.type::class.simpleName ?: "Unknown"
 
         val author = message.author
+
+		if (getKoin().get<UserFlagsCollection>().get(author?.id ?: Snowflake(0))?.hasUsedPK == true) {
+			field {
+				name = "Note"
+				value = "This message may have been an uncaught PluralKit message.".italic()
+			}
+		}
 
 		footer {
 			text = message.id.toString()

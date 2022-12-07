@@ -14,16 +14,15 @@ import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.rest.builder.message.create.embed
 import org.koin.core.component.inject
-import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.UserFlagsCollection
 import org.quiltmc.community.database.entities.UserFlags
+import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.userField
 
 class PKExtension : Extension() {
 	override val name: String = "pluralkit"
 
 	private val userFlags: UserFlagsCollection by inject()
-	private val settings: ServerSettingsCollection by inject()
 
 	override suspend fun setup() {
 		event<ProxiedMessageCreateEvent> {
@@ -34,7 +33,7 @@ class PKExtension : Extension() {
 					flags.hasUsedPK = true
 					flags.save()
 
-					settings.getCommunity()?.getConfiguredLogChannel()?.createMessage {
+					event.guild?.getSettings()?.getConfiguredLogChannel()?.createMessage {
 						embed {
 							title = "New PK user"
 							color = DISCORD_FUCHSIA

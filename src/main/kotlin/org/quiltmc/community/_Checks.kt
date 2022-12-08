@@ -138,6 +138,11 @@ suspend fun CheckContext<*>.hasBaseModeratorRole(includeCommunityManagers: Boole
 
 				fail("Must be a Ladysnake moderator, with the `Moderators` role")
 			}
+			if (!member.isOwner() && member.id !in OVERRIDING_USERS && !member.hasPermission(Permission.Administrator)) {
+				logger.failed("Member does not have the Administrator permission")
+
+				fail("Must be a Ladysnake moderator, with the `Moderators` role")
+			}
 		}
 	}
 }

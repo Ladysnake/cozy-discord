@@ -161,6 +161,11 @@ suspend fun CheckContext<*>.notHasBaseModeratorRole(includeCommunityManagers: Bo
 
 			fail("Must **not** be a Ladysnake moderator")
 		}
+		if (member.isOwner() || member.id in OVERRIDING_USERS || member.hasPermission(Permission.Administrator)) {
+			logger.failed("Member is an owner or has admin perms")
+
+			fail("Must **not** be a Ladysnake moderator")
+		}
 	}
 }
 

@@ -11,10 +11,20 @@ import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.translate
 import dev.kord.common.entity.Permission
+import dev.kord.core.entity.Member
 import dev.kord.core.event.Event
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import mu.KotlinLogging
 import org.quiltmc.community.database.collections.ServerSettingsCollection
+import org.quiltmc.community.database.getSettings
+
+private val modChecks: List<suspend Member.() -> Boolean> = listOf(
+	{ roleIds.any { it in MODERATOR_ROLES } },
+	{ isOwner() },
+	{ hasPermission(Permission.Administrator) },
+	{ id in OVERRIDING_USERS },
+	{ guild.getSettings()?.moderatorRoles?.intersect(roleIds).isNullOrEmpty().not() },
+)
 
 suspend fun CheckContext<*>.inLadysnake() {
 	anyGuild()
@@ -133,13 +143,8 @@ suspend fun CheckContext<*>.hasBaseModeratorRole(includeCommunityManagers: Boole
 
 			fail()
 		} else {
-			if (!member.roleIds.any { it in MODERATOR_ROLES }) {
+			if (modChecks.none { member.it() }) {
 				logger.failed("Member does not have a Ladysnake base moderator role")
-
-				fail("Must be a Ladysnake moderator, with the `Moderators` role")
-			}
-			if (!member.isOwner() && member.id !in OVERRIDING_USERS && !member.hasPermission(Permission.Administrator)) {
-				logger.failed("Member does not have the Administrator permission")
 
 				fail("Must be a Ladysnake moderator, with the `Moderators` role")
 			}
@@ -161,13 +166,8 @@ suspend fun CheckContext<*>.notHasBaseModeratorRole(includeCommunityManagers: Bo
 
 		fail()
 	} else {
-		if (member.roleIds.any { it in MODERATOR_ROLES }) {
+		if (modChecks.any { member.it() }) {
 			logger.failed("Member has a Ladysnake base moderator role")
-
-			fail("Must **not** be a Ladysnake moderator")
-		}
-		if (member.isOwner() || member.id in OVERRIDING_USERS || member.hasPermission(Permission.Administrator)) {
-			logger.failed("Member is an owner or has admin perms")
 
 			fail("Must **not** be a Ladysnake moderator")
 		}

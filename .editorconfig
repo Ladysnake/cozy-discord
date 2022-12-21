@@ -9,3 +9,12 @@ max_line_length = 120
 
 [*.yml]
 indent_style = space
+
+# Ignore Gradle wrapper scripts
+[{gradlew,gradlew.bat}]
+generated_code = true
+charset = unset
+insert_final_newline = unset
+indent_style = unset
+trim_trailing_whitespace = unset
+max_line_length = unset

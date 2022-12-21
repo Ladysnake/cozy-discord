@@ -1,4 +1,4 @@
-FROM gradle:7.5.1-jdk17 as BUILD
+FROM gradle:7.6-jdk17 as BUILD
 
 WORKDIR /app
 

@@ -1,5 +1,13 @@
 # Cozy: Discord
 
+
+
+## **This is a fork maintained by Ladysnake**
+
+---
+
+
+
 This repository contains a Discord bot that we make use of to help keep the Quilt community servers running smoothly.
 Its features include, but are not limited to:
 

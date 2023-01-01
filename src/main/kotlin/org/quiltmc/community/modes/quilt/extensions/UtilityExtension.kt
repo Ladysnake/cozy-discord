@@ -1117,15 +1117,18 @@ class UtilityExtension : Extension() {
 				check { isAdminOrHasOverride() }
 
 				action {
-					val roleId = when (guild!!.id) {
-						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+					val roles = guild!!.getSettings()?.moderatorRoles
+						?: listOf(
+								when (guild!!.id) {
+								LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+								YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-						else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
-					}
+								else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+							}
+						)
 
-					val moderatorRole = guild!!.getRole(roleId)
-					val everyoneRole = guild!!.getRole(guild!!.id)
+					val moderatorRoles = roles.mapNotNull { guild!!.getRoleOrNull(it) }
+					val everyoneRole = guild!!.asGuild().getEveryoneRole()
 
 					everyoneRole.edit {
 						permissions = everyoneRole.permissions
@@ -1138,15 +1141,17 @@ class UtilityExtension : Extension() {
 						reason = "Server locked down by ${user.asUser().tag}"
 					}
 
-					moderatorRole.edit {
-						permissions = moderatorRole.permissions
-							.plus(Permission.AddReactions)
-							.plus(Permission.CreatePrivateThreads)
-							.plus(Permission.CreatePublicThreads)
-							.plus(Permission.SendMessages)
-							.plus(Permission.SendMessagesInThreads)
+					moderatorRoles.forEach {
+						it.edit {
+							permissions = it.permissions
+								.plus(Permission.AddReactions)
+								.plus(Permission.CreatePrivateThreads)
+								.plus(Permission.CreatePublicThreads)
+								.plus(Permission.SendMessages)
+								.plus(Permission.SendMessagesInThreads)
 
-						reason = "Server locked down by ${user.asUser().tag}"
+							reason = "Server locked down by ${user.asUser().tag}"
+						}
 					}
 
 					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
@@ -1174,14 +1179,17 @@ class UtilityExtension : Extension() {
 				check { isAdminOrHasOverride() }
 
 				action {
-					val roleId = when (guild!!.id) {
-						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+					val roles = guild!!.getSettings()?.moderatorRoles
+						?: listOf(
+								when (guild!!.id) {
+								LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+								YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-						else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
-					}
+								else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+							}
+						)
 
-					val moderatorRole = guild!!.getRole(roleId)
+					val moderatorRoles = roles.mapNotNull { guild!!.getRoleOrNull(it) }
 					val everyoneRole = guild!!.getRole(guild!!.id)
 
 					everyoneRole.edit {
@@ -1195,15 +1203,17 @@ class UtilityExtension : Extension() {
 						reason = "Server unlocked by ${user.asUser().tag}"
 					}
 
-					moderatorRole.edit {
-						permissions = moderatorRole.permissions
-							.minus(Permission.AddReactions)
-							.minus(Permission.CreatePrivateThreads)
-							.minus(Permission.CreatePublicThreads)
-							.minus(Permission.SendMessages)
-							.minus(Permission.SendMessagesInThreads)
+					moderatorRoles.forEach {
+						it.edit {
+							permissions = it.permissions
+								.minus(Permission.AddReactions)
+								.minus(Permission.CreatePrivateThreads)
+								.minus(Permission.CreatePublicThreads)
+								.minus(Permission.SendMessages)
+								.minus(Permission.SendMessagesInThreads)
 
-						reason = "Server unlocked by ${user.asUser().tag}"
+							reason = "Server unlocked by ${user.asUser().tag}"
+						}
 					}
 
 					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
@@ -1243,16 +1253,19 @@ class UtilityExtension : Extension() {
 						}
 					}
 
-					val staffRoleId = when (guild?.id) {
-						LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
-						YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
+					val modRoles = guild!!.getSettings()?.moderatorRoles
+						?: listOf(
+								when (guild!!.id) {
+								LADYSNAKE_GUILD -> LADYSNAKE_MODERATOR_ROLE
+								YOUTUBE_GUILD -> YOUTUBE_MODERATOR_ROLE
 
-						else -> null
-					}
+								else -> throw DiscordRelayedException("Incorrect server ID: ${guild?.id?.value}")
+							}
+						)
 
 					val ch = channelObj.asChannelOf<TextChannel>()
 
-					if (staffRoleId != null) {
+					modRoles.forEach { staffRoleId ->
 						ch.editRolePermission(staffRoleId) {
 							SPEAKING_PERMISSIONS.forEach { allowed += it }
 

@@ -12,6 +12,7 @@ package org.quiltmc.community
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.SlashCommandContext
+import com.kotlindiscord.kord.extensions.components.forms.ModalForm
 import com.kotlindiscord.kord.extensions.utils.env
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
@@ -154,6 +155,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
 				single { MetaCollection() } bind MetaCollection::class
 				single { OwnedThreadCollection() } bind OwnedThreadCollection::class
 				single { ServerSettingsCollection() } bind ServerSettingsCollection::class
+				single { ServerApplicationCollection() } bind ServerApplicationCollection::class
 				single { SuggestionsCollection() } bind SuggestionsCollection::class
 				single { TeamCollection() } bind TeamCollection::class
 				single { UserFlagsCollection() } bind UserFlagsCollection::class
@@ -234,8 +236,8 @@ suspend fun GuildMessageChannel.getArchiveDuration(settings: ServerSettings?): A
 
 // Logging-related extensions
 
-suspend fun <C : SlashCommandContext<C, A>, A : Arguments>
-		SlashCommandContext<C, A>.getGithubLogChannel(): GuildMessageChannel? {
+suspend fun <C : SlashCommandContext<C, A, M>, A : Arguments, M : ModalForm>
+		SlashCommandContext<C, A, M>.getGithubLogChannel(): GuildMessageChannel? {
 	val channelId = getKoin().get<GlobalSettingsCollection>().get()?.githubLogChannel ?: return null
 
 	return event.kord.getChannelOf<GuildMessageChannel>(channelId)
@@ -259,9 +261,9 @@ suspend fun Guild.getFilterLogChannel(): GuildMessageChannel? {
 	return getChannelOf(channelId)
 }
 
-suspend fun EmbedBuilder.userField(user: UserBehavior, role: String, inline: Boolean = false) {
+suspend fun EmbedBuilder.userField(user: UserBehavior, role: String? = null, inline: Boolean = false) {
 	field {
-		name = role
+		name = role ?: "User"
 		value = "${user.mention} (`${user.id}` / `${user.asUser().tag}`)"
 
 		this.inline = inline
@@ -428,3 +430,29 @@ val KordEntity.mention get() = when (this) {
 
 fun <T : Comparable<T>> min(a: T, b: T) = if (a < b) a else b
 fun <T : Comparable<T>> max(a: T, b: T) = if (a > b) a else b
+
+private const val CHANNEL_NAME_LENGTH = 75
+
+private val THREAD_DELIMITERS = arrayOf(
+	",", ".",
+	"(", ")",
+	"<", ">",
+	"[", "]",
+)
+
+/**
+ * Attempts to generate a thread name based on the message's content.
+ *
+ * Failing that, it returns a string of format `"$fallbackPrefix | ${message.id}"`
+ */
+fun Message.contentToThreadName(fallbackPrefix: String): String {
+	@Suppress("SpreadOperator")
+	return content.trim()
+		.split("\n")
+		.firstOrNull()
+		?.split(*THREAD_DELIMITERS)
+		?.firstOrNull()
+		?.take(CHANNEL_NAME_LENGTH)
+
+		?: "$fallbackPrefix | $id"
+}

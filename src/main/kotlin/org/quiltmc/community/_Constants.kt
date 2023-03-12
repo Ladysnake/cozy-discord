@@ -107,3 +107,6 @@ internal val GALLERY_CHANNEL = Snowflake(
 )
 
 internal val BAN_SHARING_WEBHOOK_URL = envOrNull("BAN_SHARING_WEBHOOK_URL")
+
+internal val COMMUNITY_RELEASE_CHANNELS = envOrNull("COMMUNITY_RELEASE_CHANNELS")?.split(',')
+	?.map { Snowflake(it.trim()) } ?: listOf()

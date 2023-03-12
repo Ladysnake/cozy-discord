@@ -18,6 +18,7 @@ enum class FilterAction(
 	RESPOND(-1, "Respond with the filter note"),
 	DELETE(0, "Delete message"),
 	REMOVE_ATTACHMENTS(0, "Remove attachments"),
-	KICK(1, "Kick user", validForUsers = true),
-	BAN(2, "Ban user", validForUsers = true),
+	TIMEOUT(1, "Timeout user", true),
+	KICK(2, "Kick user"),
+	BAN(3, "Ban user", true)
 }

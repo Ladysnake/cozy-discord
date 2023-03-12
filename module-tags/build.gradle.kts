@@ -12,11 +12,13 @@ plugins {
 
 dependencies {
 	detektPlugins(libs.detekt)
+	detektPlugins(libs.detekt.libraries)
 
 	ksp(libs.kordex.annotationProcessor)
 
 	implementation(libs.kordex.annotations)
 	implementation(libs.kordex.core)
+	implementation(libs.kordex.unsafe)
 
 	implementation(libs.logging)
 

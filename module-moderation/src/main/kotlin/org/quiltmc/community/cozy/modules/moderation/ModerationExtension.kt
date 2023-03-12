@@ -14,17 +14,17 @@ import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
-import com.kotlindiscord.kord.extensions.commands.converters.impl.member
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalDuration
-import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
+import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.chatCommand
+import com.kotlindiscord.kord.extensions.extensions.chatGroupCommand
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.PKMessageCreateEvent
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.ProxiedMessageCreateEvent
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.removeTimeout
+import com.kotlindiscord.kord.extensions.utils.respond
 import com.kotlindiscord.kord.extensions.utils.timeout
 import dev.kord.common.Color
 import dev.kord.core.behavior.channel.*
@@ -268,49 +268,117 @@ public class ModerationExtension(
 			}
 		}
 
-		ephemeralSlashCommand(::ForceVerifyArguments) {
-			name = "force-verify"
-			description = "Make a user bypass Discord's verification process"
+		// Chat commands, if enabled
 
-			allowInDms = false
+		chatCommand(::TimeoutArguments) {
+			name = "timeout"
+			description = "Remove or apply a timeout to a user"
+
+			config.getCommandChecks().forEach(::check)
+
+			action {
+				val reason = arguments.reason ?: "No reason given"
+
+				if (arguments.duration != null) {
+					arguments.user.timeout(
+						arguments.duration!!,
+						reason = "Timed out by ${user?.asUser()?.tag}: $reason"
+					)
+
+					message.respond {
+						content = "Timeout applied."
+					}
+				} else {
+					arguments.user.removeTimeout(
+						reason = "Timeout removed by ${user?.asUser()?.tag}: $reason"
+					)
+
+					message.respond {
+						content = "Timeout removed."
+					}
+				}
+			}
+		}
+
+		chatGroupCommand {
+			name = "slowmode"
+			description = "Manage slowmode of the current channel or thread"
 
 			check { anyGuild() }
 
 			config.getCommandChecks().forEach(::check)
 
-			action {
-				val member = guild!!.getMemberOrNull(arguments.user.id)
+			this.chatCommand {
+				name = "get"
+				description = "Get the slowmode of the channel or thread"
 
-				if (member == null) {
-					respond {
-						content = "User is not in this guild."
+				action {
+					message.respond {
+						content = "Slowmode is currently " +
+								"${channel.asChannelOf<GuildMessageChannel>().data.rateLimitPerUser.value ?: 0} " +
+								"second(s)."
 					}
-				} else {
-					member.addRole(
-						config.getTemporaryRole(guild!!.asGuild()).id,
-						"Force verified by ${user.asUser().tag}"
-					)
-					member.removeRole(config.getTemporaryRole(guild!!.asGuild()).id)
+				}
+			}
+
+			this.chatCommand {
+				name = "reset"
+				description = "Reset the slowmode of the channel or thread back to 0"
+
+				action {
+					val channel = this.channel.asChannel() as? TextChannel
+					val thread = this.channel.asChannel() as? ThreadChannel
+
+					thread?.edit {
+						rateLimitPerUser = Duration.ZERO
+					}
+
+					channel?.edit {
+						rateLimitPerUser = Duration.ZERO
+					}
+
+					message.respond {
+						content = "Slowmode reset."
+					}
+				}
+			}
+
+			this.chatCommand(::SlowmodeEditArguments) {
+				name = "set"
+				description = "Set the slowmode of the channel or thread"
+
+				action {
+					val channel = this.channel.asChannel() as? TextChannel
+					val thread = this.channel.asChannel() as? ThreadChannel
+
+					thread?.edit {
+						rateLimitPerUser = arguments.duration.toTotalSeconds().seconds
+					}
+
+					channel?.edit {
+						rateLimitPerUser = arguments.duration.toTotalSeconds().seconds
+					}
 
 					config.getLoggingChannelOrNull(guild!!.asGuild())?.createEmbed {
-						title = "User force verified"
+						title = "Slowmode changed"
+						description = "Set to ${arguments.duration.toTotalSeconds()} second(s)."
 						color = DISCORD_BLURPLE
 
 						field {
 							inline = true
-							name = "Moderator"
-							value = "${user.asUser().tag} (${user.mention})"
+							name = "Channel"
+							value = channel?.mention ?: thread!!.mention
 						}
 
 						field {
 							inline = true
 							name = "User"
-							value = "${member.tag} (${member.mention})"
+							value = user?.mention.toString()
 						}
 					}
 
-					respond {
-						content = "User ${member.mention} has been force verified."
+					message.respond {
+						content = "Slowmode set to ${arguments.duration.toTotalSeconds()} second(s)."
 					}
 				}
 			}
@@ -351,13 +419,6 @@ public class ModerationExtension(
 			name = "reason"
 			description = "Optional reason for applying this timeout"
 			maxLength = 50
-		}
-	}
-
-	public inner class ForceVerifyArguments : Arguments() {
-		public val user: Member by member {
-			name = "member"
-			description = "Member to verify"
 		}
 	}
 }

@@ -14,7 +14,6 @@ package org.quiltmc.community
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
 import com.kotlindiscord.kord.extensions.checks.guildFor
-import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
 import com.kotlindiscord.kord.extensions.modules.extra.phishing.DetectionAction
@@ -22,20 +21,17 @@ import com.kotlindiscord.kord.extensions.modules.extra.phishing.extPhishing
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.extPluralKit
 import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
-import dev.kord.common.entity.Permission
 import dev.kord.core.entity.Guild
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEvent
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.embed
-import org.quiltmc.community.cozy.modules.cleanup.userCleanup
 import org.quiltmc.community.cozy.modules.tags.TagFormatter
 import org.quiltmc.community.cozy.modules.tags.config.TagsConfig
 import org.quiltmc.community.cozy.modules.tags.tags
 import org.quiltmc.community.cozy.modules.welcome.welcomeChannel
 import org.quiltmc.community.database.collections.InvalidMentionsCollection
-import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
 import org.quiltmc.community.database.entities.InvalidMention
@@ -50,7 +46,6 @@ import org.quiltmc.community.modes.quilt.extensions.rotatinglog.ExtraLogExtensio
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 
 val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
@@ -59,6 +54,11 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	common()
 	database(true)
 	settings()
+
+	chatCommands {
+		defaultPrefix = "%"
+		enabled = true
+	}
 
 	intents {
 		+Intents.all
@@ -94,6 +94,10 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         extMappings { }
 
 		extPluralKit()
+
+		help {
+			enableBundledExtension = true
+		}
 
 		welcomeChannel(getKoin().get<WelcomeChannelCollection>()) {
 			staffCommandCheck {
@@ -181,22 +185,22 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 			check { notHasBaseModeratorRole() }
 		}
 
-		userCleanup {
-			maxPendingDuration = 3.days
-			taskDelay = 1.days
-			loggingChannelName = "rtuuy-message-log"
-
-			runAutomatically = true
-
-			guildPredicate {
-				val servers = getKoin().get<ServerSettingsCollection>()
-				val serverEntry = servers.get(it.id)
-
-				serverEntry?.ladysnakeServerType != null
-			}
-
-			commandCheck { hasPermission(Permission.Administrator) }
-		}
+//		userCleanup {
+//			maxPendingDuration = 3.days
+//			taskDelay = 1.days
+//			loggingChannelName = "rtuuy-message-log"
+//
+//			runAutomatically = true
+//
+//			guildPredicate {
+//				val servers = getKoin().get<ServerSettingsCollection>()
+//				val serverEntry = servers.get(it.id)
+//
+//				serverEntry?.ladysnakeServerType != null
+//			}
+//
+//			commandCheck { hasPermission(Permission.Administrator) }
+//		}
 
 		sentry {
             distribution = "ladysnake"

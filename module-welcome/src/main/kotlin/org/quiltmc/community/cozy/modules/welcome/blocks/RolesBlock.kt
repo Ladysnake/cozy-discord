@@ -22,6 +22,7 @@ import dev.kord.core.entity.Role
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import dev.kord.core.event.interaction.SelectMenuInteractionCreateEvent
+import dev.kord.rest.builder.component.option
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.actionRow
@@ -114,7 +115,7 @@ public data class RolesBlock(
 			content = "Please select your roles using the menu below."
 
 			actionRow {
-				selectMenu(generateMenuId()) {
+				stringSelect(generateMenuId()) {
 					guildRoles.forEach { (id, role) ->
 						val emojiString = roles[id]!!.emoji
 

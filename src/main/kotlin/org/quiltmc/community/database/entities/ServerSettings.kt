@@ -31,10 +31,14 @@ data class ServerSettings(
 
 	var commandPrefix: String? = "?",
 	val moderatorRoles: MutableSet<Snowflake> = mutableSetOf(),
+	var verificationRole: Snowflake? = null,
 
 	var cozyLogChannel: Snowflake? = null,
 	var filterLogChannel: Snowflake? = null,
 	var messageLogCategory: Snowflake? = null,
+	var moderationLogChannel: Snowflake? = null,
+	var applicationLogChannel: Snowflake? = null,
+	var applicationThreadsChannel: Snowflake? = null,
 
 	var ladysnakeServerType: LadysnakeServerType? = null,
 	var leaveServer: Boolean = false,
@@ -80,10 +84,29 @@ data class ServerSettings(
         builder.append(commandPrefix)
         builder.append("\n\n")
 
-        builder.append("Cozy Logs:".bold() + ' ')
+        if (showQuiltSettings) {
+			builder.append("**Application Logs:** ")
+
+			if (applicationLogChannel != null) {
+				builder.append("<#$applicationLogChannel>")
+			} else {
+				builder.append(":x: Not configured")
+			}
+
+			builder.append("**Application threads channel:** ")
+
+			if (applicationThreadsChannel != null) {
+				builder.append("<#$applicationThreadsChannel>")
+			} else {
+				builder.append(":x: Not configured")
+			}
+		}
+
+		builder.append("\n")
+		builder.append("Cozy Logs:".bold() + ' ')
 
 		if (cozyLogChannel != null) {
-			builder.append("<#${cozyLogChannel!!.value}>")
+			builder.append("<#$cozyLogChannel>")
 		} else {
 			builder.append(":x: Not configured")
 		}
@@ -93,7 +116,16 @@ data class ServerSettings(
 			builder.append("Filter Logs:".bold() + ' ')
 
 			if (filterLogChannel != null) {
-				builder.append("<#${filterLogChannel!!.value}>")
+				builder.append("<#$filterLogChannel>")
+			} else {
+				builder.append(":x: Not configured")
+			}
+
+			builder.append("\n")
+			builder.append("**Moderation Logs:** ")
+
+			if (moderationLogChannel != null) {
+				builder.append("<#$moderationLogChannel>")
 			} else {
 				builder.append(":x: Not configured")
 			}
@@ -103,7 +135,7 @@ data class ServerSettings(
 		builder.append("Message Logs:".bold() + ' ')
 
 		if (messageLogCategory != null) {
-			builder.append("<#${messageLogCategory!!.value}>")
+			builder.append("<#$messageLogCategory>")
 		} else {
 			builder.append(":x: Not configured")
 		}
@@ -128,6 +160,16 @@ data class ServerSettings(
 			builder.append("Yes")
 		} else {
 			builder.append("No")
+		}
+
+		builder.append("\n")
+
+		builder.append("**Verification role:** ")
+
+		if (verificationRole != null) {
+			builder.append("<@&$verificationRole>")
+		} else {
+			builder.append("N/A")
 		}
 
 		builder.append("\n\n")

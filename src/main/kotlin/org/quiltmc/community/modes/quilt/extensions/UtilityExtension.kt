@@ -20,19 +20,18 @@ import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
+import com.kotlindiscord.kord.extensions.components.ComponentContainer
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.ephemeralButton
 import com.kotlindiscord.kord.extensions.extensions.*
+import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.edit
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.types.respondEphemeral
-import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.envOrNull
+import com.kotlindiscord.kord.extensions.utils.*
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
-import com.kotlindiscord.kord.extensions.utils.setNickname
 import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.*
@@ -54,16 +53,14 @@ import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
+import org.quiltmc.community.cozy.modules.moderation.compareTo
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.SuggestionsCollection
@@ -259,6 +256,10 @@ class UtilityExtension : Extension() {
 					else -> return@action
 				}
 
+				// Work around a Discord API race condition - yes, really!
+				// Specifically: "Cannot message this thread until after the post author has sent an initial message."
+				delay(1.seconds)
+
 				val message = event.channel.createMessage {
 					content = "Oh hey, that's a nice thread you've got there! Let me just get the mods in on this " +
 							"sweet discussion..."
@@ -308,6 +309,97 @@ class UtilityExtension : Extension() {
 		}
 
 		GUILDS.forEach { guildId ->
+			ephemeralSlashCommand(::SelfTimeoutArguments) {
+				name = "self-timeout"
+				description = "Time yourself out for up to three days"
+
+				allowInDms = false
+
+				guild(guildId)
+
+				check { inQuiltGuild() }
+
+				action {
+					lateinit var components: ComponentContainer
+
+					val relative = Clock.System.now()
+						.plus(arguments.duration, TimeZone.UTC)
+						.toDiscord(TimestampType.RelativeTime)
+
+					val absolute = Clock.System.now()
+						.plus(arguments.duration, TimeZone.UTC)
+						.toDiscord(TimestampType.LongDateTime)
+
+					edit {
+						content = "You've requested a timeout, which will end $relative (at $absolute).\n\n" +
+
+								"This timeout will be applied as soon as you click the button below. However, please " +
+								"note that **we will not be removing timeouts you set on yourself** in most " +
+								"situations, even if you request it. You should avoid setting timeouts you're not " +
+								"sure about.\n\n" +
+
+								"Are you sure you'd like to apply this timeout?"
+
+						components = components {
+							ephemeralButton {
+								label = "Confirm"
+								style = ButtonStyle.Danger
+
+								@OptIn(DoNotChain::class)
+								action {
+									member!!.asMember()
+										.timeout(
+											arguments.duration,
+											reason = "Requested using /self-timeout"
+										)
+
+									guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+										title = "Requested timeout automatically applied"
+										color = DISCORD_BLURPLE
+
+										userField(user.asUser())
+
+										field {
+											name = "Duration"
+											value = arguments.duration.format(SupportedLocales.ENGLISH)
+										}
+
+										field {
+											name = "Relative ending time"
+											value = relative
+										}
+
+										field {
+											name = "Absolute ending time"
+											value = absolute
+										}
+									}
+
+									respond {
+										content = "Your timeout has been applied. See you $relative!"
+									}
+
+									components.cancel()
+								}
+							}
+
+							ephemeralButton {
+								label = "Cancel"
+								style = ButtonStyle.Secondary
+
+								action {
+									respond {
+										content = "Your timeout has been cancelled."
+									}
+
+									components.cancel()
+								}
+							}
+						}
+					}
+				}
+			}
+
 			ephemeralMessageCommand {
 				name = "Raw JSON"
 
@@ -1433,6 +1525,93 @@ class UtilityExtension : Extension() {
             }
         }
 
+		chatCommand(::SelfTimeoutArguments) {
+			name = "self-timeout"
+			description = "Time yourself out for up to three days"
+
+			check { inQuiltGuild() }
+
+			action {
+				lateinit var components: ComponentContainer
+
+				val relative = Clock.System.now()
+					.plus(arguments.duration, TimeZone.UTC)
+					.toDiscord(TimestampType.RelativeTime)
+
+				val absolute = Clock.System.now()
+					.plus(arguments.duration, TimeZone.UTC)
+					.toDiscord(TimestampType.LongDateTime)
+
+				message.respond {
+					content = "You've requested a timeout, which will end $relative (at $absolute).\n\n" +
+
+						"This timeout will be applied as soon as you click the button below. However, please " +
+						"note that **we will not be removing timeouts you set on yourself** in most " +
+						"situations, even if you request it. You should avoid setting timeouts you're not " +
+						"sure about.\n\n" +
+
+						"Are you sure you'd like to apply this timeout?"
+
+					components = components {
+						ephemeralButton {
+							label = "Confirm"
+							style = ButtonStyle.Danger
+
+							@OptIn(DoNotChain::class)
+							action {
+								member!!.asMember()
+									.timeout(
+										arguments.duration,
+										reason = "Requested using /self-timeout"
+									)
+
+								guild?.asGuild()?.getCozyLogChannel()?.createEmbed {
+									title = "Requested timeout automatically applied"
+									color = DISCORD_BLURPLE
+
+									userField(user.asUser())
+
+									field {
+										name = "Duration"
+										value = arguments.duration.format(SupportedLocales.ENGLISH)
+									}
+
+									field {
+										name = "Relative ending time"
+										value = relative
+									}
+
+									field {
+										name = "Absolute ending time"
+										value = absolute
+									}
+								}
+
+								respond {
+									content = "Your timeout has been applied. See you $relative!"
+								}
+
+								components.cancel()
+							}
+						}
+
+						ephemeralButton {
+							label = "Cancel"
+							style = ButtonStyle.Secondary
+
+							action {
+								respond {
+									content = "Your timeout has been cancelled."
+								}
+
+								components.cancel()
+							}
+						}
+					}
+				}
+			}
+		}
+
         ephemeralSlashCommand {
             name = "guilds"
             description = "Manage guilds that the bot is in"
@@ -1537,6 +1716,21 @@ class UtilityExtension : Extension() {
 					.collect {
 						it.delete("Temp role for force verify (>=10 minutes old)")
 					}
+			}
+		}
+	}
+
+	inner class SelfTimeoutArguments : Arguments() {
+		val duration by duration {
+			name = "duration"
+			description = "How long to time yourself out for; no more than three days"
+
+			positiveOnly = true
+
+			validate {
+				if (value > DateTimePeriod(days = 3)) {
+					fail("You may not time yourself out for more than three days.")
+				}
 			}
 		}
 	}

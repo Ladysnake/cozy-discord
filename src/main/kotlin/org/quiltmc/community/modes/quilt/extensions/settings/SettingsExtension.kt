@@ -78,11 +78,11 @@ class SettingsExtension : Extension() {
 				val settings = serverSettings.get(event.guild.id)
 
 				if (settings == null) {
-					logger.info { "Creating settings entry for guild: ${event.guild.name} (${event.guild.id.value})" }
+					logger.info { "Creating settings entry for guild: ${event.guild.name} (${event.guild.id})" }
 
 					serverSettings.set(ServerSettings(event.guild.id))
 				} else if (settings.leaveServer) {
-					logger.info { "Leaving guild, as configured: ${event.guild.name} (${event.guild.id.value})" }
+					logger.info { "Leaving guild, as configured: ${event.guild.name} (${event.guild.id})" }
 
 					delay(2.seconds)
 
@@ -305,7 +305,7 @@ class SettingsExtension : Extension() {
 
 					if (arguments.serverId !in settings.ladysnakeGuilds) {
 						respond {
-							content = ":x: `${arguments.serverId.value}` is not marked as an official Ladysnake guild."
+							content = ":x: `${arguments.serverId}` is not marked as an official Ladysnake guild."
 						}
 
 						return@action
@@ -462,7 +462,7 @@ class SettingsExtension : Extension() {
 
                         if (settings == null) {
                             respond {
-                                content = "Unknown guild ID: `${arguments.serverId?.value}`"
+                                content = "Unknown guild ID: `${arguments.serverId}`"
                             }
 
                             return@action
@@ -514,7 +514,7 @@ class SettingsExtension : Extension() {
 
                         if (settings == null) {
                             respond {
-                                content = "Unknown guild ID: `${arguments.serverId?.value}`"
+                                content = "Unknown guild ID: `${arguments.serverId}`"
                             }
 
                             return@action
@@ -530,8 +530,250 @@ class SettingsExtension : Extension() {
                 }
 
                 ephemeralSubCommand(::TopMessageChannelGuildArg) {
-                    name = "cozy-log-channel"
-                    description = "Configure the channel Cozy should send log messages to"
+					name = "cozy-log-channel"
+					description = "Configure the channel Cozy should send log messages to"
+				}
+			ephemeralSubCommand(::RoleServerArg) {
+				name = "add-moderator-role"
+				description = "Add a role that should be given moderator permissions"
+
+				action {
+					val context = CheckContext(event, getLocale())
+
+					if (arguments.serverId != null) {
+						context.hasPermissionInMainGuild(Permission.Administrator)
+
+						if (!context.passed) {
+							respond {
+								content = ":x: Only Quilt community managers can modify settings for other servers."
+							}
+
+							return@action
+						}
+					}
+
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.role.guildId != settings._id) {
+						respond {
+							content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.role.id in settings.moderatorRoles) {
+						respond {
+							content = ":x: That role is already marked as a moderator role"
+						}
+
+						return@action
+					}
+
+					settings.moderatorRoles.add(arguments.role.id)
+					settings.save()
+
+					respond {
+						content = "Moderator role added: ${arguments.role.mention}"
+					}
+				}
+			}
+
+			ephemeralSubCommand(::RoleServerArg) {
+				name = "remove-moderator-role"
+				description = "Remove a configured moderator role"
+
+				action {
+					val context = CheckContext(event, getLocale())
+
+					if (arguments.serverId != null) {
+						context.hasPermissionInMainGuild(Permission.Administrator)
+
+						if (!context.passed) {
+							respond {
+								content = ":x: Only Quilt community managers can modify settings for other servers."
+							}
+
+							return@action
+						}
+					}
+
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.role.guildId != settings._id) {
+						respond {
+							content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.role.id !in settings.moderatorRoles) {
+						respond {
+							content = ":x: That role is not marked as a moderator role"
+						}
+
+						return@action
+					}
+
+					settings.moderatorRoles.remove(arguments.role.id)
+					settings.save()
+
+					respond {
+						content = "Moderator role removed: ${arguments.role.mention}"
+					}
+				}
+			}
+
+			ephemeralSubCommand(::TopMessageChannelGuildArg) {
+				name = "application-log-channel"
+				description = "Configure the channel Cozy should send server applications messages to"
+
+				action {
+					val context = CheckContext(event, getLocale())
+
+					if (arguments.serverId != null) {
+						context.hasPermissionInMainGuild(Permission.Administrator)
+
+						if (!context.passed) {
+							respond {
+								content = ":x: Only Quilt community managers can modify settings for other servers."
+							}
+
+							return@action
+						}
+					}
+
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.channel == null) {
+						respond {
+							content = "**Current application logging channel:** " +
+									"<#${settings.applicationLogChannel}>"
+						}
+
+						return@action
+					}
+
+					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+					if (channel.guildId != settings._id) {
+						respond {
+							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+						}
+
+						return@action
+					}
+
+					settings.applicationLogChannel = channel.id
+					settings.save()
+
+					respond {
+						content = "**Application logging channel set:** ${channel.mention}"
+					}
+				}
+			}
+
+			ephemeralSubCommand(::TopMessageChannelGuildArg) {
+				name = "application-threads-channel"
+				description = "Configure the channel Cozy should create server application threads within"
+
+				action {
+					val context = CheckContext(event, getLocale())
+
+					if (arguments.serverId != null) {
+						context.hasPermissionInMainGuild(Permission.Administrator)
+
+						if (!context.passed) {
+							respond {
+								content = ":x: Only Quilt community managers can modify settings for other servers."
+							}
+
+							return@action
+						}
+					}
+
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.channel == null) {
+						respond {
+							content = "**Current application threads channel:** " +
+									"<#${settings.applicationThreadsChannel}>"
+						}
+
+						return@action
+					}
+
+					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+					if (channel.guildId != settings._id) {
+						respond {
+							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+						}
+
+						return@action
+					}
+
+					settings.applicationThreadsChannel = channel.id
+					settings.save()
+
+					respond {
+						content = "**Application threads channel set:** ${channel.mention}"
+					}
+				}
+			}
+
+			ephemeralSubCommand(::TopMessageChannelGuildArg) {
+				name = "cozy-log-channel"
+				description = "Configure the channel Cozy should send log messages to"
 
                     action {
                         val context = CheckContext(event, getLocale())
@@ -562,7 +804,7 @@ class SettingsExtension : Extension() {
 
                         if (settings == null) {
                             respond {
-                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                                content = ":x: Unknown guild ID: `${arguments.serverId}`"
                             }
 
                             return@action
@@ -570,7 +812,7 @@ class SettingsExtension : Extension() {
 
                         if (arguments.channel == null) {
                             respond {
-                                content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel?.value}>"
+                                content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel}>"
                             }
 
                             return@action
@@ -581,7 +823,7 @@ class SettingsExtension : Extension() {
                         if (channel.guildId != settings._id) {
                             respond {
                                 content =
-                                    ":x: That channel doesn't belong to the guild with ID: `${settings._id.value}`"
+                                    ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
                             }
 
                             return@action
@@ -628,7 +870,7 @@ class SettingsExtension : Extension() {
 
                         if (settings == null) {
                             respond {
-                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                                content = ":x: Unknown guild ID: `${arguments.serverId}`"
                             }
 
                             return@action
@@ -637,7 +879,7 @@ class SettingsExtension : Extension() {
                         if (arguments.channel == null) {
                             respond {
                                 content = "**Current Cozy filter logging channel:** " +
-                                        "<#${settings.filterLogChannel?.value}>"
+                                        "<#${settings.filterLogChannel}>"
                             }
 
                             return@action
@@ -648,7 +890,7 @@ class SettingsExtension : Extension() {
                         if (channel.guildId != settings._id) {
                             respond {
                                 content = ":x: That channel doesn't belong to the guild with ID: " +
-                                        "`${settings._id.value}`"
+                                        "`${settings._id}`"
                             }
 
                             return@action
@@ -663,7 +905,65 @@ class SettingsExtension : Extension() {
                     }
                 }
 
-                ephemeralSubCommand(::CategoryGuildArg) {
+                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+				name = "moderation-log-channel"
+				description = "Configure the channel Cozy should send moderation log messages to"
+
+				action {
+					val context = CheckContext(event, getLocale())
+
+					if (arguments.serverId != null) {
+						context.hasPermissionInMainGuild(Permission.Administrator)
+
+						if (!context.passed) {
+							respond {
+								content = ":x: Only Quilt community managers can modify settings for other servers."
+							}
+
+							return@action
+						}
+					}
+
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					if (arguments.channel == null) {
+						respond {
+							content = "**Current Cozy moderation logging channel:** <#${settings.moderationLogChannel}>"
+						}
+
+						return@action
+					}
+
+					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+					if (channel.guildId != settings._id) {
+						respond {
+							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+						}
+
+						return@action
+					}
+
+					settings.moderationLogChannel = channel.id
+					settings.save()
+
+					respond {
+						content = "**Cozy moderation logging channel set:** ${channel.mention}"
+					}
+				}
+			}ephemeralSubCommand(::CategoryGuildArg) {
                     name = "message-log-category"
                     description = "Configure the category Cozy should use for message logs"
 
@@ -696,7 +996,7 @@ class SettingsExtension : Extension() {
 
                             if (settings == null) {
                                 respond {
-                                    content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                                    content = ":x: Unknown guild ID: `${arguments.serverId}`"
                                 }
 
                                 return@action
@@ -705,7 +1005,7 @@ class SettingsExtension : Extension() {
                             if (arguments.category == null) {
                                 respond {
                                     content = "**Current message log category:** " +
-                                            "<#${settings.messageLogCategory?.value}>"
+                                            "<#${settings.messageLogCategory}>"
                                 }
 
                                 return@action
@@ -716,7 +1016,7 @@ class SettingsExtension : Extension() {
                             if (category.guildId != settings._id) {
                                 respond {
                                     content =
-                                        ":x: That category doesn't belong to the guild with ID: `${settings._id.value}`"
+                                        ":x: That category doesn't belong to the guild with ID: `${settings._id}`"
                                 }
 
                                 return@action
@@ -761,7 +1061,7 @@ class SettingsExtension : Extension() {
 
                         if (settings == null) {
                             respond {
-                                content = ":x: Unknown guild ID: `${arguments.serverId?.value}`"
+                                content = ":x: Unknown guild ID: `${arguments.serverId}`"
                             }
 
                             return@action
@@ -787,10 +1087,44 @@ class SettingsExtension : Extension() {
 
                         respond {
                             content = if (settings.ladysnakeServerType == null) {
-                                "**Server no longer flagged as a Ladysnake server:** `${settings._id.value}`"
+                                "**Server no longer flagged as a Ladysnake server:** `${settings._id}`"
                             } else {
                                 "**Server flagged as the ${settings.ladysnakeServerType!!.readableName} server:** " +
-                                        "`${settings._id.value}`"
+                                        "`${settings._id}`"
+						}
+					}
+				}
+			}
+
+			ephemeralSubCommand(::SingleRoleArg) {
+				name = "verification-role"
+				description = "For Quilt servers: Set (or clear) the verification role"
+
+				check { hasPermissionInMainGuild(Permission.Administrator) }
+
+				action {
+					val settings = if (arguments.serverId == null) {
+						serverSettings.get(guild!!.id)
+					} else {
+						serverSettings.get(arguments.serverId!!)
+					}
+
+					if (settings == null) {
+						respond {
+							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+						}
+
+						return@action
+					}
+
+					settings.verificationRole = arguments.role?.id
+					settings.save()
+
+					respond {
+						content = if (settings.verificationRole == null) {
+							"**Verification role unset**"
+						} else {
+							"**Verification role set:** <@&${settings.verificationRole}>"
                             }
                         }
                     }
@@ -814,9 +1148,9 @@ class SettingsExtension : Extension() {
 
                         respond {
                             content = if (arguments.shouldLeave) {
-                                "**Server will now be left automatically:** `${settings._id.value}`"
+                                "**Server will now be left automatically:** `${settings._id}`"
                             } else {
-                                "**Server will not left automatically:** `${settings._id.value}`"
+                                "**Server will not left automatically:** `${settings._id}`"
                             }
                         }
 
@@ -1178,6 +1512,18 @@ class SettingsExtension : Extension() {
 		val role by role {
 			name = "role"
 			description = "Role to add/remove"
+		}
+
+		val serverId by optionalSnowflake {
+			name = "server"
+			description = "Server ID, if not the current one"
+		}
+	}
+
+	inner class SingleRoleArg : Arguments() {
+		val role by optionalRole {
+			name = "role"
+			description = "Role to set, omit to clear"
 		}
 
 		val serverId by optionalSnowflake {

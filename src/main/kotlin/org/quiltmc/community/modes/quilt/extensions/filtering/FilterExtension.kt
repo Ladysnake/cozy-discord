@@ -33,6 +33,7 @@ import com.kotlindiscord.kord.extensions.utils.deleteIgnoringNotFound
 import com.kotlindiscord.kord.extensions.utils.dm
 import com.kotlindiscord.kord.extensions.utils.getJumpUrl
 import com.kotlindiscord.kord.extensions.utils.respond
+import com.kotlindiscord.kord.extensions.utils.timeout
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
 import dev.kord.core.behavior.channel.createEmbed
@@ -57,6 +58,7 @@ import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.FilterEntry
 import java.util.*
+import kotlin.time.Duration.Companion.minutes
 
 const val FILTERS_PER_PAGE = 2
 
@@ -882,6 +884,32 @@ class FilterExtension : Extension() {
 				}
 
 				message.deleteIgnoringNotFound()
+			}
+
+			FilterAction.TIMEOUT -> {
+				message.deleteIgnoringNotFound()
+
+				message.author!!.dm {
+					content = "You have been timed out on **${guild.name}** for sending the below message. It has also been removed."
+
+					embed {
+						description = message.content
+
+						field {
+							name = "Channel"
+							value = "${message.channel.mention} (`${message.channel.id.value}`)"
+						}
+
+						field {
+							name = "Message ID"
+							value = "`${message.id}`"
+						}
+					}
+				}
+
+				message.author!!
+					.asMember(message.getGuild().id)
+					.timeout(10.minutes, "Triggered filter: $_id")
 			}
 
 			FilterAction.REMOVE_ATTACHMENTS -> {

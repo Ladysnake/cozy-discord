@@ -1060,7 +1060,9 @@ class ModerationExtension(
 		member.edit {
 			communicationDisabledUntil = if (length > 0) {
 				Clock.System.now() + length.seconds
-			} else null
+			} else {
+				null
+			}
 
 			this.reason = reason
 		}

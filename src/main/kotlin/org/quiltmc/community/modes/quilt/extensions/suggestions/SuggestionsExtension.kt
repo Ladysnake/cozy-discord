@@ -60,11 +60,9 @@ import dev.kord.rest.request.KtorRequestException
 import io.github.evanrupert.excelkt.Sheet
 import io.github.evanrupert.excelkt.workbook
 import io.ktor.client.*
-import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
-import io.ktor.http.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -89,6 +87,9 @@ import org.quiltmc.community.database.entities.Suggestion
 import org.quiltmc.community.database.getSettings
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import kotlin.collections.component1
+import kotlin.collections.component2
+import kotlin.collections.set
 import kotlin.time.Duration.Companion.seconds
 
 private const val ACTION_DOWN = "down"
@@ -394,7 +395,9 @@ class SuggestionsExtension : Extension() {
 					val url = "$PK_BASE_URL/members/$pkMemberId"
 					val response = httpClient.get(url).bodyAsText()
 					Json.decodeFromString(PKMember.serializer(), response)
-				} else null
+				} else {
+					null
+				}
 
 				val owner = event.interaction.user
 				val ownerAvatar = pkMember?.avatarUrl ?: owner.avatar?.url

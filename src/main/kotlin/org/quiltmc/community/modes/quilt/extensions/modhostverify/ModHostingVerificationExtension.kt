@@ -33,7 +33,6 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.koin.core.component.inject
-import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.inLadysnakeGuild
 import org.quiltmc.community.inReleaseChannel
@@ -42,7 +41,6 @@ import org.quiltmc.community.modes.quilt.extensions.modhostverify.modrinth.Modri
 import java.time.Instant
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
-import kotlin.time.Duration.Companion.seconds
 
 private val MODRINTH_URL_REGEX = Regex("modrinth\\.com/mod/([\\w!@\$()`.+,\"\\-']{3,64})")
 private val CURSEFORGE_URL_REGEX = Regex("curseforge\\.com/minecraft/mc-mods/([\\w!@\$()`.+,\"\\-']{3,64})")
@@ -53,7 +51,7 @@ val TIME_BETWEEN_PROJECT_STATUS_CHECKS = 60.minutes
 const val MAX_RETRY_FOR_CHECKING_PROJECTS = 72
 const val POLLING_SECONDS_FOR_PROCESSING = 15L
 
-private val THREAD_DELAY = 3.seconds
+//private val THREAD_DELAY = 3.seconds
 
 private val unitsToProcess = mutableListOf<ModHostingVerificationProcessingUnit>()
 
@@ -64,7 +62,7 @@ class ModHostingVerificationExtension : Extension() {
 
 	private val logger = KotlinLogging.logger { }
 	private val scheduler = Scheduler()
-	private val threads: OwnedThreadCollection by inject()
+//	private val threads: OwnedThreadCollection by inject()
 
 	private val client = HttpClient {
 		install(ContentNegotiation) {

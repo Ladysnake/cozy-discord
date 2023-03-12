@@ -56,7 +56,7 @@ import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.ServerApplication
 import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.hasBaseModeratorRole
-import org.quiltmc.community.inQuiltGuild
+import org.quiltmc.community.inLadysnakeGuild
 import kotlin.time.Duration.Companion.seconds
 
 private val COMPONENT_REGEX = "application/(\\d+)/(thread|verify)".toRegex()
@@ -81,7 +81,7 @@ class ApplicationsExtension : Extension() {
 
 				guild(it)
 
-				check { inQuiltGuild() }
+				check { inLadysnakeGuild() }
 				check { hasBaseModeratorRole(false) }
 
 				ephemeralSubCommand(::ForceVerifyArguments) {
@@ -217,7 +217,7 @@ class ApplicationsExtension : Extension() {
 
 				guild(it)
 
-				check { inQuiltGuild() }
+				check { inLadysnakeGuild() }
 				check { hasBaseModeratorRole(false) }
 
 				action {
@@ -286,7 +286,7 @@ class ApplicationsExtension : Extension() {
 			name = "force-verify"
 			description = "Make a user bypass Discord's verification process"
 
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 			check { hasBaseModeratorRole(false) }
 
 			action {
@@ -355,7 +355,7 @@ class ApplicationsExtension : Extension() {
 		}
 
 		event<ButtonInteractionCreateEvent> {
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 			check { hasBaseModeratorRole(false) }
 
 			check {
@@ -539,7 +539,7 @@ class ApplicationsExtension : Extension() {
 		}
 
 		event<GuildJoinRequestDeleteEvent> {
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 
 			check {
 				val guild = guildFor(event)!!
@@ -615,7 +615,7 @@ class ApplicationsExtension : Extension() {
 		}
 
 		event<GuildJoinRequestUpdateEvent> {
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 
 			check {
 				val guild = guildFor(event)!!

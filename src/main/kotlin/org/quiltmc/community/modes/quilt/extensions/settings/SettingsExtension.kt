@@ -906,64 +906,66 @@ class SettingsExtension : Extension() {
                 }
 
                 ephemeralSubCommand(::TopMessageChannelGuildArg) {
-				name = "moderation-log-channel"
-				description = "Configure the channel Cozy should send moderation log messages to"
+					name = "moderation-log-channel"
+					description = "Configure the channel Cozy should send moderation log messages to"
 
-				action {
-					val context = CheckContext(event, getLocale())
+					action {
+						val context = CheckContext(event, getLocale())
 
-					if (arguments.serverId != null) {
-						context.hasPermissionInMainGuild(Permission.Administrator)
+						if (arguments.serverId != null) {
+							context.hasPermissionInMainGuild(Permission.Administrator)
 
-						if (!context.passed) {
+							if (!context.passed) {
+								respond {
+									content = ":x: Only Quilt community managers can modify settings for other servers."
+								}
+
+								return@action
+							}
+						}
+
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
+						}
+
+						if (settings == null) {
 							respond {
-								content = ":x: Only Quilt community managers can modify settings for other servers."
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
 							}
 
 							return@action
 						}
-					}
 
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
+						if (arguments.channel == null) {
+							respond {
+								content = "**Current Cozy moderation logging channel:** <#${settings.moderationLogChannel}>"
+							}
 
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							return@action
 						}
 
-						return@action
-					}
+						val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
 
-					if (arguments.channel == null) {
-						respond {
-							content = "**Current Cozy moderation logging channel:** <#${settings.moderationLogChannel}>"
+						if (channel.guildId != settings._id) {
+							respond {
+								content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+							}
+
+							return@action
 						}
 
-						return@action
-					}
+						settings.moderationLogChannel = channel.id
+						settings.save()
 
-					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-					if (channel.guildId != settings._id) {
 						respond {
-							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+							content = "**Cozy moderation logging channel set:** ${channel.mention}"
 						}
-
-						return@action
-					}
-
-					settings.moderationLogChannel = channel.id
-					settings.save()
-
-					respond {
-						content = "**Cozy moderation logging channel set:** ${channel.mention}"
 					}
 				}
-			}ephemeralSubCommand(::CategoryGuildArg) {
+
+				ephemeralSubCommand(::CategoryGuildArg) {
                     name = "message-log-category"
                     description = "Configure the category Cozy should use for message logs"
 

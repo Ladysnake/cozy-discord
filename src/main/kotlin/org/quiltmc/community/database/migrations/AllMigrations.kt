@@ -280,4 +280,36 @@ object AllMigrations {
 			it.save()
 		}
 	}
+
+	/**
+	 * Targets upstream's v20 and v21 migrations.
+	 */
+	suspend fun v25(db: CoroutineDatabase) {
+		db.createCollection(ServerApplicationCollection.name)
+
+		val settingsCollection = db.getCollection<ServerSettings>(ServerSettingsCollection.name)
+		val appCollection = db.getCollection<ServerApplication>(ServerApplicationCollection.name)
+
+		val entries = appCollection.find(
+			ServerApplication::messageLink exists false,
+		).toList()
+
+		entries
+			.groupBy { it.guildId }
+			.forEach { (guildId, applications) ->
+				val settings = settingsCollection.findOne(ServerSettings::_id eq guildId)!!
+
+				applications.forEach { app ->
+					val link = "https://discord.com/channels" +
+						"/${settings._id}" +
+						"/${settings.applicationLogChannel}" +
+						"/${app.messageId}"
+
+					appCollection.updateOne(
+						ServerApplication::_id eq app._id,
+						setValue(ServerApplication::messageLink, link),
+					)
+				}
+			}
+	}
 }

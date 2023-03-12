@@ -8,7 +8,10 @@
 
 package org.quiltmc.community.modes.quilt.extensions
 
-import com.kotlindiscord.kord.extensions.checks.*
+import com.kotlindiscord.kord.extensions.checks.anyGuild
+import com.kotlindiscord.kord.extensions.checks.hasPermission
+import com.kotlindiscord.kord.extensions.checks.isNotInThread
+import com.kotlindiscord.kord.extensions.checks.notHasPermission
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.group
@@ -45,6 +48,7 @@ import kotlinx.datetime.Instant
 import net.codebox.homoglyph.HomoglyphBuilder
 import org.koin.core.component.inject
 import org.quiltmc.community.GALLERY_CHANNEL
+import org.quiltmc.community.contentToThreadName
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.getSettings

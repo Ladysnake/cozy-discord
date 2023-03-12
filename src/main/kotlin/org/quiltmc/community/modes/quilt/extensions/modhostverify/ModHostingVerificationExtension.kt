@@ -12,14 +12,10 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.modules.extra.pluralkit.events.PKMessageCreateEvent
 import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.getParentMessage
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import dev.kord.common.entity.MessageType
 import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createEmbed
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.channel.withTyping
-import dev.kord.core.behavior.edit
 import dev.kord.core.entity.Member
 import dev.kord.core.entity.Message
 import dev.kord.core.entity.User
@@ -34,16 +30,13 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.koin.core.component.inject
-import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.OwnedThreadCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
-import org.quiltmc.community.database.entities.OwnedThread
+import org.quiltmc.community.inLadysnakeGuild
+import org.quiltmc.community.inReleaseChannel
 import org.quiltmc.community.modes.quilt.extensions.modhostverify.curseforge.CurseforgeProject
 import org.quiltmc.community.modes.quilt.extensions.modhostverify.modrinth.ModrinthProjectVersion
 import java.time.Instant
@@ -97,7 +90,7 @@ class ModHostingVerificationExtension : Extension() {
 		event<PKMessageCreateEvent> {
 			check { event.author != null }
 			check { isNotBot() }
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 			check { inReleaseChannel() }
 			check { failIf(event.message.content.trim().isEmpty()) }
 			check {
@@ -367,65 +360,65 @@ class ModHostingVerificationExtension : Extension() {
 		}
 
 		if (sentDm == null) {
-			fallbackToThreadForCompatNotice(author, message, projects)
+//			fallbackToThreadForCompatNotice(author, message, projects)
 		}
 	}
 
-	private suspend fun fallbackToThreadForCompatNotice(author: User, message: Message, projects: List<Project>) {
-		val channel = message.channel.asChannelOf<TextChannel>()
-
-		val possibleExistingThread = channel.activeThreads.filter {
-			!it.isPrivate && !it.isLocked && it.getParentMessage() == message
-		}.firstOrNull()
-
-		if (possibleExistingThread != null) {
-			possibleExistingThread.createMessage { attachQuiltCompatEmbed(author, message, projects, true) }
-		} else {
-			val thread = channel.startPublicThreadWithMessage(message.id, message.contentToThreadName(channel.name))
-
-			threads.set(
-				OwnedThread(thread.id, author.id, message.getGuild().id)
-			)
-
-			val threadMessage = thread.createMessage {
-				content = "Oh hey, that's a nice post you've got there! Let me just get the mods in on " +
-						"this..."
-			}
-
-			threadMessage.pin("First message in the thread.")
-
-			thread.withTyping {
-				delay(THREAD_DELAY)
-			}
-
-			val guild = message.getGuild()
-			val role = when (guild.id) {
-				COMMUNITY_GUILD -> guild.getRole(COMMUNITY_MODERATOR_ROLE)
-				TOOLCHAIN_GUILD -> guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
-
-				else -> return
-			}
-
-			threadMessage.edit {
-				content = "Hey, ${role.mention}, you've gotta check this showcase out!"
-			}
-
-			thread.withTyping {
-				delay(THREAD_DELAY)
-			}
-
-			threadMessage.edit {
-				content = "Welcome to your new thread, ${author.mention}! This message is at the " +
-						"start of the thread. Remember, you're welcome to use the `/thread` commands to manage " +
-						"your thread as needed.\n\n" +
-
-						"We recommend using `/thread rename` to give your thread a more meaningful title if the " +
-						"generated one isn't good enough!"
-			}
-
-			thread.createMessage { attachQuiltCompatEmbed(author, message, projects, true) }
-		}
-	}
+//	private suspend fun fallbackToThreadForCompatNotice(author: User, message: Message, projects: List<Project>) {
+//		val channel = message.channel.asChannelOf<TextChannel>()
+//
+//		val possibleExistingThread = channel.activeThreads.filter {
+//			!it.isPrivate && !it.isLocked && it.getParentMessage() == message
+//		}.firstOrNull()
+//
+//		if (possibleExistingThread != null) {
+//			possibleExistingThread.createMessage { attachQuiltCompatEmbed(author, message, projects, true) }
+//		} else {
+//			val thread = channel.startPublicThreadWithMessage(message.id, message.contentToThreadName(channel.name))
+//
+//			threads.set(
+//				OwnedThread(thread.id, author.id, message.getGuild().id)
+//			)
+//
+//			val threadMessage = thread.createMessage {
+//				content = "Oh hey, that's a nice post you've got there! Let me just get the mods in on " +
+//						"this..."
+//			}
+//
+//			threadMessage.pin("First message in the thread.")
+//
+//			thread.withTyping {
+//				delay(THREAD_DELAY)
+//			}
+//
+//			val guild = message.getGuild()
+//			val role = when (guild.id) {
+//				COMMUNITY_GUILD -> guild.getRole(COMMUNITY_MODERATOR_ROLE)
+//				TOOLCHAIN_GUILD -> guild.getRole(TOOLCHAIN_MODERATOR_ROLE)
+//
+//				else -> return
+//			}
+//
+//			threadMessage.edit {
+//				content = "Hey, ${role.mention}, you've gotta check this showcase out!"
+//			}
+//
+//			thread.withTyping {
+//				delay(THREAD_DELAY)
+//			}
+//
+//			threadMessage.edit {
+//				content = "Welcome to your new thread, ${author.mention}! This message is at the " +
+//						"start of the thread. Remember, you're welcome to use the `/thread` commands to manage " +
+//						"your thread as needed.\n\n" +
+//
+//						"We recommend using `/thread rename` to give your thread a more meaningful title if the " +
+//						"generated one isn't good enough!"
+//			}
+//
+//			thread.createMessage { attachQuiltCompatEmbed(author, message, projects, true) }
+//		}
+//	}
 
 	private suspend fun MessageCreateBuilder.attachQuiltCompatEmbed(
 		author: User,

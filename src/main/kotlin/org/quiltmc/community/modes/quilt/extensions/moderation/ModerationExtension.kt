@@ -13,13 +13,16 @@ import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
+import com.kotlindiscord.kord.extensions.components.forms.ModalForm
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
 import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.*
+import com.kotlindiscord.kord.extensions.utils.authorId
+import com.kotlindiscord.kord.extensions.utils.dm
+import com.kotlindiscord.kord.extensions.utils.removeTimeout
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import com.soywiz.korio.async.toChannel
 import dev.kord.common.entity.*
@@ -29,7 +32,10 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.modal
 import dev.kord.core.behavior.interaction.response.respond
-import dev.kord.core.entity.*
+import dev.kord.core.entity.Guild
+import dev.kord.core.entity.Member
+import dev.kord.core.entity.Role
+import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
@@ -400,7 +406,8 @@ class ModerationExtension(
 
 				action(::timeout)
 			}
-			ephemeralSlashCommand({ RequiresReason("The user to kick") }) {
+			@Suppress("USELESS_CAST") // Kordex needs @OverloadResolutionByLambdaReturnType
+			ephemeralSlashCommand({ RequiresReason("The user to kick") } as () -> RequiresReason) {
 				name = "kick"
 				description = "Kick a user from the server."
 
@@ -887,7 +894,7 @@ class ModerationExtension(
 		}
 	}
 
-	private suspend inline fun slowmode(context: EphemeralSlashCommandContext<SlowModeArguments>) {
+	private suspend inline fun slowmode(context: EphemeralSlashCommandContext<SlowModeArguments, *>, ignored: ModalForm?) {
 		val channel = context.arguments.channel ?: context.channel.asChannel()
 		if (channel !is GuildMessageChannel) {
 			context.respond {
@@ -910,7 +917,7 @@ class ModerationExtension(
 		}
 	}
 
-	private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments>) {
+	private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments, *>, ignored: ModalForm?) {
 		if (context.guild == null) {
 			throw DiscordRelayedException("This command can only be used in a guild.")
 		}
@@ -1041,7 +1048,7 @@ class ModerationExtension(
 		}
 	}
 
-	private suspend fun timeout(context: EphemeralSlashCommandContext<TimeoutArguments>) {
+	private suspend fun timeout(context: EphemeralSlashCommandContext<TimeoutArguments, *>, ignored: ModalForm?) {
 		val user = context.arguments.user
 		val member = user.asMember(context.guild!!.id)
 

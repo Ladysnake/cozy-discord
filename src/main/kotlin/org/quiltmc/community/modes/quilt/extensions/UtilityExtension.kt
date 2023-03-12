@@ -317,7 +317,7 @@ class UtilityExtension : Extension() {
 
 				guild(guildId)
 
-				check { inQuiltGuild() }
+				check { inLadysnakeGuild() }
 
 				action {
 					lateinit var components: ComponentContainer
@@ -1443,7 +1443,7 @@ class UtilityExtension : Extension() {
             check { failIfNot(event.message.channelId in THREAD_ONLY_CHANNELS) }
 
             action {
-                val settings = event.getGuild()!!.getSettings() ?: return@action
+                val settings = event.getGuildOrNull()!!.getSettings() ?: return@action
                 if (event.message.channelId in settings.threadOnlyChannels) {
                     if (event.message.attachments.isEmpty()) {
                         event.message.delete("Found in thread-only channel without attachment")
@@ -1529,7 +1529,7 @@ class UtilityExtension : Extension() {
 			name = "self-timeout"
 			description = "Time yourself out for up to three days"
 
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 
 			action {
 				lateinit var components: ComponentContainer

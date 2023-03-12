@@ -18,14 +18,20 @@ import com.kotlindiscord.kord.extensions.utils.envOrNull
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.common.Color
-import dev.kord.common.entity.*
+import dev.kord.common.entity.ArchiveDuration
+import dev.kord.common.entity.DiscordEmbed
+import dev.kord.common.entity.Snowflake
+import dev.kord.common.entity.TextInputStyle
 import dev.kord.common.entity.optional.Optional
 import dev.kord.common.entity.optional.value
 import dev.kord.core.Kord
-import dev.kord.core.behavior.*
+import dev.kord.core.behavior.RoleBehavior
+import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.ChannelBehavior
 import dev.kord.core.behavior.channel.MessageChannelBehavior
 import dev.kord.core.behavior.channel.asChannelOfOrNull
+import dev.kord.core.behavior.edit
+import dev.kord.core.behavior.getChannelOf
 import dev.kord.core.entity.*
 import dev.kord.core.entity.application.ApplicationCommand
 import dev.kord.core.entity.channel.GuildChannel
@@ -36,8 +42,6 @@ import dev.kord.rest.builder.component.TextInputBuilder
 import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
-import io.ktor.client.request.forms.*
-import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
@@ -393,12 +397,12 @@ fun ModalBuilder.textInput(
 	}
 }
 
-fun ModalBuilder.selectMenu(
+fun ModalBuilder.stringSelect(
 	customId: String,
 	builder: SelectMenuBuilder.() -> Unit
 ) {
 	actionRow {
-		selectMenu(customId, builder)
+		stringSelect(customId, builder)
 	}
 }
 

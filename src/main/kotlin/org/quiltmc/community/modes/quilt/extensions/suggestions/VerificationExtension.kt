@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.filter
 import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.ServerSettingsCollection
-import org.quiltmc.community.inQuiltGuild
+import org.quiltmc.community.inLadysnakeGuild
 import kotlin.time.Duration.Companion.minutes
 
 class VerificationExtension : Extension() {
@@ -26,7 +26,7 @@ class VerificationExtension : Extension() {
 
 	override suspend fun setup() {
 		event<GuildCreateEvent> {
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 
 			action {
 				val roleId = serverSettings.get(event.guild.id)?.verificationRole
@@ -52,7 +52,7 @@ class VerificationExtension : Extension() {
 		}
 
 		event<MemberUpdateEvent> {
-			check { inQuiltGuild() }
+			check { inLadysnakeGuild() }
 			check { failIf(event.member.isPending, "Member is pending") }
 
 			action {

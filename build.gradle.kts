@@ -54,6 +54,7 @@ allprojects {
 }
 
 dependencies {
+	implementation("io.ktor:ktor-client-encoding:2.2.4")
 	detektPlugins(libs.detekt)
 	detektPlugins(libs.detekt.libraries)
 
@@ -77,6 +78,7 @@ dependencies {
 	implementation(libs.semver)
 
 	implementation(libs.logback)
+	implementation(libs.logback.groovy)
 	implementation(libs.logging)
 	implementation(libs.groovy)
 
@@ -85,8 +87,8 @@ dependencies {
 	implementation(libs.kx.ser)
 	implementation(libs.graphql)
 
+	implementation(project(":module-log-parser"))
 	implementation(libs.scrimage)
-
 	implementation(project(":module-welcome"))
 	implementation(project(":module-user-cleanup"))
 	implementation(project(":module-tags"))

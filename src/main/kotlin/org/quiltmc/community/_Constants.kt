@@ -25,29 +25,36 @@ internal val MAIN_GUILD = Snowflake(
 		?: 292744693803122688U
 )
 
-internal val MESSAGE_LOG_CATEGORIES = envOrNull("MESSAGE_LOG_CATEGORIES")?.split(',')
+internal val MESSAGE_LOG_CATEGORIES = envOrNull("MESSAGE_LOG_CATEGORIES")
+	?.split(',')
 	?.map { Snowflake(it.trim()) } ?: listOf()
 
 internal val COLOUR_BLURPLE = DISCORD_BLURPLE
 internal val COLOUR_NEGATIVE = DISCORD_RED
 internal val COLOUR_POSITIVE = DISCORD_GREEN
 
-internal val LADYSNAKE_MODERATOR_ROLE = envOrNull("LADYSNAKE_MODERATOR_ROLE")?.let { Snowflake(it) }
+internal val LADYSNAKE_MODERATOR_ROLE = envOrNull("LADYSNAKE_MODERATOR_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(807373579946688533)
 
-internal val YOUTUBE_MODERATOR_ROLE = envOrNull("YOUTUBE_MODERATOR_ROLE")?.let { Snowflake(it) }
+internal val YOUTUBE_MODERATOR_ROLE = envOrNull("YOUTUBE_MODERATOR_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(863767485609541632)
 
-internal val COMMUNITY_MANAGER_ROLE = envOrNull("COMMUNITY_MANAGER_ROLE")?.let { Snowflake(it) }
+internal val COMMUNITY_MANAGER_ROLE = envOrNull("COMMUNITY_MANAGER_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(832332800551813141)
 
-internal val TOOLCHAIN_MANAGER_ROLE = envOrNull("TOOLCHAIN_MANAGER_ROLE")?.let { Snowflake(it) }
+internal val TOOLCHAIN_MANAGER_ROLE = envOrNull("TOOLCHAIN_MANAGER_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(833877938000494602)
 
-internal val COMMUNITY_DEVELOPER_ROLE = envOrNull("COMMUNITY_DEVELOPER_ROLE")?.let { Snowflake(it) }
+internal val COMMUNITY_DEVELOPER_ROLE = envOrNull("COMMUNITY_DEVELOPER_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(972868531844710412)
 
-internal val TOOLCHAIN_DEVELOPER_ROLE = envOrNull("TOOLCHAIN_DEVELOPER_ROLE")?.let { Snowflake(it) }
+internal val TOOLCHAIN_DEVELOPER_ROLE = envOrNull("TOOLCHAIN_DEVELOPER_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(849305976951537725)
 
 internal val MODERATOR_ROLES: List<Snowflake> =
@@ -67,18 +74,23 @@ internal val MANAGER_ROLES: List<Snowflake> =
 		?.map { Snowflake(it.trim()) }
 		?: listOf(COMMUNITY_MANAGER_ROLE, TOOLCHAIN_MANAGER_ROLE)
 
-internal val MINECRAFT_UPDATE_PING_ROLE = envOrNull("MINECRAFT_UPDATE_PING_ROLE")?.let { Snowflake(it) }
+internal val MINECRAFT_UPDATE_PING_ROLE = envOrNull("MINECRAFT_UPDATE_PING_ROLE")
+	?.let { Snowflake(it) }
 	?: Snowflake(1003614007237816361)
 
 internal val LADYSNAKE_GUILD = Snowflake(
-	envOrNull("LADYSNAKE_GUILD_ID")?.toLong() ?: 292744693803122688
+	envOrNull("LADYSNAKE_GUILD_ID")?.toLong()
+		?: 292744693803122688
 )
 
 internal val YOUTUBE_GUILD = Snowflake(
-	envOrNull("YOUTUBE_GUILD_ID")?.toLong() ?: 924373275688198204
+	envOrNull("YOUTUBE_GUILD_ID")?.toLong()
+		?: 924373275688198204
 )
 
-internal val GUILDS = envOrNull("GUILDS")?.split(',')?.map { Snowflake(it.trim()) }
+internal val GUILDS = envOrNull("GUILDS")
+	?.split(',')
+	?.map { Snowflake(it.trim()) }
 	?: listOf(LADYSNAKE_GUILD, YOUTUBE_GUILD)
 
 internal val LADYSNAKE_SUGGESTION_CHANNEL = Snowflake(
@@ -89,7 +101,8 @@ internal val SUGGESTION_CHANNELS = envOrNull("SUGGESTION_CHANNELS")?.split(',')?
 	?: listOf(LADYSNAKE_SUGGESTION_CHANNEL)
 
 internal val GITHUB_LOG_CHANNEL = Snowflake(
-	envOrNull("GITHUB_LOG_CHANNEL_ID")?.toLong() ?: 558629602206023691
+	envOrNull("GITHUB_LOG_CHANNEL_ID")?.toLong()
+		?: 558629602206023691
 )
 
 internal val THREAD_ONLY_CHANNELS = envOrNull("THREAD_ONLY_CHANNELS")?.split(',')
@@ -103,10 +116,27 @@ internal val ABSOLUTE_MAX_PER_SECOND = ceil(MAX_MESSAGES_PER_SECOND * 1.5).toInt
 internal val ABSOLUTE_MAX_PER_MINUTE = ceil(MAX_MESSAGES_PER_MINUTE * 1.5).toInt()
 
 internal val GALLERY_CHANNEL = Snowflake(
-	envOrNull("GALLERY_CHANNEL_ID")?.toLong() ?: 832348385997619300
+	envOrNull("GALLERY_CHANNEL_ID")?.toLong()
+		?: 832348385997619300
 )
 
 internal val BAN_SHARING_WEBHOOK_URL = envOrNull("BAN_SHARING_WEBHOOK_URL")
 
-internal val COMMUNITY_RELEASE_CHANNELS = envOrNull("COMMUNITY_RELEASE_CHANNELS")?.split(',')
-	?.map { Snowflake(it.trim()) } ?: listOf()
+internal val COMMUNITY_RELEASE_CHANNELS = envOrNull("COMMUNITY_RELEASE_CHANNELS")
+	?.split(',')
+	?.map { Snowflake(it.trim()) }
+	?: listOf()
+
+internal val SKIPPABLE_HANDLER_CATEGORIES = envOrNull("COMMUNITY_DEV_CATEGORIES")
+	?.split(",")
+	?.map { Snowflake(it) }
+	?: listOf(
+		"832344714916659271",  // Mod Development
+		"832333242874986608",  // Community Team
+		"948262230447755305",  // Outreach Team
+		"842018452214382602",  // Quilt Developers (Toolchain)
+	).map { Snowflake(it) }
+
+internal val SKIPPABLE_HANDLER_IDS = envOrNull("SKIPPABLE_HANDLERS")
+	?.split(",")
+	?: listOf("rule-breaking-mod", "piracy", "problematic-launcher")

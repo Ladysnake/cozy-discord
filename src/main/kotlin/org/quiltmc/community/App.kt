@@ -27,6 +27,9 @@ import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEve
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.embed
+import org.quiltmc.community.cozy.modules.logs.extLogParser
+import org.quiltmc.community.cozy.modules.logs.processors.PiracyProcessor
+import org.quiltmc.community.cozy.modules.logs.processors.ProblematicLauncherProcessor
 import org.quiltmc.community.cozy.modules.tags.TagFormatter
 import org.quiltmc.community.cozy.modules.tags.config.TagsConfig
 import org.quiltmc.community.cozy.modules.tags.tags
@@ -36,10 +39,11 @@ import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
 import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.getSettings
+import org.quiltmc.community.logs.NonQuiltLoaderProcessor
+import org.quiltmc.community.logs.RuleBreakingModProcessor
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
-import org.quiltmc.community.modes.quilt.extensions.logs.LogParsingExtension
 import org.quiltmc.community.modes.quilt.extensions.minecraft.MinecraftExtension
 import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.ExtraLogExtension
@@ -72,7 +76,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
 	extensions {
         add(::FilterExtension)
-        add(::LogParsingExtension)
+
         add(::MessageLogExtension)
         add(::MinecraftExtension)
         add(::SettingsExtension)
@@ -94,6 +98,64 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
         extMappings { }
 
 		extPluralKit()
+
+		extLogParser {
+			// Bundled non-default processors
+			processor(PiracyProcessor())
+			processor(ProblematicLauncherProcessor())
+
+			// Quilt-specific processors
+			processor(NonQuiltLoaderProcessor())
+			processor(RuleBreakingModProcessor())
+
+//			@Suppress("TooGenericExceptionCaught")
+//			suspend fun predicate(handler: BaseLogHandler, event: Event): Boolean = with(handler) {
+//				val predicateLogger = KotlinLogging.logger(
+//					"org.quiltmc.community.AppKt.setupQuilt.extLogParser.predicate"
+//				)
+//
+//				val kord: Kord = getKoin().get()
+//				val channelId = channelSnowflakeFor(event)
+//				val guild = guildFor(event)
+//
+//				try {
+//					val skippableChannelIds = SKIPPABLE_HANDLER_CATEGORIES.mapNotNull {
+//						kord.getChannelOf<Category>(it)
+//							?.channels
+//							?.map { ch -> ch.id }
+//							?.toList()
+//					}.flatten()
+//
+//					val isSkippable = identifier in SKIPPABLE_HANDLER_IDS
+//
+//					if (guild?.id == TOOLCHAIN_GUILD && isSkippable) {
+//						predicateLogger.info {
+//							"Skipping handler '$identifier' in <#$channelId>: Skippable handler, and on Toolchain"
+//						}
+//
+//						return false
+//					}
+//
+//					if (channelId in skippableChannelIds && isSkippable) {
+//						predicateLogger.info {
+//							"Skipping handler '$identifier' in <#$channelId>: Skippable handler, and in a dev category"
+//						}
+//
+//						return false
+//					}
+//
+//					predicateLogger.debug { "Passing handler '$identifier' in <#$channelId>" }
+//
+//					return true
+//				} catch (e: Exception) {
+//					predicateLogger.warn(e) { "Skipping processor '$identifier' in <#$channelId> due to an error." }
+//
+//					return true
+//				}
+//			}
+//
+//			globalPredicate(::predicate)
+		}
 
 		help {
 			enableBundledExtension = true

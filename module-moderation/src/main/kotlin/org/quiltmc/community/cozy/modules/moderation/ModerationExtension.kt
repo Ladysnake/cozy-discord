@@ -14,7 +14,10 @@ import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.anyGuild
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
-import com.kotlindiscord.kord.extensions.commands.converters.impl.*
+import com.kotlindiscord.kord.extensions.commands.converters.impl.duration
+import com.kotlindiscord.kord.extensions.commands.converters.impl.member
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalDuration
+import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalString
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.chatCommand
 import com.kotlindiscord.kord.extensions.extensions.chatGroupCommand
@@ -34,13 +37,13 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.rest.builder.message.create.embed
+import org.quiltmc.community.cozy.modules.moderation.config.ModerationConfig
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DateTimePeriod
-import org.quiltmc.community.cozy.modules.moderation.config.ModerationConfig
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 public val MAXIMUM_SLOWMODE_DURATION: DateTimePeriod = DateTimePeriod(hours = 6)
 public const val MAX_TIMEOUT_SECS: Int = 60 * 60 * 24 * 28
@@ -138,11 +141,11 @@ public class ModerationExtension(
 
 							icon = if (event is ProxiedMessageCreateEvent && event.pkMessage.member != null) {
 								event.pkMessage.member?.avatarUrl
-									?: event.author.memberAvatar?.url
-									?: event.author.avatar?.url
+									?: event.author.memberAvatar?.cdnUrl?.toUrl()
+									?: event.author.avatar?.cdnUrl?.toUrl()
 							} else {
-								event.author?.memberAvatar?.url
-									?: event.author?.avatar?.url
+								event.author?.memberAvatar?.cdnUrl?.toUrl()
+									?: event.author?.avatar?.cdnUrl?.toUrl()
 							}
 						}
 					}

@@ -42,9 +42,6 @@ import dev.kord.core.entity.channel.CategorizableChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.TextChannelThread
 import dev.kord.core.event.message.ReactionAddEvent
-import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import net.codebox.homoglyph.HomoglyphBuilder
 import org.koin.core.component.inject
 import org.quiltmc.community.GALLERY_CHANNEL
@@ -56,6 +53,9 @@ import org.quiltmc.community.modes.quilt.extensions.storage.BannedReactions
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 private val THREAD_DELAY = 3.seconds
 
@@ -118,9 +118,8 @@ class ShowcaseExtension : Extension() {
 				val title = event.message.contentToThreadName("Gallery")
 
 				val thread = channel.startPublicThreadWithMessage(
-					event.message.id,
-					title
-				)
+					event.message.id, title
+				) { reason = "Showcase thread created for ${event.message.author?.tag}" }
 
 				threads.set(
 					OwnedThread(thread.id, authorId, guild.id)

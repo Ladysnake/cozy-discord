@@ -64,11 +64,6 @@ import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.jvm.javaio.*
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.collect
-import kotlinx.serialization.json.Json
 import mu.KotlinLogging
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.IndexedColors
@@ -91,6 +86,11 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.collect
+import kotlinx.serialization.json.Json
 
 private const val ACTION_DOWN = "down"
 private const val ACTION_REMOVE = "remove"
@@ -177,7 +177,7 @@ class SuggestionsExtension : Extension() {
 					text = event.message.content,
 
 					owner = event.message.author!!.id,
-					ownerAvatar = event.message.author!!.avatar?.url,
+					ownerAvatar = event.message.author!!.avatar?.cdnUrl?.toUrl(),
 					ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName,
 
 					positiveVoters = mutableListOf(event.message.author!!.id)
@@ -400,7 +400,7 @@ class SuggestionsExtension : Extension() {
 				}
 
 				val owner = event.interaction.user
-				val ownerAvatar = pkMember?.avatarUrl ?: owner.avatar?.url
+				val ownerAvatar = pkMember?.avatarUrl ?: owner.avatar?.cdnUrl?.toUrl()
 				val ownerName = if (pkMember != null) {
 					"${pkMember.displayName ?: pkMember.name} (${owner.tag})"
 				} else {
@@ -894,11 +894,14 @@ class SuggestionsExtension : Extension() {
 		if (suggestion.message == null) {
 			val message = channel.createMessage { suggestion(suggestion) }
 
+			val archiveDuration = channel.getArchiveDuration(channel.getGuild().getSettings())
 			val thread = (channel as? TextChannel)?.startPublicThreadWithMessage(
 				message.id,
-				name = name ?: suggestion._id.toString(),
-				archiveDuration = channel.getArchiveDuration(channel.getGuild().getSettings())
-			)
+				name = name ?: suggestion._id.toString()
+			) {
+				autoArchiveDuration = archiveDuration
+				reason = null
+			}
 
 			if (thread != null) {
 				@Suppress("TooGenericExceptionCaught") // debugging go brrr

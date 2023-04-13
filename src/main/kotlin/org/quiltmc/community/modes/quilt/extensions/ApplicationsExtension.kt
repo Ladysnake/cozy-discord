@@ -24,7 +24,6 @@ import com.kotlindiscord.kord.extensions.types.editingPaginator
 import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.Color
-import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.channel.createEmbed
@@ -44,10 +43,6 @@ import dev.kord.rest.builder.message.create.actionRow
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.actionRow
 import dev.kord.rest.builder.message.modify.embed
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.Instant
 import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.GUILDS
@@ -58,6 +53,10 @@ import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.hasBaseModeratorRole
 import org.quiltmc.community.inLadysnakeGuild
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.toList
+import kotlinx.datetime.Instant
 
 private val COMPONENT_REGEX = "application/(\\d+)/(thread|verify)".toRegex()
 
@@ -434,11 +433,9 @@ class ApplicationsExtension : Extension() {
 						} else {
 							logger.info { "Creating thread for application: ${application._id}" }
 
-							val thread = threadChannel.startPrivateThread(
-								"App: ${user.tag}",
-								ArchiveDuration.Week
-							)
-
+							// Not actually deprecated, Kord walled themselves into a hole here
+							@Suppress("DEPRECATION_ERROR")
+							val thread = threadChannel.startPrivateThread("App: ${user.tag}")
 							val initialMessage = thread.createMessage("Better get the mods in...")
 
 							initialMessage.edit { content = settings.moderatorRoles.joinToString { "<@&$it>" } }
@@ -831,7 +828,7 @@ class ApplicationsExtension : Extension() {
 		}
 
 		thumbnail {
-			url = (user.avatar ?: user.defaultAvatar).url
+			url = (user.avatar ?: user.defaultAvatar).cdnUrl.toUrl()
 		}
 
 		footer {

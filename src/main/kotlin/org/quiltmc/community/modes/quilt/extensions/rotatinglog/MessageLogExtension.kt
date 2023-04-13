@@ -31,6 +31,15 @@ import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
+import mu.KotlinLogging
+import org.quiltmc.community.*
+import org.quiltmc.community.database.collections.UserFlagsCollection
+import org.quiltmc.community.database.getSettings
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -41,15 +50,6 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import mu.KotlinLogging
-import org.quiltmc.community.*
-import org.quiltmc.community.database.collections.UserFlagsCollection
-import org.quiltmc.community.database.getSettings
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import java.time.Instant as jtInstant
 
 private const val LINE_LENGTH = 45
@@ -61,7 +61,9 @@ private const val DUAL_MESSAGE_LIMIT = 950
 class MessageLogExtension : Extension() {
 	override val name = "message-log"
 
-	private val logger = KotlinLogging.logger { }
+	private val logger = KotlinLogging.logger(
+		"org.quiltmc.community.modes.quilt.extensions.messagelog.MessageLogExtension"
+	)
 
 	private var loopJob: Job? = null
 	private lateinit var messageChannel: Channel<LogMessage>
@@ -91,6 +93,8 @@ class MessageLogExtension : Extension() {
 			check { inLadysnakeGuild() }
 
 			action {
+				logger.debug { "Bulk delete event received: ${event.messages.size} messages" }
+
 				// Do this as early as possible so that we can catch the usual creation events
 				event.messages.forEach { bulkDeletedMessages.add(it.id) }
 
@@ -179,7 +183,9 @@ class MessageLogExtension : Extension() {
 
 						addFile(
 							"messages.md",
-							ChannelProvider { messages.byteInputStream().toByteReadChannel() }
+							ChannelProvider {
+								messages.byteInputStream().toByteReadChannel()
+							}
 						)
 					}
 				)
@@ -241,6 +247,8 @@ class MessageLogExtension : Extension() {
 			}
 
 			action {
+				logger.debug { "Single delete event received: `${event.message?.id}`" }
+
 				// Wait here in case we get a bulk deletion event
 				delay(3.seconds)
 
@@ -311,7 +319,9 @@ class MessageLogExtension : Extension() {
 
 							addFile(
 								"old.md",
-								ChannelProvider { splitContent(message.content).byteInputStream().toByteReadChannel() }
+								ChannelProvider {
+									splitContent(message.content).byteInputStream().toByteReadChannel()
+								}
 							)
 						}
 					)
@@ -333,6 +343,8 @@ class MessageLogExtension : Extension() {
             }
 
 			action {
+				logger.debug { "Message edit event received: `${event.messageId}`" }
+
 				val old = event.old
 				val new = event.getMessage()
 
@@ -392,14 +404,18 @@ class MessageLogExtension : Extension() {
 							if (old != null && !canEmbedOld) {
 								addFile(
 									"old.md",
-									ChannelProvider { splitContent(old.content).byteInputStream().toByteReadChannel() }
+									ChannelProvider {
+										splitContent(old.content).byteInputStream().toByteReadChannel()
+									}
 								)
 							}
 
 							if (!canEmbedNew) {
 								addFile(
 									"new.md",
-									ChannelProvider { splitContent(new.content).byteInputStream().toByteReadChannel() }
+									ChannelProvider {
+										splitContent(new.content).byteInputStream().toByteReadChannel()
+									}
 								)
 							}
 						}
@@ -493,7 +509,17 @@ class MessageLogExtension : Extension() {
 				continue
 			}
 
+			logger.trace { "Logging message on guild: ${logMessage.guild.name} (${logMessage.guild.id})" }
+
 			rotator.logMessage(logMessage.messageBuilder)
+		}
+
+		logger.warn { "Send loop ended." }
+
+		if (!messageChannel.isClosedForReceive) {
+			logger.info { "Rescheduling send loop." }
+
+			loopJob = kord.launch { sendLoop() }
 		}
 	}
 

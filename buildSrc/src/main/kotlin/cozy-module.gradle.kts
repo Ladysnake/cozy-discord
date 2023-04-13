@@ -19,11 +19,20 @@ plugins {
 }
 
 group = "org.quiltmc.community"
-version = "1.0-SNAPSHOT"
+version = "1.0.1-SNAPSHOT"
 
 repositories {
 	mavenLocal()
 	google()
+
+	maven {
+		name = "Sleeping Town"
+		url = uri("https://repo.sleeping.town")
+
+		content {
+			includeGroup("com.unascribed")
+		}
+	}
 
 	maven {
 		name = "Sonatype Snapshots"

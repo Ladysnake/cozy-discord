@@ -29,17 +29,9 @@ import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.allowedMentions
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
-import mu.KotlinLogging
-import org.quiltmc.community.*
-import org.quiltmc.community.database.collections.UserFlagsCollection
-import org.quiltmc.community.database.getSettings
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -50,6 +42,14 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.quiltmc.community.*
+import org.quiltmc.community.database.collections.UserFlagsCollection
+import org.quiltmc.community.database.getSettings
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.ExperimentalTime
 import java.time.Instant as jtInstant
 
 private const val LINE_LENGTH = 45

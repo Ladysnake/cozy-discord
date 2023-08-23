@@ -74,7 +74,7 @@ public class RoleSyncExtension(
 			}
 		}
 
-		ephemeralSlashCommand() {
+		ephemeralSlashCommand {
 			name = "role-sync"
 			description = "Manually sync roles"
 

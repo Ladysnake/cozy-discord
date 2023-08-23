@@ -13,8 +13,6 @@ pluginManagement {
 
 rootProject.name = "CozyDiscord"
 
-enableFeaturePreview("VERSION_CATALOGS")
-
 dependencyResolutionManagement {
 	versionCatalogs {
 		create("libs") {

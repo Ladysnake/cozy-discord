@@ -26,15 +26,16 @@ import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.channel.NewsChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
+import dev.kord.rest.builder.channel.thread.StartThreadWithMessageBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.datetime.Clock
-import mu.KotlinLogging
 import org.apache.commons.text.StringEscapeUtils
 import org.quiltmc.community.*
 import org.quiltmc.community.database.getSettings
@@ -339,20 +340,15 @@ class MinecraftExtension : Extension() {
 		}
 
 		if (guildId == LADYSNAKE_GUILD) {
+			val archiveDuration = getArchiveDuration(getGuild().getSettings())
+			val builder: StartThreadWithMessageBuilder.() -> Unit = {
+				autoArchiveDuration = archiveDuration
+				reason = "Minecraft update discussion thread"
+			}
 			when (this) {
-				is TextChannel -> startPublicThreadWithMessage(
-					message.id,
-					title,
-					getArchiveDuration(getGuild().getSettings())
-				)
-
+				is TextChannel -> startPublicThreadWithMessage(message.id, title, builder)
 				is NewsChannel -> {
-					startPublicThreadWithMessage(
-						message.id,
-						title,
-						getArchiveDuration(getGuild().getSettings())
-					)
-
+					startPublicThreadWithMessage(message.id, title, builder)
 					message.publish()
 				}
 			}

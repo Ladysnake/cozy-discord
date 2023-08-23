@@ -8,10 +8,10 @@
 
 package org.quiltmc.community.cozy.modules.logs.data
 
-import org.quiltmc.community.cozy.modules.logs.MatchRegexSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
+import org.quiltmc.community.cozy.modules.logs.MatchRegexSerializer
 
 @Serializable
 public data class UrlTransformSplit(

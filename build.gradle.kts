@@ -1,4 +1,5 @@
 import com.expediagroup.graphql.plugin.gradle.config.GraphQLSerializer
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 /*
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -105,8 +106,7 @@ graphql {
 }
 
 application {
-	// This is deprecated, but the Shadow plugin requires it
-	mainClassName = "org.quiltmc.community.AppKt"
+	mainClass.set("org.quiltmc.community.AppKt")
 }
 
 gitHooks {

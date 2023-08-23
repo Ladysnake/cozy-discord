@@ -32,9 +32,9 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.GlobalSettingsCollection

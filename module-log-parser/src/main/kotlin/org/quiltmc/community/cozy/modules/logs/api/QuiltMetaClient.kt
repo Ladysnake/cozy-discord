@@ -14,11 +14,11 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import org.quiltmc.community.cozy.modules.logs.api.models.quiltmeta.LoaderElement
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import org.quiltmc.community.cozy.modules.logs.api.models.quiltmeta.LoaderElement
+import kotlin.time.Duration.Companion.minutes
 
 private const val API_VERSION = 3
 private const val BASE_URL = "https://meta.quiltmc.org/v$API_VERSION"

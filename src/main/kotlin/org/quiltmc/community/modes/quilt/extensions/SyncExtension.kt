@@ -32,11 +32,11 @@ import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Instant
-import mu.KotlinLogging
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.asUser
 import org.quiltmc.community.getModLogChannel

@@ -460,3 +460,11 @@ fun Message.contentToThreadName(fallbackPrefix: String): String {
 
 		?: "$fallbackPrefix | $id"
 }
+
+@Suppress("deprecation")
+val User.identifier: String get() = try {
+	if (discriminator == "0") "@$username" else tag
+} catch (e: IncompatibleClassChangeError) {
+	// whoops kordex is probably already updated
+	"@$username"
+}

@@ -49,10 +49,10 @@ import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.RestRequestException
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.InvalidMentionsCollection
@@ -171,7 +171,7 @@ class ModerationExtension(
 					if (spamCheck.size > ABSOLUTE_MAX_PER_SECOND || spamCheck.size > ABSOLUTE_MAX_PER_MINUTE) {
 						// over the limit, time the user out
 						event.message.getAuthorAsMember()?.timeout(2.minutes)
-						event.message.author.tryDM(event.getGuild()) {
+						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = "You have been timed out for spamming in an associated server. " +
 									"Please do not spam."
 						}
@@ -180,7 +180,7 @@ class ModerationExtension(
 
 					if (recentMessagesForUser.size > MAX_MESSAGES_PER_MINUTE) {
 						event.message.delete()
-						event.message.author.tryDM(event.getGuild()) {
+						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = "You have exceeded the maximum amount of messages per minute. " +
 									"Please wait a minute before sending another message."
 						}
@@ -188,7 +188,7 @@ class ModerationExtension(
 
 					if (spamCheck.size > MAX_MESSAGES_PER_SECOND) {
 						event.message.delete()
-						event.message.author.tryDM(event.getGuild()) {
+						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = "You have exceeded the maximum amount of messages per second. " +
 									"Please wait a second before sending another message."
 						}
@@ -225,7 +225,7 @@ class ModerationExtension(
 					val mentions = event.message.mentionedUserIds + event.message.mentionedRoleIds
 					if (mentions.size > MAX_MENTIONS_PER_MESSAGE && MAX_MENTIONS_PER_MESSAGE != 0) {
 						event.message.delete()
-						event.message.author.tryDM(event.getGuild()) {
+						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = "You have exceeded the maximum amount of mentions per message. " +
 									"Please do not mention more than $MAX_MENTIONS_PER_MESSAGE users."
 						}
@@ -239,7 +239,7 @@ class ModerationExtension(
 							mention.type == ROLE && event.member?.id !in mention.exceptions &&
 							event.member?.roleIds?.any { it in mention.exceptions } != true
 						) {
-							event.message.author.tryDM(event.getGuild()) {
+							event.message.author.tryDM(event.getGuildOrNull()) {
 								content = "You have mentioned a role that is not allowed to be mentioned. " +
 										"Please do not mention roles that are not allowed to be mentioned."
 							}
@@ -252,7 +252,7 @@ class ModerationExtension(
 							mention.type == USER && event.member?.id !in mention.exceptions &&
 							event.member?.roleIds?.any { it in mention.exceptions } != true
 						) {
-							event.message.author.tryDM(event.getGuild()) {
+							event.message.author.tryDM(event.getGuildOrNull()) {
 								content = "You have mentioned a user that is not allowed to be mentioned. " +
 										"Please do not mention users that are not allowed to be mentioned."
 							}
@@ -732,7 +732,7 @@ class ModerationExtension(
 						.takeLast(2)
 
 					val user = kord.getUser(restriction._id)!!
-					val guild = kord.getGuildOrThrow(restriction.guildId)
+					val guild = kord.getGuild(restriction.guildId)
 
 					if (restriction.returningBanTime == null) {
 						deferred.respond {
@@ -1258,7 +1258,7 @@ class ModerationExtension(
 
 		companion object {
 			val allSupported = values().filterNot {
-				it in listOf(BAN_SHARING /* the only one that's not supported yet */)
+				it in listOf(BAN_SHARING) // the only one that's not supported yet
 			}
 		}
 	}

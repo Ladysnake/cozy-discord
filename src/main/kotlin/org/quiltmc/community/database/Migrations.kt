@@ -7,7 +7,7 @@
 package org.quiltmc.community.database
 
 import com.kotlindiscord.kord.extensions.koin.KordExKoinComponent
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.MetaCollection
 import org.quiltmc.community.database.entities.Meta

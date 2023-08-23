@@ -21,12 +21,13 @@ import dev.kord.core.entity.Message
 import dev.kord.core.event.Event
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KLogger
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
-import mu.KLogger
-import mu.KotlinLogging
+import kotlinx.serialization.decodeFromString
 import org.koin.core.component.inject
 import org.quiltmc.community.cozy.modules.logs.config.LogParserConfig
 import org.quiltmc.community.cozy.modules.logs.data.Log
@@ -37,7 +38,6 @@ import org.quiltmc.community.cozy.modules.logs.events.PKEventHandler
 import org.quiltmc.community.cozy.modules.logs.types.BaseLogHandler
 import java.net.URL
 import kotlin.time.Duration.Companion.minutes
-import kotlinx.serialization.decodeFromString
 
 public class LogParserExtension : Extension() {
 	override val name: String = "quiltmc-log-parser"

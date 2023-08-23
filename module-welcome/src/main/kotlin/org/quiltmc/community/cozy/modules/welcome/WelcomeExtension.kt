@@ -142,7 +142,7 @@ public class WelcomeExtension : Extension() {
 									name = "Staff Member"
 									value = "${user.mention} (" +
 											"`${user.id}` / " +
-											"`${user.asUser().tag}`" +
+											"`${user.asUser().identifier}`" +
 											")"
 								}
 							}
@@ -217,7 +217,7 @@ public class WelcomeExtension : Extension() {
 								name = "Staff Member"
 								value = "${user.mention} (" +
 										"`${user.id}` / " +
-										"`${user.asUser().tag}`" +
+										"`${user.asUser().identifier}`" +
 										")"
 							}
 						}
@@ -286,7 +286,7 @@ public class WelcomeExtension : Extension() {
 								name = "Staff Member"
 								value = "${user.mention} (" +
 										"`${user.id}` / " +
-										"`${user.asUser().tag}`" +
+										"`${user.asUser().identifier}`" +
 										")"
 							}
 						}

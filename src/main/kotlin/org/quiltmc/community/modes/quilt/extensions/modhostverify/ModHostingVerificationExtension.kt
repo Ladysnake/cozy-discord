@@ -22,6 +22,7 @@ import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.rest.builder.message.create.MessageCreateBuilder
 import dev.kord.rest.builder.message.create.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.plugins.*
@@ -31,7 +32,6 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import kotlinx.serialization.json.Json
-import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.inLadysnakeGuild

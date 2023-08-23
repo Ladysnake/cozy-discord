@@ -17,7 +17,6 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 import org.quiltmc.community.database.Entity
-import java.util.*
 
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...

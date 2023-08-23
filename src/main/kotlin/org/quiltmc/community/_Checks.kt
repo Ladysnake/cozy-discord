@@ -14,7 +14,7 @@ import dev.kord.common.entity.Permission
 import dev.kord.core.entity.Member
 import dev.kord.core.event.Event
 import dev.kord.core.event.interaction.InteractionCreateEvent
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.getSettings
 

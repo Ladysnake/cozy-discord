@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
+// AnnotationOnSeparateLine because detekt is dumb in this specific location for some reason
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "AnnotationOnSeparateLine")
 @file:OptIn(PrivilegedIntent::class)
 
 /*

@@ -32,6 +32,7 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import org.koin.core.component.inject
+import org.quiltmc.community.cozy.modules.welcome.identifier
 
 @Suppress("MagicNumber")
 @Serializable
@@ -135,7 +136,7 @@ public data class ComplianceBlock(
 				inline = true
 				name = "User"
 
-				value = "${user.mention} (`${user.tag}` / `${user.id}`)"
+				value = "${user.mention} (`${user.identifier}` / `${user.id}`)"
 			}
 		}
 

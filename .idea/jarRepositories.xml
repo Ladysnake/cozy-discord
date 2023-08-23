@@ -27,6 +27,11 @@
       <option name="url" value="file:/$MAVEN_REPOSITORY$/" />
     </remote-repository>
     <remote-repository>
+      <option name="id" value="MavenLocal" />
+      <option name="name" value="MavenLocal" />
+      <option name="url" value="file:/$MAVEN_REPOSITORY$/" />
+    </remote-repository>
+    <remote-repository>
       <option name="id" value="Fabric" />
       <option name="name" value="Fabric" />
       <option name="url" value="https://maven.fabricmc.net" />
@@ -72,11 +77,6 @@
       <option name="url" value="https://repo.maven.apache.org/maven2/" />
     </remote-repository>
     <remote-repository>
-      <option name="id" value="MavenLocal" />
-      <option name="name" value="MavenLocal" />
-      <option name="url" value="file:/$USER_HOME$/.m2/repository/" />
-    </remote-repository>
-    <remote-repository>
       <option name="id" value="Kotlin Discord (Snapshots)" />
       <option name="name" value="Kotlin Discord (Snapshots)" />
       <option name="url" value="https://maven.kotlindiscord.com/repository/maven-snapshots/" />
@@ -95,6 +95,11 @@
       <option name="id" value="Sleeping Town" />
       <option name="name" value="Sleeping Town" />
       <option name="url" value="https://repo.sleeping.town" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="Gradle Central Plugin Repository" />
+      <option name="name" value="Gradle Central Plugin Repository" />
+      <option name="url" value="https://plugins.gradle.org/m2" />
     </remote-repository>
   </component>
 </project>

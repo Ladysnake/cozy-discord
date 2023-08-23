@@ -7,6 +7,7 @@
 package org.quiltmc.community.cozy.modules.moderation
 
 import com.kotlindiscord.kord.extensions.builders.ExtensibleBotBuilder
+import dev.kord.core.entity.User
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.TimeZone.Companion.UTC
@@ -29,3 +30,11 @@ public fun ExtensibleBotBuilder.ExtensionsBuilder.moderation(config: ModerationC
 
 public fun ExtensibleBotBuilder.ExtensionsBuilder.moderation(body: SimpleModerationConfig.Builder.() -> Unit): Unit =
 	moderation(SimpleModerationConfig(body))
+
+@Suppress("deprecation")
+internal val User.identifier: String get() = try {
+	if (discriminator == "0") "@$username" else tag
+} catch (e: IncompatibleClassChangeError) {
+	// whoops kordex is probably already updated
+	"@$username"
+}

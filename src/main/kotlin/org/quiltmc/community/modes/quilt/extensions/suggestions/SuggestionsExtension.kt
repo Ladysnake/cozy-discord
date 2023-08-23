@@ -59,12 +59,17 @@ import dev.kord.rest.json.JsonErrorCode
 import dev.kord.rest.request.KtorRequestException
 import io.github.evanrupert.excelkt.Sheet
 import io.github.evanrupert.excelkt.workbook
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.request.forms.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.jvm.javaio.*
-import mu.KotlinLogging
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.collect
+import kotlinx.serialization.json.Json
 import org.apache.poi.ss.usermodel.FillPatternType
 import org.apache.poi.ss.usermodel.IndexedColors
 import org.apache.poi.xssf.usermodel.XSSFColor
@@ -86,11 +91,6 @@ import kotlin.collections.component1
 import kotlin.collections.component2
 import kotlin.collections.set
 import kotlin.time.Duration.Companion.seconds
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.reactive.collect
-import kotlinx.serialization.json.Json
 
 private const val ACTION_DOWN = "down"
 private const val ACTION_REMOVE = "remove"
@@ -178,7 +178,7 @@ class SuggestionsExtension : Extension() {
 
 					owner = event.message.author!!.id,
 					ownerAvatar = event.message.author!!.avatar?.cdnUrl?.toUrl(),
-					ownerName = event.message.author!!.asMember(event.message.getGuild().id).displayName,
+					ownerName = event.message.author!!.asMember(event.message.getGuild().id).effectiveName,
 
 					positiveVoters = mutableListOf(event.message.author!!.id)
 				)

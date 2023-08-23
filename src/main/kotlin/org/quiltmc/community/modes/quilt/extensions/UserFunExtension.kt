@@ -720,7 +720,7 @@ class UserFunExtension : Extension() {
 
 			action {
 				val message = event.interaction.getTarget().content
-				val author = event.interaction.getTarget().getAuthorAsMember()?.displayName
+				val author = event.interaction.getTarget().getAuthorAsMember().effectiveName
 					?: event.interaction.getTarget().data.author.username
 				val guild = event.interaction.target.getChannel().data.guildId.value!!
 				val initiator = event.interaction.user

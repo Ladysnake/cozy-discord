@@ -9,7 +9,7 @@ package org.quiltmc.community.modes.quilt.extensions
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.event
 import dev.kord.core.event.gateway.ReadyEvent
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 class ConsoleLogExtension : Extension() {
 	private val logger = KotlinLogging.logger {}

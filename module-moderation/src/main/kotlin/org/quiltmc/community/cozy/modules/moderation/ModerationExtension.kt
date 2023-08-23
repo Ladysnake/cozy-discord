@@ -37,13 +37,13 @@ import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.rest.builder.message.create.embed
-import org.quiltmc.community.cozy.modules.moderation.config.ModerationConfig
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.datetime.DateTimePeriod
+import org.quiltmc.community.cozy.modules.moderation.config.ModerationConfig
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 public val MAXIMUM_SLOWMODE_DURATION: DateTimePeriod = DateTimePeriod(hours = 6)
 public const val MAX_TIMEOUT_SECS: Int = 60 * 60 * 24 * 28
@@ -132,11 +132,11 @@ public class ModerationExtension(
 									if (event.pkMessage.system != null) {
 										append(event.pkMessage.system?.tag ?: "(${event.pkMessage.system?.id})")
 									} else {
-										append("(${event.author.displayName})")
+										append("(${event.author.effectiveName})")
 									}
 								}
 							} else {
-								event.author!!.displayName
+								event.author!!.effectiveName
 							}
 
 							icon = if (event is ProxiedMessageCreateEvent && event.pkMessage.member != null) {
@@ -167,7 +167,7 @@ public class ModerationExtension(
 				if (arguments.duration != null) {
 					arguments.user.timeout(
 						arguments.duration!!,
-						reason = "Timed out by ${user.asUser().tag}: $reason"
+						reason = "Timed out by ${user.asUser().identifier}: $reason"
 					)
 
 					respond {
@@ -175,7 +175,7 @@ public class ModerationExtension(
 					}
 				} else {
 					arguments.user.removeTimeout(
-						reason = "Timeout removed by ${user.asUser().tag}: $reason"
+						reason = "Timeout removed by ${user.asUser().identifier}: $reason"
 					)
 
 					respond {
@@ -285,7 +285,7 @@ public class ModerationExtension(
 				if (arguments.duration != null) {
 					arguments.user.timeout(
 						arguments.duration!!,
-						reason = "Timed out by ${user?.asUser()?.tag}: $reason"
+						reason = "Timed out by ${user?.asUser()?.identifier}: $reason"
 					)
 
 					message.respond {
@@ -293,7 +293,7 @@ public class ModerationExtension(
 					}
 				} else {
 					arguments.user.removeTimeout(
-						reason = "Timeout removed by ${user?.asUser()?.tag}: $reason"
+						reason = "Timeout removed by ${user?.asUser()?.identifier}: $reason"
 					)
 
 					message.respond {

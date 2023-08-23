@@ -27,10 +27,10 @@ import dev.kord.core.event.role.RoleUpdateEvent
 import dev.kord.rest.Image
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.request.RestRequestException
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.reduce
 import kotlinx.coroutines.flow.toList
-import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
@@ -90,7 +90,7 @@ class ExtraLogExtension : Extension() {
                             }
 
                             thumbnail {
-                                url = member.avatar?.url ?: member.defaultAvatar.url
+                                url = member.avatar?.cdnUrl?.toUrl() ?: member.defaultAvatar.cdnUrl.toUrl()
                             }
                         }
                     }
@@ -147,7 +147,7 @@ class ExtraLogExtension : Extension() {
                             }
 
                             thumbnail {
-                                url = member.avatar?.url ?: member.defaultAvatar.url
+                                url = member.avatar?.cdnUrl?.toUrl() ?: member.defaultAvatar.cdnUrl.toUrl()
                             }
                         }
                     }
@@ -189,7 +189,7 @@ class ExtraLogExtension : Extension() {
                                     }
 
                                     thumbnail {
-                                        url = member.avatar?.url ?: member.defaultAvatar.url
+                                        url = member.avatar?.cdnUrl?.toUrl() ?: member.defaultAvatar.cdnUrl.toUrl()
                                     }
                                 }
                             }
@@ -234,8 +234,8 @@ class ExtraLogExtension : Extension() {
                                         field {
                                             name = "Avatar"
                                             value = """
-                                            Old: ${old.avatar?.url ?: old.defaultAvatar.url}
-                                            New: ${member.avatar?.url ?: member.defaultAvatar.url}
+                                            Old: ${old.avatar?.cdnUrl?.toUrl() ?: old.defaultAvatar.cdnUrl.toUrl()}
+                                            New: ${member.avatar?.cdnUrl?.toUrl() ?: member.defaultAvatar.cdnUrl.toUrl()}
                                         """.trimIndent()
 
                                             inline = true
@@ -689,8 +689,8 @@ class ExtraLogExtension : Extension() {
                             field {
                                 name = "Banner"
                                 value = """
-                                    Old: ${old.getBannerUrl(Image.Format.PNG) ?: "None"}
-                                    New: ${new.getBannerUrl(Image.Format.PNG) ?: "None"}
+                                    Old: ${old.banner?.cdnUrl?.toUrl { format = Image.Format.PNG } ?: "None"}
+                                    New: ${new.banner?.cdnUrl?.toUrl { format = Image.Format.PNG } ?: "None"}
                                 """.trimIndent()
 
                                 inline = true
@@ -814,7 +814,7 @@ class ExtraLogExtension : Extension() {
 
                         if (role.icon != null) {
                             thumbnail {
-                                url = role.icon!!.url
+                                url = role.icon!!.cdnUrl.toUrl()
                             }
                         }
 
@@ -907,7 +907,7 @@ class ExtraLogExtension : Extension() {
 
                         if (role.icon != null) {
                             thumbnail {
-                                url = role.icon!!.url
+                                url = role.icon!!.cdnUrl.toUrl()
                             }
                         }
                     }
@@ -992,7 +992,7 @@ class ExtraLogExtension : Extension() {
 
                             if (new.icon != null) {
                                 thumbnail {
-                                    url = new.icon!!.url
+                                    url = new.icon!!.cdnUrl.toUrl()
                                 }
                             }
 
@@ -1048,8 +1048,8 @@ class ExtraLogExtension : Extension() {
                                 field {
                                     name = "Icon"
                                     value = """
-                                        Old: ${if (old.icon == null) "None" else old.icon!!.url}
-                                        New: ${if (new.icon == null) "None" else new.icon!!.url}
+                                        Old: ${if (old.icon == null) "None" else old.icon!!.cdnUrl.toUrl()}
+                                        New: ${if (new.icon == null) "None" else new.icon!!.cdnUrl.toUrl()}
                                     """.trimIndent()
                                     inline = true
                                 }

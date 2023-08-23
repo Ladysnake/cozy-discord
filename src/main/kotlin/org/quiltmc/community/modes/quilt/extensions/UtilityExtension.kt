@@ -48,6 +48,7 @@ import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.create.embed
 import dev.kord.rest.builder.message.modify.embed
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.InternalCoroutinesApi
@@ -57,7 +58,6 @@ import kotlinx.datetime.*
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import mu.KotlinLogging
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.cozy.modules.moderation.compareTo
@@ -1470,12 +1470,14 @@ class UtilityExtension : Extension() {
                             messageContent
                         }
 
+						val archiveDuration = channel.getArchiveDuration(guildFor(event)?.getSettings())
                         val thread = channel.startPublicThreadWithMessage(
                             event.message.id,
-                            threadName,
-                            channel.getArchiveDuration(guildFor(event)?.getSettings()),
-                            "Automatic thread for thread-only channel"
-                        )
+                            threadName
+						) {
+							autoArchiveDuration = archiveDuration
+							reason = "Automatic thread for thread-only channel"
+						}
 
                         val ownedThread = OwnedThread(
                             thread.id,

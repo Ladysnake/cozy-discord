@@ -23,13 +23,13 @@ import com.kotlindiscord.kord.extensions.utils.scheduling.Task
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.entity.Guild
 import dev.kord.core.entity.Member
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Clock
 import kotlinx.datetime.toJavaInstant
-import mu.KotlinLogging
 import org.quiltmc.community.cozy.modules.cleanup.config.UserCleanupConfig
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -106,8 +106,11 @@ public class UserCleanupExtension(
 
 							description = "**Mention** | **Tag** | **Join date**\n\n"
 
+							@Suppress("deprecation") // using literally for detection against deprecation
 							chunk.forEach { member ->
-								description += "${member.mention} | ${member.tag} |" +
+								val migrated = member.asUser().discriminator == "0"
+								val tag = if (migrated) "@${member.username}" else member.tag
+								description += "${member.mention} | $tag |" +
 										"${member.joinedAt.toDiscord(TimestampType.Default)}\n"
 							}
 						}

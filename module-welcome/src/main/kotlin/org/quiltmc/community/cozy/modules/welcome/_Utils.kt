@@ -13,6 +13,7 @@ import com.kotlindiscord.kord.extensions.utils.loadModule
 import dev.kord.common.entity.DiscordComponent
 import dev.kord.common.entity.EmbedType
 import dev.kord.core.entity.Message
+import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.component.Component
 import dev.kord.rest.builder.message.EmbedBuilder
@@ -145,3 +146,11 @@ public fun EmbedBuilder.isSimilar(other: EmbedBuilder): Boolean {
  */
 public fun Channel.getJumpUrl(): String =
 	"$DISCORD_CHANNEL_URI/${data.guildId.value?.value ?: "@me"}/${id.value}"
+
+@Suppress("deprecation")
+internal val User.identifier: String get() = try {
+	if (discriminator == "0") "@$username" else tag
+} catch (e: IncompatibleClassChangeError) {
+	// whoops kordex is probably already updated
+	"@$username"
+}

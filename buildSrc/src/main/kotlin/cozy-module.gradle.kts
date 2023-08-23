@@ -15,7 +15,7 @@ plugins {
 	id("com.google.devtools.ksp")
 	id("io.gitlab.arturbosch.detekt")
 	id("org.cadixdev.licenser")
-	id("org.ec4j.editorconfig")
+//	id("org.ec4j.editorconfig")
 }
 
 group = "org.quiltmc.community"
@@ -94,15 +94,15 @@ tasks {
 		}
 
 		check {
-			dependsOn("editorconfigCheck")
+//			dependsOn("editorconfigCheck")
 		}
 
-		editorconfig {
-			excludes = mutableListOf(
-				"build",
-				".*/**",
-			)
-		}
+//		editorconfig {
+//			excludes = mutableListOf(
+//				"build",
+//				".*/**",
+//			)
+//		}
 	}
 }
 

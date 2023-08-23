@@ -9,19 +9,18 @@ package org.quiltmc.community.cozy.modules.logs.processors.quilt
 import dev.kord.core.event.Event
 import io.ktor.client.call.*
 import io.ktor.client.request.*
-import org.quiltmc.community.cozy.modules.logs.data.LoaderType
-import org.quiltmc.community.cozy.modules.logs.data.Log
-import org.quiltmc.community.cozy.modules.logs.data.Order
-import org.quiltmc.community.cozy.modules.logs.types.LogProcessor
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import org.quiltmc.community.cozy.modules.logs.data.LoaderType
+import org.quiltmc.community.cozy.modules.logs.data.Log
+import org.quiltmc.community.cozy.modules.logs.data.Order
+import org.quiltmc.community.cozy.modules.logs.types.LogProcessor
+import kotlin.time.Duration.Companion.minutes
 
 private const val THREAD_LINK = "https://forum.quiltmc.org/t/mod-incompatibility-megathread/261"
 private const val THREAD_JSON = "$THREAD_LINK.json"

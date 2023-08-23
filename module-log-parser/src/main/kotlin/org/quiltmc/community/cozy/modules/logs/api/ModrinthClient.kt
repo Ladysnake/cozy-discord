@@ -13,11 +13,11 @@ import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
-import org.quiltmc.community.cozy.modules.logs.api.models.modrinth.ModrinthVersion
-import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.json.Json
+import org.quiltmc.community.cozy.modules.logs.api.models.modrinth.ModrinthVersion
+import kotlin.time.Duration.Companion.minutes
 
 private const val API_VERSION = 2
 private const val BASE_URL = "https://api.modrinth.com/v$API_VERSION"

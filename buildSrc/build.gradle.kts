@@ -8,6 +8,20 @@ plugins {
 	`kotlin-dsl`
 }
 
+// poor man's version catalog
+val versionFile = project.file("../libs.versions.toml")
+val versionFileContents = versionFile.readText()
+
+val versions = versionFileContents
+	.substringAfter("[versions]")
+	.substringBefore("[")
+	.trim()
+	.split("\n")
+	.filter { it.isNotBlank() }
+	.map { it.trim() }
+	.map { it.split("=") }
+	.associate { (k, v) -> k.trim() to v.substringAfter('"').substringBefore('"') }
+
 repositories {
 	google()
 	gradlePluginPortal()
@@ -17,15 +31,15 @@ dependencies {
 	implementation(gradleApi())
 	implementation(localGroovy())
 
-	implementation(kotlin("gradle-plugin", version = "1.8.0"))
-	implementation(kotlin("serialization", version = "1.8.0"))
+	implementation(kotlin("gradle-plugin", version = versions["kotlin"]))
+	implementation(kotlin("serialization", version = versions["kotlin"]))
 
-	implementation("gradle.plugin.org.cadixdev.gradle", "licenser", "0.6.1")
-	implementation("com.github.jakemarsden", "git-hooks-gradle-plugin", "0.0.2")
-	implementation("com.google.devtools.ksp", "com.google.devtools.ksp.gradle.plugin", "1.8.0-1.0.9")
-	implementation("io.gitlab.arturbosch.detekt", "detekt-gradle-plugin", "1.22.0")
-	implementation("org.ec4j.editorconfig", "org.ec4j.editorconfig.gradle.plugin", "0.0.3")
+	implementation("gradle.plugin.org.cadixdev.gradle", "licenser", versions["gradle-licenser"])
+	implementation("com.github.jakemarsden", "git-hooks-gradle-plugin", versions["git-hooks-gradle-plugin"])
+	implementation("com.google.devtools.ksp", "com.google.devtools.ksp.gradle.plugin", versions["ksp"])
+	implementation("io.gitlab.arturbosch.detekt", "detekt-gradle-plugin", versions["detekt"])
+//	implementation("org.ec4j.editorconfig", "org.ec4j.editorconfig.gradle.plugin", versions["editorconfig-gradle-plugin"])
 
-	implementation("com.expediagroup.graphql", "com.expediagroup.graphql.gradle.plugin", "6.3.5")
-	implementation("com.github.johnrengelman.shadow", "com.github.johnrengelman.shadow.gradle.plugin", "7.1.2")
+	implementation("com.expediagroup.graphql", "com.expediagroup.graphql.gradle.plugin", versions["graphql"])
+	implementation("com.github.johnrengelman.shadow", "com.github.johnrengelman.shadow.gradle.plugin", versions["shadow-gradle-plugin"])
 }

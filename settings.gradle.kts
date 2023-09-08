@@ -20,10 +20,3 @@ dependencyResolutionManagement {
 		}
 	}
 }
-
-include(":module-log-parser")
-include(":module-moderation")
-include(":module-role-sync")
-include(":module-tags")
-include(":module-user-cleanup")
-include(":module-welcome")

@@ -87,13 +87,15 @@ dependencies {
 	implementation(libs.kotlin.stdlib)
 	implementation(libs.kx.ser)
 	implementation(libs.graphql)
-
-	implementation(project(":module-log-parser"))
 	implementation(libs.scrimage)
-	implementation(project(":module-welcome"))
-	implementation(project(":module-user-cleanup"))
-	implementation(project(":module-tags"))
-	implementation(project(":module-moderation"))
+
+//	implementation(project(":module-log-parser"))
+//	implementation(project(":module-welcome"))
+//	implementation(project(":module-user-cleanup"))
+//	implementation(project(":module-tags"))
+//	implementation(project(":module-moderation"))
+
+	implementation(libs.bundles.cozy.modules)
 }
 
 graphql {

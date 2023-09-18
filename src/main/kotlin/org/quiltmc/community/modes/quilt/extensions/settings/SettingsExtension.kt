@@ -529,314 +529,310 @@ class SettingsExtension : Extension() {
                     }
                 }
 
-                ephemeralSubCommand(::TopMessageChannelGuildArg) {
+				ephemeralSubCommand(::RoleServerArg) {
+					name = "add-moderator-role"
+					description = "Add a role that should be given moderator permissions"
+
+					action {
+						val context = CheckContext(event, getLocale())
+
+						if (arguments.serverId != null) {
+							context.hasPermissionInMainGuild(Permission.Administrator)
+
+							if (!context.passed) {
+								respond {
+									content = ":x: Only Quilt community managers can modify settings for other servers."
+								}
+
+								return@action
+							}
+						}
+
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
+						}
+
+						if (settings == null) {
+							respond {
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.role.guildId != settings._id) {
+							respond {
+								content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.role.id in settings.moderatorRoles) {
+							respond {
+								content = ":x: That role is already marked as a moderator role"
+							}
+
+							return@action
+						}
+
+						settings.moderatorRoles.add(arguments.role.id)
+						settings.save()
+
+						respond {
+							content = "Moderator role added: ${arguments.role.mention}"
+						}
+					}
+				}
+
+				ephemeralSubCommand(::RoleServerArg) {
+					name = "remove-moderator-role"
+					description = "Remove a configured moderator role"
+
+					action {
+						val context = CheckContext(event, getLocale())
+
+						if (arguments.serverId != null) {
+							context.hasPermissionInMainGuild(Permission.Administrator)
+
+							if (!context.passed) {
+								respond {
+									content = ":x: Only Quilt community managers can modify settings for other servers."
+								}
+
+								return@action
+							}
+						}
+
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
+						}
+
+						if (settings == null) {
+							respond {
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.role.guildId != settings._id) {
+							respond {
+								content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.role.id !in settings.moderatorRoles) {
+							respond {
+								content = ":x: That role is not marked as a moderator role"
+							}
+
+							return@action
+						}
+
+						settings.moderatorRoles.remove(arguments.role.id)
+						settings.save()
+
+						respond {
+							content = "Moderator role removed: ${arguments.role.mention}"
+						}
+					}
+				}
+
+				ephemeralSubCommand(::TopMessageChannelGuildArg) {
+					name = "application-log-channel"
+					description = "Configure the channel Cozy should send server applications messages to"
+
+					action {
+						val context = CheckContext(event, getLocale())
+
+						if (arguments.serverId != null) {
+							context.hasPermissionInMainGuild(Permission.Administrator)
+
+							if (!context.passed) {
+								respond {
+									content = ":x: Only Quilt community managers can modify settings for other servers."
+								}
+
+								return@action
+							}
+						}
+
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
+						}
+
+						if (settings == null) {
+							respond {
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.channel == null) {
+							respond {
+								content = "**Current application logging channel:** " +
+										"<#${settings.applicationLogChannel}>"
+							}
+
+							return@action
+						}
+
+						val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+						if (channel.guildId != settings._id) {
+							respond {
+								content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+							}
+
+							return@action
+						}
+
+						settings.applicationLogChannel = channel.id
+						settings.save()
+
+						respond {
+							content = "**Application logging channel set:** ${channel.mention}"
+						}
+					}
+				}
+
+				ephemeralSubCommand(::TopMessageChannelGuildArg) {
+					name = "application-threads-channel"
+					description = "Configure the channel Cozy should create server application threads within"
+
+					action {
+						val context = CheckContext(event, getLocale())
+
+						if (arguments.serverId != null) {
+							context.hasPermissionInMainGuild(Permission.Administrator)
+
+							if (!context.passed) {
+								respond {
+									content = ":x: Only Quilt community managers can modify settings for other servers."
+								}
+
+								return@action
+							}
+						}
+
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
+						}
+
+						if (settings == null) {
+							respond {
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							}
+
+							return@action
+						}
+
+						if (arguments.channel == null) {
+							respond {
+								content = "**Current application threads channel:** " +
+										"<#${settings.applicationThreadsChannel}>"
+							}
+
+							return@action
+						}
+
+						val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+						if (channel.guildId != settings._id) {
+							respond {
+								content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+							}
+
+							return@action
+						}
+
+						settings.applicationThreadsChannel = channel.id
+						settings.save()
+
+						respond {
+							content = "**Application threads channel set:** ${channel.mention}"
+						}
+					}
+				}
+
+				ephemeralSubCommand(::TopMessageChannelGuildArg) {
 					name = "cozy-log-channel"
 					description = "Configure the channel Cozy should send log messages to"
-				}
-			ephemeralSubCommand(::RoleServerArg) {
-				name = "add-moderator-role"
-				description = "Add a role that should be given moderator permissions"
 
-				action {
-					val context = CheckContext(event, getLocale())
+						action {
+							val context = CheckContext(event, getLocale())
 
-					if (arguments.serverId != null) {
-						context.hasPermissionInMainGuild(Permission.Administrator)
+							if (arguments.serverId != null) {
+								with(context) {
+									any(
+										{ hasPermissionInMainGuild(Permission.Administrator) },
+										{ failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
+									)
+								}
 
-						if (!context.passed) {
-							respond {
-								content = ":x: Only Quilt community managers can modify settings for other servers."
+								if (!context.passed) {
+									respond {
+										content =
+											":x: Only Ladysnake community managers can modify settings for other servers."
+									}
+
+									return@action
+								}
 							}
 
-							return@action
-						}
-					}
-
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
-
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.role.guildId != settings._id) {
-						respond {
-							content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.role.id in settings.moderatorRoles) {
-						respond {
-							content = ":x: That role is already marked as a moderator role"
-						}
-
-						return@action
-					}
-
-					settings.moderatorRoles.add(arguments.role.id)
-					settings.save()
-
-					respond {
-						content = "Moderator role added: ${arguments.role.mention}"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::RoleServerArg) {
-				name = "remove-moderator-role"
-				description = "Remove a configured moderator role"
-
-				action {
-					val context = CheckContext(event, getLocale())
-
-					if (arguments.serverId != null) {
-						context.hasPermissionInMainGuild(Permission.Administrator)
-
-						if (!context.passed) {
-							respond {
-								content = ":x: Only Quilt community managers can modify settings for other servers."
+							val settings = if (arguments.serverId == null) {
+								serverSettings.get(guild!!.id)
+							} else {
+								serverSettings.get(arguments.serverId!!)
 							}
 
-							return@action
-						}
-					}
+							if (settings == null) {
+								respond {
+									content = ":x: Unknown guild ID: `${arguments.serverId}`"
+								}
 
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
-
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.role.guildId != settings._id) {
-						respond {
-							content = ":x: That role doesn't belong to the guild with ID: `${settings._id}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.role.id !in settings.moderatorRoles) {
-						respond {
-							content = ":x: That role is not marked as a moderator role"
-						}
-
-						return@action
-					}
-
-					settings.moderatorRoles.remove(arguments.role.id)
-					settings.save()
-
-					respond {
-						content = "Moderator role removed: ${arguments.role.mention}"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::TopMessageChannelGuildArg) {
-				name = "application-log-channel"
-				description = "Configure the channel Cozy should send server applications messages to"
-
-				action {
-					val context = CheckContext(event, getLocale())
-
-					if (arguments.serverId != null) {
-						context.hasPermissionInMainGuild(Permission.Administrator)
-
-						if (!context.passed) {
-							respond {
-								content = ":x: Only Quilt community managers can modify settings for other servers."
+								return@action
 							}
 
-							return@action
-						}
-					}
+							if (arguments.channel == null) {
+								respond {
+									content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel}>"
+								}
 
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
-
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.channel == null) {
-						respond {
-							content = "**Current application logging channel:** " +
-									"<#${settings.applicationLogChannel}>"
-						}
-
-						return@action
-					}
-
-					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-					if (channel.guildId != settings._id) {
-						respond {
-							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
-						}
-
-						return@action
-					}
-
-					settings.applicationLogChannel = channel.id
-					settings.save()
-
-					respond {
-						content = "**Application logging channel set:** ${channel.mention}"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::TopMessageChannelGuildArg) {
-				name = "application-threads-channel"
-				description = "Configure the channel Cozy should create server application threads within"
-
-				action {
-					val context = CheckContext(event, getLocale())
-
-					if (arguments.serverId != null) {
-						context.hasPermissionInMainGuild(Permission.Administrator)
-
-						if (!context.passed) {
-							respond {
-								content = ":x: Only Quilt community managers can modify settings for other servers."
+								return@action
 							}
 
-							return@action
+							val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
+
+							if (channel.guildId != settings._id) {
+								respond {
+									content =
+										":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
+								}
+
+								return@action
+							}
+
+							settings.cozyLogChannel = channel.id
+							settings.save()
+
+							respond {
+								content = "**Cozy logging channel set:** ${channel.mention}"
+							}
 						}
 					}
-
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
-
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
-						}
-
-						return@action
-					}
-
-					if (arguments.channel == null) {
-						respond {
-							content = "**Current application threads channel:** " +
-									"<#${settings.applicationThreadsChannel}>"
-						}
-
-						return@action
-					}
-
-					val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-					if (channel.guildId != settings._id) {
-						respond {
-							content = ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
-						}
-
-						return@action
-					}
-
-					settings.applicationThreadsChannel = channel.id
-					settings.save()
-
-					respond {
-						content = "**Application threads channel set:** ${channel.mention}"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::TopMessageChannelGuildArg) {
-				name = "cozy-log-channel"
-				description = "Configure the channel Cozy should send log messages to"
-
-                    action {
-                        val context = CheckContext(event, getLocale())
-
-                        if (arguments.serverId != null) {
-                            with(context) {
-                                any(
-                                    { hasPermissionInMainGuild(Permission.Administrator) },
-                                    { failIfNot { event.interaction.user.id in OVERRIDING_USERS } }
-                                )
-                            }
-
-                            if (!context.passed) {
-                                respond {
-                                    content =
-                                        ":x: Only Ladysnake community managers can modify settings for other servers."
-                                }
-
-                                return@action
-                            }
-                        }
-
-                        val settings = if (arguments.serverId == null) {
-                            serverSettings.get(guild!!.id)
-                        } else {
-                            serverSettings.get(arguments.serverId!!)
-                        }
-
-                        if (settings == null) {
-                            respond {
-                                content = ":x: Unknown guild ID: `${arguments.serverId}`"
-                            }
-
-                            return@action
-                        }
-
-                        if (arguments.channel == null) {
-                            respond {
-                                content = "**Current Cozy logging channel:** <#${settings.cozyLogChannel}>"
-                            }
-
-                            return@action
-                        }
-
-                        val channel = event.kord.getChannelOf<TopGuildMessageChannel>(arguments.channel!!.id)!!
-
-                        if (channel.guildId != settings._id) {
-                            respond {
-                                content =
-                                    ":x: That channel doesn't belong to the guild with ID: `${settings._id}`"
-                            }
-
-                            return@action
-                        }
-
-                        settings.cozyLogChannel = channel.id
-                        settings.save()
-
-                        respond {
-                            content = "**Cozy logging channel set:** ${channel.mention}"
-                        }
-                    }
-                }
 
                 ephemeralSubCommand(::TopMessageChannelGuildArg) {
                     name = "filter-log-channel"
@@ -1098,39 +1094,39 @@ class SettingsExtension : Extension() {
 				}
 			}
 
-			ephemeralSubCommand(::SingleRoleArg) {
-				name = "verification-role"
-				description = "For Quilt servers: Set (or clear) the verification role"
+				ephemeralSubCommand(::SingleRoleArg) {
+					name = "verification-role"
+					description = "For Quilt servers: Set (or clear) the verification role"
 
-				check { hasPermissionInMainGuild(Permission.Administrator) }
+					check { hasPermissionInMainGuild(Permission.Administrator) }
 
-				action {
-					val settings = if (arguments.serverId == null) {
-						serverSettings.get(guild!!.id)
-					} else {
-						serverSettings.get(arguments.serverId!!)
-					}
-
-					if (settings == null) {
-						respond {
-							content = ":x: Unknown guild ID: `${arguments.serverId}`"
+					action {
+						val settings = if (arguments.serverId == null) {
+							serverSettings.get(guild!!.id)
+						} else {
+							serverSettings.get(arguments.serverId!!)
 						}
 
-						return@action
+						if (settings == null) {
+							respond {
+								content = ":x: Unknown guild ID: `${arguments.serverId}`"
+							}
+
+							return@action
+						}
+
+						settings.verificationRole = arguments.role?.id
+						settings.save()
+
+						respond {
+							content = if (settings.verificationRole == null) {
+								"**Verification role unset**"
+							} else {
+								"**Verification role set:** <@&${settings.verificationRole}>"
+								}
+							}
+						}
 					}
-
-					settings.verificationRole = arguments.role?.id
-					settings.save()
-
-					respond {
-						content = if (settings.verificationRole == null) {
-							"**Verification role unset**"
-						} else {
-							"**Verification role set:** <@&${settings.verificationRole}>"
-                            }
-                        }
-                    }
-                }
 
                 ephemeralSubCommand(::ShouldLeaveArg) {
                     name = "set-leave-server"

@@ -44,6 +44,8 @@ data class ServerSettings(
 	var leaveServer: Boolean = false,
 	val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
 	var defaultThreadLength: ArchiveDuration? = null,
+
+	val pingTimeoutBlacklist: MutableSet<Snowflake> = mutableSetOf(),
 ) : Entity<Snowflake> {
 	suspend fun save() {
 		val collection = getKoin().get<ServerSettingsCollection>()

@@ -312,4 +312,13 @@ object AllMigrations {
 				}
 			}
 	}
+
+	suspend fun v26(db: CoroutineDatabase) {
+		db.getCollection<ServerSettings>(ServerSettingsCollection.name).updateMany(
+			ServerSettings::pingTimeoutBlacklist exists false,
+			setValue(ServerSettings::pingTimeoutBlacklist, mutableSetOf())
+		)
+
+		db.createCollection(PingGroupCollection.name)
+	}
 }

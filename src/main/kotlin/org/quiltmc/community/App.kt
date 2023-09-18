@@ -25,6 +25,7 @@ import com.kotlindiscord.kord.extensions.utils.getKoin
 import dev.kord.core.entity.Guild
 import dev.kord.core.event.interaction.ChatInputCommandInteractionCreateEvent
 import dev.kord.core.event.interaction.GuildChatInputCommandInteractionCreateEvent
+import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.create.embed
@@ -66,7 +67,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	}
 
 	intents {
-		+Intents.all
+		+Intents.ALL
 	}
 
 	members {

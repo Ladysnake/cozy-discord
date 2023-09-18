@@ -16,6 +16,7 @@ import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.*
+import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
@@ -23,6 +24,8 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.components.ComponentContainer
 import com.kotlindiscord.kord.extensions.components.components
 import com.kotlindiscord.kord.extensions.components.ephemeralButton
+import com.kotlindiscord.kord.extensions.components.ephemeralStringSelectMenu
+import com.kotlindiscord.kord.extensions.components.forms.ModalForm
 import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.time.TimestampType
@@ -39,6 +42,7 @@ import dev.kord.core.behavior.channel.threads.edit
 import dev.kord.core.behavior.createRole
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
+import dev.kord.core.entity.channel.MessageChannel
 import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.thread.ThreadChannel
 import dev.kord.core.event.channel.thread.TextChannelThreadCreateEvent
@@ -61,11 +65,9 @@ import kotlinx.serialization.json.Json
 import org.koin.core.component.inject
 import org.quiltmc.community.*
 import org.quiltmc.community.cozy.modules.moderation.compareTo
-import org.quiltmc.community.database.collections.GlobalSettingsCollection
-import org.quiltmc.community.database.collections.OwnedThreadCollection
-import org.quiltmc.community.database.collections.SuggestionsCollection
-import org.quiltmc.community.database.collections.UserFlagsCollection
+import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.OwnedThread
+import org.quiltmc.community.database.entities.PingGroup
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
@@ -108,8 +110,9 @@ class UtilityExtension : Extension() {
 		MANAGER_ROLES,
 		MODERATOR_ROLES
 	).flatten()
-	private val threads: OwnedThreadCollection by inject()
 
+	private val pingGroups: PingGroupCollection by inject()
+	private val threads: OwnedThreadCollection by inject()
 	private val userFlags: UserFlagsCollection by inject()
 
 	private val suggestionsExtension: SuggestionsExtension? = bot.findExtension()
@@ -1434,6 +1437,184 @@ class UtilityExtension : Extension() {
                     }
                 }
             }
+
+			ephemeralUserCommand {
+				name = "Manage Ping Groups"
+
+				allowInDms = false
+
+				guild(guildId)
+
+				check {
+					any(
+						{ hasBaseModeratorRole() },
+						{ failIf(event.interaction.user.id != event.interaction.targetId) }
+					)
+				}
+
+				action {
+					val checks = CheckContext(event, getLocale())
+					checks.hasBaseModeratorRole()
+					val allowAny = checks.passed
+
+					val userId = event.interaction.targetId
+
+					val selectable = pingGroups.getAll(guildId, allowAny).toSet()
+					val removable = pingGroups.getByUser(guildId, userId).toSet()
+
+					val groups = selectable + removable
+
+					if (groups.isEmpty()) {
+						respond {
+							content = "**Error:** There are no ping groups that you can add or remove."
+						}
+						return@action
+					}
+
+					respond {
+						content = "Please select the ping groups you'd like to be subscribed to. " +
+								"If you'd like to unsubscribe from a group, simply unselect it."
+
+						components {
+							ephemeralStringSelectMenu {
+								placeholder = "Ping Groups"
+
+								minimumChoices = 0
+								maximumChoices = null // no limit
+
+								for (group in groups.sortedBy { it.name }) {
+									option(group.name, group._id) {
+										group.emoji?.takeUnless { it.isBlank() }?.toReaction()?.let(::emoji)
+										description = group.desc
+										default = group in removable
+									}
+								}
+
+								action {
+									val values = event.interaction.values.toSet()
+									val selected = selectable.filter { it._id in values }
+									val removed = removable.filter { it._id !in values }
+
+									for (group in selected) {
+										group.users.add(userId)
+										pingGroups.set(group)
+									}
+
+									for (group in removed) {
+										group.users.remove(userId)
+										pingGroups.set(group)
+									}
+
+									respond {
+										content = "Ping groups updated."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+
+			ephemeralSlashCommand {
+				name = "ping-groups"
+				description = "Manage ping groups"
+
+				allowInDms = false
+
+				guild(guildId)
+
+				check { hasBaseModeratorRole() }
+
+				ephemeralSubCommand(::PingGroupCreateModal) {
+					name = "create"
+					description = "Create a new ping group"
+
+					guild(guildId)
+
+					check { hasBaseModeratorRole() }
+
+					action {
+						it!!
+
+						val newGroup = PingGroup(
+							guildId = guildId,
+							_id = it.groupId.value!!,
+							name = it.name.value!!,
+							canSelfSubscribe = it.allowAnyone.value.toBoolean(),
+							desc = it.desc.value,
+							emoji = it.emoji.value
+						)
+
+						pingGroups.set(newGroup)
+
+						respond {
+							content = "Ping group created."
+						}
+					}
+				}
+
+				ephemeralSubCommand(::PingGroupDeleteArguments) {
+					name = "delete"
+					description = "Delete a ping group"
+
+					guild(guildId)
+
+					check { hasBaseModeratorRole() }
+
+					action {
+						val result = pingGroups.delete(arguments.id)
+
+						if (result.deletedCount != 0L) {
+							respond {
+								content = "Ping group deleted."
+							}
+						} else {
+							respond {
+								content = "**Error:** Ping group not found."
+							}
+						}
+					}
+				}
+
+				ephemeralSubCommand(::PingGroupPingArguments) {
+					// the real meat and potatoes
+					name = "ping"
+					description = "Ping a ping group"
+
+					guild(guildId)
+
+					check { hasBaseModeratorRole() }
+
+					action {
+						val group = pingGroups.get(arguments.id) ?: run {
+							respond {
+								content = "**Error:** Ping group not found."
+							}
+							return@action
+						}
+
+						val message = arguments.message ?: "Ping to group '${group.name}' from ${user.mention}"
+						val channel = arguments.channel?.asChannelOfOrNull<MessageChannel>() ?: channel.asChannel()
+
+						val fullMessage = buildString {
+							append(message)
+							append(" (")
+							for (user in group.users) {
+								if (length > 0) append(", ")
+								append("<@")
+								append(user)
+								append(">")
+							}
+							append(")")
+						}
+						channel.createMessage(fullMessage)
+
+						respond {
+							content = "Ping sent."
+						}
+					}
+				}
+			}
         }
 
         event<MessageCreateEvent> {
@@ -1817,6 +1998,83 @@ class UtilityExtension : Extension() {
         val guild by guild {
             name = "guild"
             description = "Guild to use. To specify this guild, use its ID."
+		}
+	}
+
+	inner class PingGroupPingArguments : Arguments() {
+		val id by string {
+			name = "id"
+			description = "ID of the ping group to ping"
+
+			autoComplete { event ->
+				val groups = pingGroups.getAll(event.interaction.getChannel().asChannelOf<GuildMessageChannel>().guildId, true)
+				suggestStringMap(groups.associate { it.name to it._id })
+			}
+		}
+
+		val message by optionalString {
+			name = "message"
+			description = "Message to send to the ping group"
+
+			mutate {
+				it?.trim()
+			}
+		}
+
+		val channel by optionalChannel {
+			name = "channel"
+			description = "Channel to send the message in, if not the current one"
+		}
+	}
+
+	inner class PingGroupDeleteArguments : Arguments() {
+		val id by string {
+			name = "id"
+			description = "ID of the ping group to delete"
+
+			autoComplete { event ->
+				val groups = pingGroups.getAll(event.interaction.getChannel().asChannelOf<GuildMessageChannel>().guildId, true)
+				suggestStringMap(groups.associate { it.name to it._id })
+			}
+		}
+	}
+
+	inner class PingGroupCreateModal : ModalForm() {
+		override var title = "Create Ping Group"
+
+		val groupId = lineText {
+			label = "ID used to refer to the ping group"
+			placeholder = "cool-group"
+			maxLength = 100
+			required = true
+		}
+
+		val name = lineText {
+			label = "Name of the ping group"
+			placeholder = "Cool Group"
+			maxLength = 100
+			required = true
+		}
+
+		val desc = lineText {
+			label = "Description of the ping group"
+			placeholder = "A cool group for cool people"
+			maxLength = 100
+			required = false
+		}
+
+		val emoji = lineText {
+			label = "Emoji to use for the ping group"
+			placeholder = "👍"
+			maxLength = 100
+			required = false
+		}
+
+		val allowAnyone = lineText {
+			label = "Allow anyone to subscribe? (true/false)"
+			placeholder = "false by default"
+			maxLength = 5
+			required = false
 		}
 	}
 }

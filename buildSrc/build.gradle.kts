@@ -20,6 +20,7 @@ val versions = versionFileContents
 	.filter { it.isNotBlank() }
 	.map { it.trim() }
 	.map { it.split("=") }
+	.filter { it.size == 2 }
 	.associate { (k, v) -> k.trim() to v.substringAfter('"').substringBefore('"') }
 
 repositories {

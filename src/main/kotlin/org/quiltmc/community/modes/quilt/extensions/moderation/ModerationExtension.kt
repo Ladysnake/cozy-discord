@@ -62,6 +62,7 @@ import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.entities.InvalidMention.Type.ROLE
 import org.quiltmc.community.database.entities.InvalidMention.Type.USER
 import org.quiltmc.community.database.entities.UserRestrictions
+import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.days
@@ -218,6 +219,14 @@ class ModerationExtension(
 				check { failIf(event.message.author?.isBot == true) }
 				check { failIf(event.guildId == null) }
 				check { notHasBaseModeratorRole() }
+				check {
+					failIf(
+						event.getGuildOrNull()
+							?.getSettings()
+							?.pingTimeoutBlacklist
+							?.contains(event.message.data.authorId) == true
+					)
+				}
 
 				action {
 					val guild = event.guildId!!
@@ -384,6 +393,42 @@ class ModerationExtension(
 
 						respond {
 							content = "Mention exception list for ${arguments.mentionable.mention} has been updated."
+						}
+					}
+				}
+
+				ephemeralSubCommand<RequiredUser>({ RequiredUser("The user to blacklist") }) {
+					check { hasBaseModeratorRole() }
+
+					name = "allow-massping"
+					description = "Blacklist a user from ping timeouts, allowing them to ping as many people as they want."
+
+					action {
+						val settings = guild?.getSettings() ?: return@action
+
+						settings.pingTimeoutBlacklist.add(arguments.user.id)
+						settings.save()
+
+						respond {
+							content = "User ${arguments.user.mention} has been blacklisted from ping timeouts."
+						}
+					}
+				}
+
+				ephemeralSubCommand<RequiredUser>({ RequiredUser("The user to remove from the blacklist") }) {
+					check { hasBaseModeratorRole() }
+
+					name = "disallow-massping"
+					description = "Remove a user from the ping timeout blacklist."
+
+					action {
+						val settings = guild?.getSettings() ?: return@action
+
+						settings.pingTimeoutBlacklist.remove(arguments.user.id)
+						settings.save()
+
+						respond {
+							content = "User ${arguments.user.mention} has been removed from the ping timeout blacklist."
 						}
 					}
 				}

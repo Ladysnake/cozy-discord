@@ -80,7 +80,6 @@ tasks {
 		withType<KotlinCompile>().configureEach {
 			kotlinOptions {
 				jvmTarget = "17"
-				freeCompilerArgs += "-opt-in=kotlin.RequiresOptIn"
 			}
 		}
 

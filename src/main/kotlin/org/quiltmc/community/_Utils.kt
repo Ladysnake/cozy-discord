@@ -169,6 +169,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
                 single { TagsCollection() } bind TagsCollection::class
                 single { WelcomeChannelCollection() } bind WelcomeChannelCollection::class
                 single { QuoteCollection() } bind QuoteCollection::class
+				single { PingGroupCollection() } bind PingGroupCollection::class
             }
 
 			if (migrate) {

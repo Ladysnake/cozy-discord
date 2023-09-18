@@ -1599,12 +1599,17 @@ class UtilityExtension : Extension() {
 						val fullMessage = buildString {
 							append(message)
 							append(" (")
+
+							var first = true
 							for (user in group.users) {
-								if (length > 0) append(", ")
+								if (!first) append(", ")
+								first = false
+
 								append("<@")
 								append(user)
 								append(">")
 							}
+
 							append(")")
 						}
 						channel.createMessage(fullMessage)

@@ -269,7 +269,7 @@ suspend fun Guild.getFilterLogChannel(): GuildMessageChannel? {
 suspend fun EmbedBuilder.userField(user: UserBehavior, role: String? = null, inline: Boolean = false) {
 	field {
 		name = role ?: "User"
-		value = "${user.mention} (`${user.id}` / `${user.asUser().tag}`)"
+		value = "${user.mention} (`${user.id}` / `${user.asUser().identifier}`)"
 
 		this.inline = inline
 	}
@@ -284,7 +284,7 @@ fun EmbedBuilder.channelField(channel: MessageChannelBehavior, title: String, in
 	}
 }
 
-suspend inline fun UserBehavior.softMention() = "@${asUser().tag}"
+suspend inline fun UserBehavior.softMention() = asUser().identifier
 
 suspend inline fun Snowflake.asGuild(): Guild? = getKoin().get<Kord>().getGuildOrNull(this)
 

@@ -19,6 +19,8 @@ import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.entity.KordEntity
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.interaction.AutoCompleteInteraction
+import org.quiltmc.community.modes.quilt.extensions.TEXT_CHANNEL_TYPES
+import org.quiltmc.community.modes.quilt.extensions.THREAD_CHANNEL_TYPES
 import org.quiltmc.community.modes.quilt.extensions.converters.mentionable
 
 // This is just to clean up ModerationExtension.kt a bit more.
@@ -53,6 +55,13 @@ class PurgeArguments : Arguments(), ChannelTargetArguments {
 	override val channel by optionalChannel {
         name = "channel"
         description = "The channel to purge messages from (current if omitted)"
+
+		validate {
+			failIf(
+				value != null && value!!.data.type !in (TEXT_CHANNEL_TYPES + THREAD_CHANNEL_TYPES),
+				"You must select a text channel"
+			)
+		}
 	}
 }
 

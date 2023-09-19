@@ -28,6 +28,7 @@ import com.soywiz.korio.async.toChannel
 import dev.kord.common.entity.*
 import dev.kord.common.entity.optional.optional
 import dev.kord.core.behavior.ban
+import dev.kord.core.behavior.channel.asChannelOf
 import dev.kord.core.behavior.channel.createMessage
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.interaction.modal
@@ -100,18 +101,26 @@ class ModerationExtension(
 				check { hasBaseModeratorRole() }
 
 				action {
-					val channel = arguments.channel ?: channel.asChannel()
+					val channel = (arguments.channel ?: channel).asChannelOf<GuildMessageChannel>()
 					val checkUsers = arguments.user != null
 					// checked in verifier
 					val targetUser = arguments.user as Member?
-					if (channel !is GuildMessageChannel) {
+					val deletedMessageList = mutableListOf<Snowflake>()
+
+					val mostRecentMessage = channel.lastMessage?.fetchMessage()
+					if (mostRecentMessage == null) {
 						respond {
-							content = "This command can only target a text channel, and ${channel.mention} is not one."
+							content = "Channel is empty."
 						}
 						return@action
 					}
-					val deletedMessageList = mutableListOf<Snowflake>()
-					val messages = channel.getMessagesBefore(channel.lastMessage!!.id).toChannel()
+
+					// the most recent message is missed in the loop below, so we add it here
+					if (!checkUsers || mostRecentMessage.author == targetUser) {
+						deletedMessageList.add(mostRecentMessage.id)
+					}
+
+					val messages = channel.getMessagesBefore(channel.lastMessageId!!).toChannel()
 					for (message in messages) {
 						if (message.data.flags.value?.contains(MessageFlag.Ephemeral) == true) {
 							continue // skip ephemeral messages

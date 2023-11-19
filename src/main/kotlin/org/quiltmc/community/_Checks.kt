@@ -174,6 +174,46 @@ suspend fun CheckContext<*>.notHasBaseModeratorRole(includeCommunityManagers: Bo
 	}
 }
 
+suspend fun CheckContext<*>.notExempted() {
+	if (!passed) {
+		return
+	}
+
+	val logger = KotlinLogging.logger("org.quiltmc.community.hasExemption")
+	val member = memberFor(event)?.asMemberOrNull()
+
+	if (member == null) {  // Not on a guild, fail.
+		logger.nullMember(event)
+
+		fail()
+	} else {
+		if (member.id in EXEMPTED_USERS) {
+			logger.failed("Member has an exemption")
+
+			fail("You are exempted from this check.")
+		}
+
+		if (member.roleIds.any { it in EXEMPTED_ROLES }) {
+			logger.failed("Member has an exempted role")
+
+			fail("You are exempted from this check.")
+		}
+
+		val settings = guildFor(event)?.getSettings() ?: return
+		if (member.id in settings.exemptUsers) {
+			logger.failed("Member has an exemption")
+
+			fail("You are exempted from this check.")
+		}
+
+		if (member.roleIds.any { it in settings.exemptRoles }) {
+			logger.failed("Member has an exempted role")
+
+			fail("You are exempted from this check.")
+		}
+	}
+}
+
 suspend fun <T : Event> CheckContext<T>.any(vararg checks: suspend CheckContext<T>.() -> Unit) {
 	if (!passed) {
         return

@@ -140,3 +140,13 @@ internal val SKIPPABLE_HANDLER_CATEGORIES = envOrNull("COMMUNITY_DEV_CATEGORIES"
 internal val SKIPPABLE_HANDLER_IDS = envOrNull("SKIPPABLE_HANDLERS")
 	?.split(",")
 	?: listOf("rule-breaking-mod", "piracy", "problematic-launcher")
+
+internal val EXEMPTED_ROLES = envOrNull("EXEMPTED_ROLES")
+	?.split(",")
+	?.map { Snowflake(it) }
+	?: emptyList()
+
+internal val EXEMPTED_USERS = envOrNull("EXEMPTED_USERS")
+	?.split(",")
+	?.map { Snowflake(it) }
+	?: emptyList()

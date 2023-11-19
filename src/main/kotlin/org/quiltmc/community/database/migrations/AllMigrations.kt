@@ -321,4 +321,18 @@ object AllMigrations {
 
 		db.createCollection(PingGroupCollection.name)
 	}
+
+	suspend fun v27(db: CoroutineDatabase) {
+		with(db.getCollection<ServerSettings>(ServerSettingsCollection.name)) {
+			updateMany(
+				ServerSettings::exemptUsers exists false,
+				setValue(ServerSettings::exemptUsers, mutableSetOf())
+			)
+
+			updateMany(
+				ServerSettings::exemptRoles exists false,
+				setValue(ServerSettings::exemptRoles, mutableSetOf())
+			)
+		}
+	}
 }

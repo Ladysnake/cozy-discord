@@ -157,6 +157,7 @@ class ModerationExtension(
 			event<MessageCreateEvent> {
 				check { isNotBot() } // oh man my bot is going crazy
 				check { notHasBaseModeratorRole() } // mods can spam :pineapple:
+				check { notExempted() }
 
 				action {
 					if (event.member?.roles?.firstOrNull { it.id in MODERATOR_ROLES } != null) {
@@ -228,6 +229,7 @@ class ModerationExtension(
 				check { failIf(event.message.author?.isBot == true) }
 				check { failIf(event.guildId == null) }
 				check { notHasBaseModeratorRole() }
+				check { notExempted() }
 				check {
 					failIf(
 						event.getGuildOrNull()

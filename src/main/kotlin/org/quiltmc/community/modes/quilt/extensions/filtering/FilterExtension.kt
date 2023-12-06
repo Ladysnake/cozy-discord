@@ -27,8 +27,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.types.editingPaginator
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.ban
@@ -42,7 +40,7 @@ import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.core.event.user.UserUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import net.codebox.homoglyph.HomoglyphBuilder

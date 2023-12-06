@@ -30,7 +30,7 @@ import dev.kord.cache.api.query
 import dev.kord.core.cache.data.MessageData
 import dev.kord.core.event.gateway.ConnectEvent
 import dev.kord.core.event.gateway.DisconnectEvent
-import io.sentry.Breadcrumb
+import io.sentry.Sentry.setExtra
 import io.sentry.SentryLevel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.json.*
@@ -58,7 +58,9 @@ class PersistentCacheExtension : Extension() {
         event<DisconnectEvent> {
             action {
                 extension.bot.withLock {
-                    sentry.breadcrumb(Breadcrumb.info("Disconnected - caching messages"))
+                    sentry.breadcrumb(BreadcrumbType.Info) {
+						message = "Disconnected - caching messages"
+					}
                     val cache = event.kord.cache
 
                     val messageData = cache.query<MessageData>()
@@ -84,7 +86,9 @@ class PersistentCacheExtension : Extension() {
         event<ConnectEvent> {
             action {
                 extension.bot.withLock {
-                    sentry.breadcrumb(Breadcrumb.info("Connected - loading messages"))
+                    sentry.breadcrumb(BreadcrumbType.Info) {
+						message = "Connected - loading messages"
+					}
                     try {
                         val cache = event.kord.cache
 
@@ -107,7 +111,7 @@ class PersistentCacheExtension : Extension() {
                     } catch (e: FileNotFoundException) {
                         sentry.breadcrumb(BreadcrumbType.Info) {
                             message = "No messages to load"
-                            data["exception"] = e.message
+                            data["exception"] = e.message ?: "<null>"
                         }
                     }
                 }

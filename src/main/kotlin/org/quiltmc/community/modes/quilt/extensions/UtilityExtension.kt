@@ -19,7 +19,6 @@ import com.kotlindiscord.kord.extensions.checks.*
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
-import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.components.ComponentContainer
 import com.kotlindiscord.kord.extensions.components.components
@@ -30,9 +29,6 @@ import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.i18n.SupportedLocales
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
-import com.kotlindiscord.kord.extensions.types.edit
-import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.types.respondEphemeral
 import com.kotlindiscord.kord.extensions.utils.*
 import com.kotlindiscord.kord.extensions.utils.scheduling.Scheduler
 import dev.kord.common.annotation.KordPreview
@@ -50,8 +46,7 @@ import dev.kord.core.event.channel.thread.ThreadUpdateEvent
 import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
@@ -503,7 +498,7 @@ class UtilityExtension : Extension() {
 
 				check { isInThread() }
 
-				publicSubCommand {
+				ephemeralSubCommand {
 					name = "backup"
 					description = "Get all messages in the current thread, saving them into a Markdown file."
 
@@ -516,7 +511,7 @@ class UtilityExtension : Extension() {
 						val thread = channel.asChannelOfOrNull<ThreadChannel>()
 
 						if (thread == null) {
-							respondEphemeral {
+							respond {
 								content = "**Error:** This channel isn't a thread!"
 							}
 
@@ -527,7 +522,7 @@ class UtilityExtension : Extension() {
 						val formatter = DateTimeFormatter.ofPattern("dd LL, yyyy -  kk:mm:ss")
 
 						if (thread.lastMessageId == null) {
-							respondEphemeral {
+							respond {
 								content = "**Error:** This thread has no messages!"
 							}
 

@@ -15,7 +15,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.optionalInt
 import com.kotlindiscord.kord.extensions.commands.converters.impl.string
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
-import com.kotlindiscord.kord.extensions.types.respond
 import dev.kord.common.Color
 import dev.kord.common.entity.Permission
 import dev.kord.common.entity.Snowflake
@@ -23,7 +22,7 @@ import dev.kord.core.Kord
 import dev.kord.core.behavior.edit
 import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.toInstant
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.OVERRIDING_USERS

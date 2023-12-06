@@ -15,7 +15,6 @@ import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.sentry.BreadcrumbType
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.hasPermission
 import com.kotlindiscord.kord.extensions.utils.selfMember
 import com.kotlindiscord.kord.extensions.utils.timeoutUntil
@@ -31,7 +30,7 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -308,7 +307,7 @@ class SyncExtension : Extension() {
                             if (canSeeAuditLog) {
                                 val actingModerator = guild.getAuditLogEntries {
                                     action = AuditLogEvent.MemberBanAdd
-                                }.first { it.targetId == ban.userId }.userId.asUser()
+                                }.first { it.targetId == ban.userId }.userId?.asUser()
 
                                 val text = when (actingModerator) {
                                     kord.getSelf() -> {
@@ -372,7 +371,7 @@ class SyncExtension : Extension() {
                             if (canSeeAuditLog) {
                                 val actingModerator = guild.getAuditLogEntries {
                                     action = AuditLogEvent.MemberBanRemove
-                                }.first { it.targetId == event.user.id }.userId.asUser()
+                                }.first { it.targetId == event.user.id }.userId?.asUser()
 
                                 field {
                                     name = "Responsible moderator"

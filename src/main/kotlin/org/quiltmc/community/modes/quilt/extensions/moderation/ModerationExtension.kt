@@ -19,7 +19,6 @@ import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.authorId
 import com.kotlindiscord.kord.extensions.utils.dm
 import com.kotlindiscord.kord.extensions.utils.removeTimeout
@@ -43,11 +42,10 @@ import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.core.event.interaction.ModalSubmitInteractionCreateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
+import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.create.UserMessageCreateBuilder
-import dev.kord.rest.builder.message.create.actionRow
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.embed
 import dev.kord.rest.json.request.ChannelModifyPatchRequest
 import dev.kord.rest.request.RestRequestException
 import io.github.oshai.kotlinlogging.KotlinLogging

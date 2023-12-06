@@ -27,8 +27,8 @@ import dev.kord.core.event.guild.GuildCreateEvent
 import dev.kord.core.event.message.MessageBulkDeleteEvent
 import dev.kord.core.event.message.MessageUpdateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*

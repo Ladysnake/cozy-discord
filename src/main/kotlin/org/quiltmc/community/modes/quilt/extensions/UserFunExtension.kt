@@ -14,9 +14,10 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.pagination.MessageButtonPaginator
 import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
-import com.kotlindiscord.kord.extensions.parser.StringParser
-import com.kotlindiscord.kord.extensions.types.respond
-import com.kotlindiscord.kord.extensions.utils.*
+import com.kotlindiscord.kord.extensions.utils.dm
+import com.kotlindiscord.kord.extensions.utils.download
+import com.kotlindiscord.kord.extensions.utils.getKoin
+import com.kotlindiscord.kord.extensions.utils.suggestIntMap
 import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
@@ -33,26 +34,21 @@ import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
-import dev.kord.rest.builder.message.create.actionRow
-import dev.kord.rest.builder.message.create.allowedMentions
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.actionRow
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.allowedMentions
+import dev.kord.rest.builder.message.embed
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
-import kotlinx.datetime.Clock
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.LotteryCollection
 import org.quiltmc.community.database.collections.QuoteCollection
 import org.quiltmc.community.database.entities.Lottery
 import org.quiltmc.community.hasBaseModeratorRole
 import org.quiltmc.community.inLadysnakeGuild
-import org.quiltmc.community.isAdminOrHasOverride
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import java.io.ByteArrayInputStream
-import kotlin.time.Duration.Companion.minutes
 
 private const val QUOTES_PER_PAGE = 5
 
@@ -64,7 +60,7 @@ private const val QUOTES_PER_PAGE = 5
 class UserFunExtension : Extension() {
 	override val name = "user-fun"
 
-	private var currentAssignable: AssignablesBuilder? = null
+//	private var currentAssignable: AssignablesBuilder? = null
 
 	private val lotteryCollection: LotteryCollection by inject()
 
@@ -73,194 +69,196 @@ class UserFunExtension : Extension() {
 	override suspend fun setup() {
 		// region: User role assignment
 
-		ephemeralSlashCommand {
-			name = "assignables"
-			description = "Create a message to allow users to self-assign roles"
+		// Removed, cozy's welcome module does what's needed
 
-			ephemeralSubCommand {
-				name = "start"
-				description = "Start creating a new role selector"
+//		ephemeralSlashCommand {
+//			name = "assignables"
+//			description = "Create a message to allow users to self-assign roles"
+//
+//			ephemeralSubCommand {
+//				name = "start"
+//				description = "Start creating a new role selector"
+//
+//				check { isAdminOrHasOverride() }
+//
+//				action {
+//					if (currentAssignable != null && Clock.System.now() - currentAssignable!!.lastChange < 2.minutes) {
+//						respond {
+//							content = "There is already an assignable running!"
+//						}
+//						return@action
+//					} else {
+//						currentAssignable = AssignablesBuilder(user.id)
+//						respond {
+//							content = "Creating assignable; please continue with the other `/assignables` commands"
+//						}
+//					}
+//				}
+//			}
+//
+//			ephemeralSubCommand {
+//				name = "cancel"
+//				description = "Cancel the current assignable"
+//
+//				check { isAdminOrHasOverride() }
+//
+//				action {
+//					if (currentAssignable == null) {
+//						respond {
+//							content = "There is no assignable running!"
+//						}
+//						return@action
+//					}
+//
+//					val timeSinceLastChange = Clock.System.now() - currentAssignable!!.lastChange
+//
+//					if (currentAssignable!!.owner != user.id && timeSinceLastChange < 2.minutes) {
+//						respond {
+//							content = "You can only cancel your own assignable!"
+//						}
+//						return@action
+//					}
+//
+//					currentAssignable = null
+//
+//					respond {
+//						content = "Assignable cancelled"
+//					}
+//				}
+//			}
+//
+//			ephemeralSubCommand(::AssignableComplete) {
+//				name = "finish"
+//				description = "Finish the assignable and send the message"
+//
+//				check { isAdminOrHasOverride() }
+//
+//				action {
+//					val outputChannel = arguments.channel.asChannelOf<GuildMessageChannel>()
+//
+//					if (currentAssignable == null) {
+//						respond {
+//							content = "There is no assignable running!"
+//						}
+//						return@action
+//					}
+//
+//					if (currentAssignable!!.owner != user.id) {
+//						respond {
+//							content = "You can only finish your own assignable!"
+//						}
+//						return@action
+//					}
+//
+//					currentAssignable!!.build(outputChannel)
+//
+//					currentAssignable = null
+//
+//					respond {
+//						content = "Assignable finished"
+//					}
+//				}
+//			}
+//
+//			ephemeralSubCommand(::AssignableAdd) {
+//				name = "add"
+//				description = "Add a role to the assignable"
+//
+//				check { isAdminOrHasOverride() }
+//
+//				action {
+//					if (currentAssignable == null) {
+//						respond {
+//							content = "There is no assignable running!"
+//						}
+//						return@action
+//					}
+//
+//					if (currentAssignable!!.owner != user.id) {
+//						respond {
+//							content = "You can only add roles to your own assignable!"
+//						}
+//						return@action
+//					}
+//
+//					val role = arguments.role
+//					val emojiString = arguments.emoji
+//
+//					val emoji = if (emojiString?.matches(Regex("""^[Uu]\+[0-9a-fA-F]{4,5}$""")) == true) {
+//						// get the unicode equivalent but parsing is hard
+//						@Suppress("MagicNumber")
+//						val unicode = emojiString.substring(2).toInt(16)
+//						String(Character.toChars(unicode)).toReaction()
+//					} else {
+//						// using kordex emoji converter is a lot easier than writing equivalent code
+//						val converter = EmojiConverter()
+//						if (converter.parse(StringParser(""), this, emojiString)) {
+//							ReactionEmoji.from(converter.parsed)
+//						} else {
+//							null
+//						}
+//					}
+//
+//					val assignable = AssignablesBuilder.Assignable(role, emoji)
+//					currentAssignable!!.assignables.add(assignable)
+//					currentAssignable!!.lastChange = Clock.System.now()
+//
+//					respond {
+//						content = "Added role ${role.mention} with emoji ${emoji?.mention}"
+//					}
+//				}
+//			}
+//		}
 
-				check { isAdminOrHasOverride() }
-
-				action {
-					if (currentAssignable != null && Clock.System.now() - currentAssignable!!.lastChange < 2.minutes) {
-						respond {
-							content = "There is already an assignable running!"
-						}
-						return@action
-					} else {
-						currentAssignable = AssignablesBuilder(user.id)
-						respond {
-							content = "Creating assignable; please continue with the other `/assignables` commands"
-						}
-					}
-				}
-			}
-
-			ephemeralSubCommand {
-				name = "cancel"
-				description = "Cancel the current assignable"
-
-				check { isAdminOrHasOverride() }
-
-				action {
-					if (currentAssignable == null) {
-						respond {
-							content = "There is no assignable running!"
-						}
-						return@action
-					}
-
-					val timeSinceLastChange = Clock.System.now() - currentAssignable!!.lastChange
-
-					if (currentAssignable!!.owner != user.id && timeSinceLastChange < 2.minutes) {
-						respond {
-							content = "You can only cancel your own assignable!"
-						}
-						return@action
-					}
-
-					currentAssignable = null
-
-					respond {
-						content = "Assignable cancelled"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::AssignableComplete) {
-				name = "finish"
-				description = "Finish the assignable and send the message"
-
-				check { isAdminOrHasOverride() }
-
-				action {
-					val outputChannel = arguments.channel.asChannelOf<GuildMessageChannel>()
-
-					if (currentAssignable == null) {
-						respond {
-							content = "There is no assignable running!"
-						}
-						return@action
-					}
-
-					if (currentAssignable!!.owner != user.id) {
-						respond {
-							content = "You can only finish your own assignable!"
-						}
-						return@action
-					}
-
-					currentAssignable!!.build(outputChannel)
-
-					currentAssignable = null
-
-					respond {
-						content = "Assignable finished"
-					}
-				}
-			}
-
-			ephemeralSubCommand(::AssignableAdd) {
-				name = "add"
-				description = "Add a role to the assignable"
-
-				check { isAdminOrHasOverride() }
-
-				action {
-					if (currentAssignable == null) {
-						respond {
-							content = "There is no assignable running!"
-						}
-						return@action
-					}
-
-					if (currentAssignable!!.owner != user.id) {
-						respond {
-							content = "You can only add roles to your own assignable!"
-						}
-						return@action
-					}
-
-					val role = arguments.role
-					val emojiString = arguments.emoji
-
-					val emoji = if (emojiString?.matches(Regex("""^[Uu]\+[0-9a-fA-F]{4,5}$""")) == true) {
-						// get the unicode equivalent but parsing is hard
-						@Suppress("MagicNumber")
-						val unicode = emojiString.substring(2).toInt(16)
-						ReactionEmoji.Unicode(String(Character.toChars(unicode)))
-					} else {
-						// using kordex emoji converter is a lot easier than writing equivalent code
-						val converter = EmojiConverter()
-						if (converter.parse(StringParser(""), this, emojiString)) {
-							converter.parsed.toReaction()
-						} else {
-							null
-						}
-					}
-
-					val assignable = AssignablesBuilder.Assignable(role, emoji)
-					currentAssignable!!.assignables.add(assignable)
-					currentAssignable!!.lastChange = Clock.System.now()
-
-					respond {
-						content = "Added role ${role.mention} with emoji ${emoji?.mention}"
-					}
-				}
-			}
-		}
-
-		event<ButtonInteractionCreateEvent> {
-			action {
-				val buttonId = event.interaction.component.customId?.split(':') ?: return@action
-				@Suppress("MagicNumber") // but it is right: 3 is a magic number, yes it is, it's a magic number
-				if (buttonId.size != 3 || buttonId[0] != "assignables") {
-					// somewhere in the ancient mystic trinity
-					// you get 3, that's a magic number
-					// the past and the present and the future
-					// faith and hope and charity
-					// the heart and the brain and the body
-					// give you 3, that's a magic number
-
-					// it takes 3 legs to make a tripod or to make a table stand
-					// it takes 3 wheels to make a vehicle called a tricycle
-					// every triangle has 3 corners, every triangle has 3 sides
-					// no more, no less
-					// you don't have to guess
-					// when it's 3, you can see it's a magic number
-
-					// a man and a woman had a little baby
-					// yes they did, they had 3 in the family
-					// and that's a magic number
-
-					return@action
-				}
-
-				val (_, id, roleId) = buttonId
-
-				if (id != "assign-role") {
-					return@action
-				}
-
-				val guild = kord.getGuildOrNull(event.interaction.data.guildId.value!!)!!
-				val member = guild.getMember(event.interaction.user.id)
-				val role = Snowflake(roleId)
-
-				if (role in member.roleIds) {
-					member.removeRole(role, "User removed role via assignable")
-					event.interaction.respondEphemeral {
-						content = "Removed role ${guild.getRole(role).name}"
-					}
-				} else {
-					member.addRole(role, "User added role via assignable")
-					event.interaction.respondEphemeral {
-						content = "Added role ${guild.getRole(role).name}"
-					}
-				}
-			}
-		}
+//		event<ButtonInteractionCreateEvent> {
+//			action {
+//				val buttonId = event.interaction.component.customId?.split(':') ?: return@action
+//				@Suppress("MagicNumber") // but it is right: 3 is a magic number, yes it is, it's a magic number
+//				if (buttonId.size != 3 || buttonId[0] != "assignables") {
+//					// somewhere in the ancient mystic trinity
+//					// you get 3, that's a magic number
+//					// the past and the present and the future
+//					// faith and hope and charity
+//					// the heart and the brain and the body
+//					// give you 3, that's a magic number
+//
+//					// it takes 3 legs to make a tripod or to make a table stand
+//					// it takes 3 wheels to make a vehicle called a tricycle
+//					// every triangle has 3 corners, every triangle has 3 sides
+//					// no more, no less
+//					// you don't have to guess
+//					// when it's 3, you can see it's a magic number
+//
+//					// a man and a woman had a little baby
+//					// yes they did, they had 3 in the family
+//					// and that's a magic number
+//
+//					return@action
+//				}
+//
+//				val (_, id, roleId) = buttonId
+//
+//				if (id != "assign-role") {
+//					return@action
+//				}
+//
+//				val guild = kord.getGuildOrNull(event.interaction.data.guildId.value!!)!!
+//				val member = guild.getMember(event.interaction.user.id)
+//				val role = Snowflake(roleId)
+//
+//				if (role in member.roleIds) {
+//					member.removeRole(role, "User removed role via assignable")
+//					event.interaction.respondEphemeral {
+//						content = "Removed role ${guild.getRole(role).name}"
+//					}
+//				} else {
+//					member.addRole(role, "User added role via assignable")
+//					event.interaction.respondEphemeral {
+//						content = "Added role ${guild.getRole(role).name}"
+//					}
+//				}
+//			}
+//		}
 
 		// endregion
 

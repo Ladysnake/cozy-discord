@@ -20,8 +20,6 @@ import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
-import com.kotlindiscord.kord.extensions.types.edit
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.suggestStringMap
 import dev.kord.common.entity.ArchiveDuration
 import dev.kord.common.entity.Permission
@@ -31,7 +29,7 @@ import dev.kord.core.entity.channel.Category
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.guild.GuildCreateEvent
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

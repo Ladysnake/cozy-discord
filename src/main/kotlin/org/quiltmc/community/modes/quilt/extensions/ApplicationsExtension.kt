@@ -20,8 +20,6 @@ import com.kotlindiscord.kord.extensions.events.extra.models.GuildJoinRequestRes
 import com.kotlindiscord.kord.extensions.extensions.*
 import com.kotlindiscord.kord.extensions.time.TimestampType
 import com.kotlindiscord.kord.extensions.time.toDiscord
-import com.kotlindiscord.kord.extensions.types.editingPaginator
-import com.kotlindiscord.kord.extensions.types.respond
 import com.kotlindiscord.kord.extensions.utils.*
 import dev.kord.common.Color
 import dev.kord.common.entity.ButtonStyle
@@ -39,10 +37,8 @@ import dev.kord.core.entity.channel.TextChannel
 import dev.kord.core.entity.channel.TopGuildMessageChannel
 import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
 import dev.kord.rest.builder.message.EmbedBuilder
-import dev.kord.rest.builder.message.create.actionRow
-import dev.kord.rest.builder.message.create.embed
-import dev.kord.rest.builder.message.modify.actionRow
-import dev.kord.rest.builder.message.modify.embed
+import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter

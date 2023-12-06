@@ -186,7 +186,7 @@ suspend fun ExtensibleBotBuilder.common() {
 
 	applicationCommands {
 		// Need to disable this due to the slash command perms experiment
-		syncPermissions = false
+//		syncPermissions = false
 	}
 
 	extensions {

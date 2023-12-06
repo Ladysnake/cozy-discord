@@ -25,7 +25,7 @@ import dev.kord.core.event.role.RoleCreateEvent
 import dev.kord.core.event.role.RoleDeleteEvent
 import dev.kord.core.event.role.RoleUpdateEvent
 import dev.kord.rest.Image
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.embed
 import dev.kord.rest.request.RestRequestException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.map

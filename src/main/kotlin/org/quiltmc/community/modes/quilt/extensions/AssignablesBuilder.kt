@@ -13,8 +13,8 @@ import dev.kord.core.builder.components.emoji
 import dev.kord.core.entity.ReactionEmoji
 import dev.kord.core.entity.Role
 import dev.kord.core.entity.channel.MessageChannel
-import dev.kord.rest.builder.message.create.actionRow
-import dev.kord.rest.builder.message.create.embed
+import dev.kord.rest.builder.message.actionRow
+import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 

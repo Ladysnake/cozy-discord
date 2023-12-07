@@ -196,6 +196,11 @@ suspend fun ExtensibleBotBuilder.common() {
 				enable = true
 				dsn = sentryDsn
 			}
+		} else {
+			sentry {
+				enable = false
+				dsn = "" // why is it like this
+			}
 		}
 
 		help {

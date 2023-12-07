@@ -191,15 +191,18 @@ suspend fun ExtensibleBotBuilder.common() {
 
 	extensions {
 		val sentryDsn = envOrNull("SENTRY_DSN")
-		if (sentryDsn != null) {
-			sentry {
-				enable = true
-				dsn = sentryDsn
-			}
-		} else {
-			sentry {
-				enable = false
-				dsn = "" // why is it like this
+		sentry {
+			enableIfDSN(sentryDsn)
+			setupCallback = {
+				init {
+					dsn = sentryDsn ?: ""
+					isEnabled = sentryDsn != null
+					isDebug = debug
+					dist = distribution
+					environment = this@sentry.environment
+					release = this@sentry.release
+					serverName = this@sentry.serverName
+				}
 			}
 		}
 

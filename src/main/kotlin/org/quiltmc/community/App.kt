@@ -268,7 +268,6 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
 		sentry {
             distribution = "ladysnake"
-            dsn = envOrNull("SENTRY_DSN")
 		}
 	}
 }

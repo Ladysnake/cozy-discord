@@ -29,9 +29,6 @@ import dev.kord.gateway.ALL
 import dev.kord.gateway.Intents
 import dev.kord.gateway.PrivilegedIntent
 import dev.kord.rest.builder.message.embed
-import org.quiltmc.community.cozy.modules.logs.extLogParser
-import org.quiltmc.community.cozy.modules.logs.processors.PiracyProcessor
-import org.quiltmc.community.cozy.modules.logs.processors.ProblematicLauncherProcessor
 import org.quiltmc.community.cozy.modules.tags.TagFormatter
 import org.quiltmc.community.cozy.modules.tags.config.TagsConfig
 import org.quiltmc.community.cozy.modules.tags.tags
@@ -41,8 +38,6 @@ import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
 import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.getSettings
-import org.quiltmc.community.logs.NonQuiltLoaderProcessor
-import org.quiltmc.community.logs.RuleBreakingModProcessor
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
@@ -101,6 +96,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
 		extPluralKit()
 
+		/* temporarily disabled because upstream needs updating
 		extLogParser {
 			// Bundled non-default processors
 			processor(PiracyProcessor())
@@ -158,6 +154,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 //
 //			globalPredicate(::predicate)
 		}
+		 */
 
 		help {
 			enableBundledExtension = true

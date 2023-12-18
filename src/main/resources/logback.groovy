@@ -7,6 +7,7 @@
 import ch.qos.logback.core.ConsoleAppender
 import ch.qos.logback.core.joran.spi.ConsoleTarget
 import org.quiltmc.community.DiscordLogAppender
+import java.util.ArrayList
 
 def environment = System.getenv().getOrDefault("ENVIRONMENT", "prod")
 def logUrl = System.getenv().getOrDefault("DISCORD_LOGGER_URL", null)

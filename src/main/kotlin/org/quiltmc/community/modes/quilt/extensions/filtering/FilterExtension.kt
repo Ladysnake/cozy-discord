@@ -51,6 +51,7 @@ import org.quiltmc.community.database.collections.FilterEventCollection
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.FilterEntry
+import org.quiltmc.community.database.getSettings
 import java.util.*
 import kotlin.time.Duration.Companion.minutes
 
@@ -997,14 +998,16 @@ class FilterExtension : Extension() {
 
 		guild.getFilterLogChannel()?.createMessage {
 			if (pingStaff) {
-				val modRole = when (guild.id) {
-					LADYSNAKE_GUILD -> guild.getRole(LADYSNAKE_MODERATOR_ROLE)
-					YOUTUBE_GUILD -> guild.getRole(YOUTUBE_MODERATOR_ROLE)
+//				val modRole = when (guild.id) {
+//					LADYSNAKE_GUILD -> guild.getRole(LADYSNAKE_MODERATOR_ROLE)
+//					YOUTUBE_GUILD -> guild.getRole(YOUTUBE_MODERATOR_ROLE)
+//
+//					else -> null
+//				}
 
-					else -> null
-				}
+				val modRoles = guild.getSettings()?.moderatorRoles
 
-				content = modRole?.mention
+				content = modRoles?.joinToString(" ") { "<@&${it.value}>" }
 					?: "**Warning:** This filter shouldn't have triggered on this server! This is a bug!"
 			}
 

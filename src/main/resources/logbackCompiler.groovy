@@ -4,6 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+tokensAcceptList = [
+    280, // LEFT_SHIFT
+]
+
 importsAcceptList = [
 	'org.quiltmc.community.DiscordLogAppender',
 

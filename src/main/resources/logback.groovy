@@ -33,7 +33,7 @@ appender("CONSOLE", ConsoleAppender) {
 	target = defaultTarget
 }
 
-def loggers = new ArrayList(["CONSOLE"])
+def loggers = ["CONSOLE"]
 
 if (logUrl != null) {
 	appender("DISCORD_WEBHOOK", DiscordLogAppender) {
@@ -41,7 +41,7 @@ if (logUrl != null) {
 		url = System.getenv("DISCORD_LOGGER_URL")
 	}
 
-	loggers.add("DISCORD_WEBHOOK")
+	loggers << "DISCORD_WEBHOOK"
 }
 
 root(defaultLevel, loggers)

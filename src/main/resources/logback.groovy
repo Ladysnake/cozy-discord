@@ -40,7 +40,7 @@ if (logUrl != null) {
 		url = System.getenv("DISCORD_LOGGER_URL")
 	}
 
-	loggers << "DISCORD_WEBHOOK"
+	loggers.add("DISCORD_WEBHOOK")
 }
 
 root(defaultLevel, loggers)

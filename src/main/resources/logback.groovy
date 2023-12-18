@@ -32,11 +32,15 @@ appender("CONSOLE", ConsoleAppender) {
 	target = defaultTarget
 }
 
+def loggers = ["CONSOLE"]
+
 if (logUrl != null) {
-	appender("DISCORD_ALL", DiscordLogAppender) {
-		level = INFO
+	appender("DISCORD_WEBHOOK", DiscordLogAppender) {
+		level = WARN
 		url = System.getenv("DISCORD_LOGGER_URL")
 	}
+
+	loggers << "DISCORD_WEBHOOK"
 }
 
-root(defaultLevel, ["CONSOLE"])
+root(defaultLevel, loggers)

@@ -30,7 +30,7 @@ class MongoDBDataAdapter : DataAdapter<String>(), KordExKoinComponent {
 
 	private fun StorageUnit<*>.getIdentifier(): String =
 		buildString {
-			append("${storageType.type}/")
+			append("$namespace/${storageType.type}/")
 
 			if (guild != null) append("guild-$guild/")
 			if (channel != null) append("channel-$channel/")

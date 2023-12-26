@@ -47,6 +47,7 @@ import dev.kord.core.event.gateway.ReadyEvent
 import dev.kord.core.event.guild.MemberUpdateEvent
 import dev.kord.core.event.message.MessageCreateEvent
 import dev.kord.rest.builder.message.embed
+import dev.kord.rest.request.RestRequestException
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.request.forms.*
 import io.ktor.utils.io.jvm.javaio.*
@@ -1231,19 +1232,6 @@ class UtilityExtension : Extension() {
 						reason = "Server locked down by ${user.asUser().tag}"
 					}
 
-					moderatorRoles.forEach {
-						it.edit {
-							permissions = it.permissions
-								.plus(Permission.AddReactions)
-								.plus(Permission.CreatePrivateThreads)
-								.plus(Permission.CreatePublicThreads)
-								.plus(Permission.SendMessages)
-								.plus(Permission.SendMessagesInThreads)
-
-							reason = "Server locked down by ${user.asUser().tag}"
-						}
-					}
-
 					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
 						title = "Server locked"
 						color = DISCORD_RED
@@ -1279,7 +1267,6 @@ class UtilityExtension : Extension() {
 							}
 						)
 
-					val moderatorRoles = roles.mapNotNull { guild!!.getRoleOrNull(it) }
 					val everyoneRole = guild!!.getRole(guild!!.id)
 
 					everyoneRole.edit {
@@ -1291,19 +1278,6 @@ class UtilityExtension : Extension() {
 							.plus(Permission.SendMessagesInThreads)
 
 						reason = "Server unlocked by ${user.asUser().tag}"
-					}
-
-					moderatorRoles.forEach {
-						it.edit {
-							permissions = it.permissions
-								.minus(Permission.AddReactions)
-								.minus(Permission.CreatePrivateThreads)
-								.minus(Permission.CreatePublicThreads)
-								.minus(Permission.SendMessages)
-								.minus(Permission.SendMessagesInThreads)
-
-							reason = "Server unlocked by ${user.asUser().tag}"
-						}
 					}
 
 					guild?.asGuildOrNull()?.getModLogChannel()?.createEmbed {
@@ -1355,12 +1329,17 @@ class UtilityExtension : Extension() {
 
 					val ch = channelObj.asChannelOf<TextChannel>()
 
-					modRoles.forEach { staffRoleId ->
-						ch.editRolePermission(staffRoleId) {
-							SPEAKING_PERMISSIONS.forEach { allowed += it }
+					try {
+						modRoles.forEach { staffRoleId ->
+							ch.editRolePermission(staffRoleId) {
+								SPEAKING_PERMISSIONS.forEach { allowed += it }
 
-							reason = "Channel locked by ${user.asUser().tag}"
+								reason = "Channel locked by ${user.asUser().tag}"
+							}
 						}
+					} catch (e: RestRequestException) {
+						// it happens
+						logger.warn(e) { "Channel lock for <#${ch.id}> failed ensuring moderator roles have speaking permissions" }
 					}
 
 					ch.editRolePermission(guild!!.id) {

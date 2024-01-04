@@ -6,17 +6,21 @@
 
 package org.quiltmc.community.modes.quilt.extensions.moderation
 
+import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.ChoiceEnum
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
+import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.suggestDoubleMap
 import com.kotlindiscord.kord.extensions.utils.suggestIntMap
 import com.kotlindiscord.kord.extensions.utils.suggestLongMap
+import dev.kord.core.Kord
 import dev.kord.core.behavior.RoleBehavior
 import dev.kord.core.entity.KordEntity
+import dev.kord.core.entity.User
 import dev.kord.core.entity.channel.Channel
 import dev.kord.core.entity.interaction.AutoCompleteInteraction
 import org.quiltmc.community.modes.quilt.extensions.TEXT_CHANNEL_TYPES
@@ -29,12 +33,31 @@ interface ChannelTargetArguments {
 	val channel: Channel?
 }
 
-open class RequiredUser(mentionableDesc: String, validator: Validator<KordEntity> = null) : Arguments() {
+interface UserTargetArguments {
+	suspend fun user(): User
+}
+
+open class RequiredUser(
+	mentionableDesc: String,
+	validator: Validator<User> = null
+) : Arguments(), UserTargetArguments {
 	val user by user {
         name = "user"
         description = mentionableDesc
         validate(validator)
 	}
+
+	override suspend fun user() = user
+}
+
+class UserBySnowflakeArguments : Arguments(), UserTargetArguments {
+	val snowflake by snowflake {
+		name = "user"
+		description = "The user to perform the action on, as their user ID"
+	}
+
+	override suspend fun user() = getKoin().get<Kord>().getUser(snowflake)
+		?: throw DiscordRelayedException("No user found with the ID $snowflake")
 }
 
 class PurgeArguments : Arguments(), ChannelTargetArguments {

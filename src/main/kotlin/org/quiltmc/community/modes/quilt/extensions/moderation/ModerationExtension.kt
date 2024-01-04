@@ -13,6 +13,7 @@ import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.application.slash.EphemeralSlashCommandContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
+import com.kotlindiscord.kord.extensions.commands.application.slash.group
 import com.kotlindiscord.kord.extensions.components.forms.ModalForm
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
@@ -739,6 +740,108 @@ class ModerationExtension(
 
 							respond {
 								content = "Timed out ${arguments.user} (<@!${arguments.user}>)."
+							}
+						}
+					}
+				}
+			}
+
+			ephemeralSlashCommand {
+				name = "remove"
+				description = "Remove a user's timeout or ban."
+
+				check { hasBaseModeratorRole() }
+
+				suspend fun remove(guild: Guild, user: User, isBan: Boolean) {
+					val restriction = userRestrictions.get(user.id)
+					if (restriction != null) {
+						restriction.returningBanTime = null
+						restriction.isBanned = false
+						restriction.save()
+					}
+
+					if (isBan) {
+						guild.unban(user.id)
+					} else {
+						user.asMemberOrNull(guild.id)?.removeTimeout()
+					}
+				}
+
+				group("timeout") {
+					ephemeralSubCommand(::UserBySnowflakeArguments) {
+						name = "by-id"
+						description = "Remove a user's timeout by their ID."
+
+						check { hasBaseModeratorRole() }
+
+						action {
+							val user = arguments.user()
+							val guild = getGuild()?.asGuild()
+								?: throw DiscordRelayedException("Guild not found. Are you running this in a DM?")
+
+							remove(guild, user, false)
+
+							respond {
+								content = "Removed timeout for ${user.mention}."
+							}
+						}
+					}
+
+					ephemeralSubCommand({ RequiredUser("The user to remove the timeout from") }) {
+						name = "by-mention"
+						description = "Remove a user's timeout by mentioning them."
+
+						check { hasBaseModeratorRole() }
+
+						action {
+							val user = arguments.user()
+							val guild = getGuild()?.asGuild()
+								?: throw DiscordRelayedException("Guild not found. Are you running this in a DM?")
+
+							remove(guild, user, false)
+
+							respond {
+								content = "Removed timeout for ${user.mention}."
+							}
+						}
+					}
+				}
+
+				group("ban") {
+					ephemeralSubCommand(::UserBySnowflakeArguments) {
+						name = "by-id"
+						description = "Remove a user's ban by their ID."
+
+						check { hasBaseModeratorRole() }
+
+						action {
+							val user = arguments.user()
+							val guild = getGuild()?.asGuild()
+								?: throw DiscordRelayedException("Guild not found. Are you running this in a DM?")
+
+							remove(guild, user, true)
+
+							respond {
+								content = "Removed ban for ${user.mention}."
+							}
+						}
+					}
+
+					ephemeralSubCommand({ RequiredUser("The user to remove the ban from") }) {
+						name = "by-mention"
+						description = "Remove a user's ban by mentioning them."
+
+						check { hasBaseModeratorRole() }
+
+						action {
+							val user = arguments.user()
+							val guild = getGuild()?.asGuild()
+								?: throw DiscordRelayedException("Guild not found. Are you running this in a DM?")
+
+							remove(guild, user, true)
+
+							respond {
+								content = "Removed ban for ${user.mention}."
 							}
 						}
 					}

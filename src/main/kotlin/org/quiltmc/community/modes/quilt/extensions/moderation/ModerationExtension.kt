@@ -768,6 +768,8 @@ class ModerationExtension(
 				}
 
 				group("timeout") {
+					description = "Remove a user's timeout."
+
 					ephemeralSubCommand(::UserBySnowflakeArguments) {
 						name = "by-id"
 						description = "Remove a user's timeout by their ID."
@@ -808,6 +810,8 @@ class ModerationExtension(
 				}
 
 				group("ban") {
+					description = "Remove a user's ban."
+
 					ephemeralSubCommand(::UserBySnowflakeArguments) {
 						name = "by-id"
 						description = "Remove a user's ban by their ID."

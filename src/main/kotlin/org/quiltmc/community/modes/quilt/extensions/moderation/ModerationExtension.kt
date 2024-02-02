@@ -180,7 +180,7 @@ class ModerationExtension(
 
 					if (spamCheck.size > ABSOLUTE_MAX_PER_SECOND || spamCheck.size > ABSOLUTE_MAX_PER_MINUTE) {
 						// over the limit, time the user out
-						event.message.getAuthorAsMember()?.timeout(2.minutes)
+						event.message.getAuthorAsMember().timeout(2.minutes)
 						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = "You have been timed out for spamming in an associated server. " +
 									"Please do not spam."

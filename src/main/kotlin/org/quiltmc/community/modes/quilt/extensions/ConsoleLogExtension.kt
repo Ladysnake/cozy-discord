@@ -19,19 +19,19 @@ class ConsoleLogExtension : Extension() {
 	override suspend fun setup() {
 		event<ReadyEvent> {
 			action {
-				logger.warn("GLOBAL COMMANDS")
+				logger.info { "GLOBAL COMMANDS" }
 				kord.getGlobalApplicationCommands().collect {
-					logger.info("${it.name} - ${it.id}")
+					logger.info { "${it.name} - ${it.id}" }
 				}
 
 				kord.guilds.collect { guild ->
-					logger.warn("GUILD: ${guild.name}")
+					logger.info { "GUILD: ${guild.name}" }
 					guild.getApplicationCommands().collect {
-						logger.info("${it.name} - ${it.id}")
+						logger.info { "${it.name} - ${it.id}" }
 					}
 				}
 
-				logger.warn("DONE")
+				logger.info { "DONE" }
 			}
 		}
 	}

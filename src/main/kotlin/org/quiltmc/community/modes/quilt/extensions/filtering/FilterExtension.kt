@@ -15,6 +15,7 @@ import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.DISCORD_GREEN
 import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DISCORD_YELLOW
+import com.kotlindiscord.kord.extensions.annotations.DoNotChain
 import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
@@ -49,6 +50,7 @@ import org.quiltmc.community.*
 import org.quiltmc.community.database.collections.FilterCollection
 import org.quiltmc.community.database.collections.FilterEventCollection
 import org.quiltmc.community.database.collections.GlobalSettingsCollection
+import org.quiltmc.community.database.collections.InvalidMentionsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.FilterEntry
 import org.quiltmc.community.database.getSettings
@@ -902,6 +904,7 @@ class FilterExtension : Extension() {
 					}
 				}
 
+				@OptIn(DoNotChain::class)
 				message.author!!
 					.asMember(message.getGuild().id)
 					.timeout(10.minutes, "Triggered filter: $_id")
@@ -1005,7 +1008,9 @@ class FilterExtension : Extension() {
 //					else -> null
 //				}
 
-				val modRoles = guild.getSettings()?.moderatorRoles
+				val modRoles = guild.getSettings()?.moderatorRoles?.filter {
+					getKoin().get<InvalidMentionsCollection>().get(it)?.allowsDirectMentions != false
+				}
 
 				content = modRoles?.joinToString(" ") { "<@&${it.value}>" }
 					?: "**Warning:** This filter shouldn't have triggered on this server! This is a bug!"

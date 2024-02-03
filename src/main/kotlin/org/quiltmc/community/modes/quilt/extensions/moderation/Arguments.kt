@@ -12,6 +12,7 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.converters.C
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.enumChoice
 import com.kotlindiscord.kord.extensions.commands.application.slash.converters.impl.stringChoice
 import com.kotlindiscord.kord.extensions.commands.converters.Validator
+import com.kotlindiscord.kord.extensions.commands.converters.builders.ConverterBuilder
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.suggestDoubleMap
@@ -208,45 +209,21 @@ class BanArguments : RequiresReason("The user to ban") {
         description = "The length of the ban in seconds, 0 for indefinite, or -1 to end (default indefinite)"
         defaultValue = 0L
 
-        autoComplete {
-            val map = mapFrom(
-                "second" to 1,
-                "minute" to 60,
-                "hour" to 3600,
-                "day" to 86_400,
-                "week" to 604_800,
-                "month" to 2_629_746,
-                "year" to 31_557_600,
-                defaultMap = mapOf(
-                    "1 minute" to 60,
-                    "5 minutes" to 300,
-                    "10 minutes" to 600,
-                    "30 minutes" to 1_800,
-                    "1 hour" to 3_600,
-                    "2 hours" to 7_200,
-                    "3 hours" to 10_800,
-                    "6 hours" to 21_600,
-                    "1 day" to 86_400,
-                    "2 days" to 172_800,
-                    "3 days" to 259_200,
-                    "1 week" to 604_800,
-                    "2 weeks" to 1_209_600,
-                    "3 weeks" to 1_814_400,
-                    "1 month" to 2_592_000,
-                    "2 months" to 5_184_000,
-                    "3 months" to 7_168_000,
-                    "6 months" to 15_552_000,
-                    "1 year" to 31_556_952,
-                    "forever" to 0,
-                    "unban" to -1
-                )
-            )
-
-            suggestLongMap(map)
-        }
+        restrictionLength(false, "Remove ban")
 	}
 
 	val daysToDelete by banDeleteDaySelector()
+}
+
+class VcMuteArguments : RequiresReason("The user to mute") {
+	@Suppress("MagicNumber")
+	val length by defaultingLong {
+		name = "length"
+		description = "The length of the mute (default 30 minutes)"
+		defaultValue = 1_800
+
+		restrictionLength(false, "Remove mute")
+	}
 }
 
 class TimeoutArguments : RequiresReason("The user to timeout") {
@@ -256,35 +233,7 @@ class TimeoutArguments : RequiresReason("The user to timeout") {
         description = "The length of the timeout (default 5 minutes)"
         defaultValue = 300
 
-        autoComplete {
-            val map = mapFrom(
-                "second" to 1L,
-                "minute" to 60L,
-                "hour" to 3600L,
-                "day" to 86_400L,
-                "week" to 604_800L,
-                defaultMap = mapOf(
-                    "1 minute" to 60L,
-                    "5 minutes" to 300L,
-                    "10 minutes" to 600L,
-                    "30 minutes" to 1_800L,
-                    "1 hour" to 3_600L,
-                    "2 hours" to 7_200L,
-                    "3 hours" to 10_800L,
-                    "6 hours" to 21_600L,
-                    "1 day" to 86_400L,
-                    "2 days" to 172_800L,
-                    "3 days" to 259_200L,
-                    "1 week" to 604_800L,
-                    "2 weeks" to 1_209_600L,
-                    "3 weeks" to 1_814_400L,
-                    "1 month" to 2_592_000L,
-                    "Remove timeout" to -1L
-                )
-            )
-
-            suggestLongMap(map)
-        }
+        restrictionLength(true, "Remove timeout")
 
         validate {
             failIfNot("length must be between 0 and 28 days") {
@@ -319,42 +268,7 @@ class ActionArguments : Arguments() {
         description = "The length of the action (default 1 month)"
         defaultValue = 2_629_746
 
-        autoComplete {
-            val map = mapFrom(
-                "second" to 1,
-                "minute" to 60,
-                "hour" to 3600,
-                "day" to 86_400,
-                "week" to 604_800,
-                "month" to 2_629_746,
-                "year" to 31_557_600,
-                defaultMap = mapOf(
-                    "1 minute" to 60,
-                    "5 minutes" to 300,
-                    "10 minutes" to 600,
-                    "30 minutes" to 1_800,
-                    "1 hour" to 3_600,
-                    "2 hours" to 7_200,
-                    "3 hours" to 10_800,
-                    "6 hours" to 21_600,
-                    "1 day" to 86_400,
-                    "2 days" to 172_800,
-                    "3 days" to 259_200,
-                    "1 week" to 604_800,
-                    "2 weeks" to 1_209_600,
-                    "3 weeks" to 1_814_400,
-                    "1 month" to 2_592_000,
-                    "2 months" to 5_184_000,
-                    "3 months" to 7_168_000,
-                    "6 months" to 15_552_000,
-                    "1 year" to 31_556_952,
-                    "forever" to 0,
-                    "remove" to -1
-                )
-            )
-
-            suggestLongMap(map)
-        }
+        restrictionLength(false, "Remove restriction")
 	}
 
 	val banDeleteDays by banDeleteDaySelector()
@@ -403,7 +317,7 @@ internal fun Arguments.banDeleteDaySelector() = defaultingDecimal {
 }
 
 internal fun AutoCompleteInteraction.mapFrom(
-	vararg conversions: Pair<String, Long>,
+	conversions: List<Pair<String, Long>>,
 	defaultMap: Map<String, Long> = mapOf(),
 ): Map<String, Long> {
 	val specifiedLength = focusedOption.value.substringBefore(' ').toLongOrNull()
@@ -416,5 +330,53 @@ internal fun AutoCompleteInteraction.mapFrom(
         }
 	} else {
         defaultMap
+	}
+}
+
+@Suppress("MagicNumber")
+internal fun ConverterBuilder<Long>.restrictionLength(timeout: Boolean, removeName: String) {
+	val options = listOf(
+		"second" to 1,
+		"minute" to 60,
+		"hour" to 3600,
+		"day" to 86_400,
+		"week" to 604_800,
+		"month" to 2_629_746,
+		"year" to 31_557_600,
+	).filter { !timeout || it.second <= 2_592_000 }
+		.map { (s, i) -> s to i.toLong() }
+
+	val defaultMapValues = mapOf(
+		"1 minute" to 60,
+		"5 minutes" to 300,
+		"10 minutes" to 600,
+		"30 minutes" to 1_800,
+		"1 hour" to 3_600,
+		"2 hours" to 7_200,
+		"3 hours" to 10_800,
+		"6 hours" to 21_600,
+		"1 day" to 86_400,
+		"2 days" to 172_800,
+		"3 days" to 259_200,
+		"1 week" to 604_800,
+		"2 weeks" to 1_209_600,
+		"3 weeks" to 1_814_400,
+		"1 month" to 2_592_000,
+		"2 months" to 5_184_000,
+		"3 months" to 7_168_000,
+		"6 months" to 15_552_000,
+		"1 year" to 31_556_952,
+		"forever" to 0,
+		removeName to -1
+	).mapValues { it.value.toLong() }
+
+	val defaultMap = if (timeout) {
+		defaultMapValues.filterKeys { it != "forever" }.filterValues { it <= 2_592_000 }
+	} else {
+		defaultMapValues
+	}
+
+	autoComplete {
+		suggestLongMap(mapFrom(options, defaultMap))
 	}
 }

@@ -335,4 +335,23 @@ object AllMigrations {
 			)
 		}
 	}
+
+	suspend fun v28(db: CoroutineDatabase) {
+		with(db.getCollection<UserRestrictions>(UserRestrictionsCollection.name)) {
+			updateMany(
+				UserRestrictions::isMuted exists false,
+				setValue(UserRestrictions::isMuted, false)
+			)
+
+			updateMany(
+				UserRestrictions::returningMuteTime exists false,
+				setValue(UserRestrictions::returningMuteTime, null)
+			)
+		}
+
+		db.getCollection<ServerSettings>(ServerSettingsCollection.name).updateMany(
+			ServerSettings::vcMuteRole exists false,
+			setValue(ServerSettings::vcMuteRole, null)
+		)
+	}
 }

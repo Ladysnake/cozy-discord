@@ -450,6 +450,7 @@ class ModerationExtension(
 				description = "Ban a user from the server for a specified amount of time."
 
 				check { hasBaseModeratorRole() }
+				check { inLadysnakeGuild() }
 
 				action(::beanUser)
 			}
@@ -458,8 +459,18 @@ class ModerationExtension(
 				description = "Timeout a user from the server for a specified amount of time."
 
 				check { hasBaseModeratorRole() }
+				check { inLadysnakeGuild() }
 
 				action(::timeout)
+			}
+			ephemeralSlashCommand(::VcMuteArguments) {
+				name = "vc-mute"
+				description = "Mute a user from voice channels. This applies alongside timeouts and does not override them."
+
+				check { hasBaseModeratorRole() }
+				check { inLadysnakeGuild() }
+
+				action(::mute)
 			}
 			@Suppress("USELESS_CAST") // Kordex needs @OverloadResolutionByLambdaReturnType
 			ephemeralSlashCommand({ RequiresReason("The user to kick") } as () -> RequiresReason) {
@@ -690,7 +701,9 @@ class ModerationExtension(
 							if (endTime == null) {
 								val restriction = userRestrictions.get(arguments.user)
 								if (restriction != null) {
-									userRestrictions.remove(arguments.user)
+									restriction.returningBanTime = null
+									restriction.isBanned = false
+									restriction.save()
 								}
 
 								guild!!.getMemberOrNull(arguments.user)?.removeTimeout(arguments.reason)
@@ -752,16 +765,26 @@ class ModerationExtension(
 
 				check { hasBaseModeratorRole() }
 
-				suspend fun remove(guild: Guild, user: User, isBan: Boolean) {
+				suspend fun remove(guild: Guild, user: User, isBan: Boolean, isMute: Boolean = false) {
 					val restriction = userRestrictions.get(user.id)
 					if (restriction != null) {
-						restriction.returningBanTime = null
-						restriction.isBanned = false
+						if (!isMute) {
+							restriction.returningBanTime = null
+							restriction.isBanned = false
+						} else {
+							restriction.returningMuteTime = null
+							restriction.isMuted = false
+						}
+
 						restriction.save()
 					}
 
 					if (isBan) {
 						guild.unban(user.id)
+					} else if (isMute) {
+						val muteRole = guild.getSettings()?.vcMuteRole
+							?: throw DiscordRelayedException("Mute role not found.")
+						user.asMemberOrNull(guild.id)?.removeRole(muteRole)
 					} else {
 						user.asMemberOrNull(guild.id)?.removeTimeout()
 					}
@@ -847,6 +870,27 @@ class ModerationExtension(
 							respond {
 								content = "Removed ban for ${user.mention}."
 							}
+						}
+					}
+				}
+
+				// why does this require the type to be specified? idea really hates me today
+				ephemeralSubCommand<RequiredUser>({ RequiredUser("The user to remove the mute from") }) {
+					name = "vc-mute"
+					description = "Remove a user's voice mute."
+
+					check { hasBaseModeratorRole() }
+					check { inLadysnakeGuild() }
+
+					action {
+						val user = arguments.user()
+						val guild = getGuild()?.asGuild()
+							?: throw DiscordRelayedException("Guild not found. Are you running this in a DM?")
+
+						remove(guild, user, false, true)
+
+						respond {
+							content = "Removed voice mute for ${user.mention}."
 						}
 					}
 				}
@@ -962,7 +1006,9 @@ class ModerationExtension(
 
 			@Suppress("MagicNumber")
 			scheduler.schedule(5, repeat = true) {
-				val timedOutIds = userRestrictions.getAll()
+				val allCurrentRestrictions = userRestrictions.getAll()
+
+				val timedOutIds = allCurrentRestrictions
 					.filter { !it.isBanned && it.returningBanTime != null }
 					.map { it to kord.getGuildOrNull(it.guildId)?.getMemberOrNull(it._id) }
 					.filter { it.second != null }
@@ -990,22 +1036,38 @@ class ModerationExtension(
 					}
 				}
 
-				val bannedUsers = userRestrictions.getAll()
+				val bannedUsers = allCurrentRestrictions
 					.filter { it.isBanned && it.returningBanTime!! <= Clock.System.now() }
 
 				bannedUsers.forEach {
 					val userId = it._id
 					val guild = kord.getGuildOrNull(it.guildId)!!
 
+					it.isBanned = false
+					it.returningBanTime = null
+					it.save()
+
 					// sanity check
 					if (guild.getBanOrNull(userId) == null) {
 						logger.warn { "User $userId was attempted to be unbanned, even though they already are" }
-						userRestrictions.remove(userId) // remove the restriction that shouldn't be there anyway
 						return@forEach
 					}
 
 					guild.unban(userId)
-					userRestrictions.remove(userId) // remove the restriction
+				}
+
+				allCurrentRestrictions.filter { it.isMuted }.forEach {
+					val guild = kord.getGuildOrNull(it.guildId) ?: return@forEach
+					val member = guild.getMemberOrNull(it._id) ?: return@forEach
+
+					if (it.returningMuteTime!! >= Clock.System.now()) {
+						val muteRole = guild.getSettings()?.vcMuteRole ?: return@forEach
+						member.removeRole(muteRole)
+
+						it.isMuted = false
+						it.returningMuteTime = null
+						it.save()
+					}
 				}
 			}
 		}
@@ -1297,6 +1359,90 @@ class ModerationExtension(
 
 		context.respond {
 			content = "Timed out ${user.softMention()} (${user.id})."
+		}
+	}
+
+	private suspend fun mute(context: EphemeralSlashCommandContext<VcMuteArguments, *>, ignored: ModalForm?) {
+		val muteRole = context.getGuild()?.getSettings()?.vcMuteRole
+			?: throw DiscordRelayedException("No VC mute role is set up in this guild.")
+
+		val user = context.arguments.user
+		val member = user.asMember(context.getGuild()!!.id)
+
+		val reason = context.arguments.reason
+		val length = context.arguments.length
+		val endTime = Clock.System.now() + length.seconds
+		val removal = length < 0
+
+		if (!removal) {
+			member.addRole(muteRole, reason)
+		} else {
+			member.removeRole(muteRole, reason)
+		}
+
+		val restriction = userRestrictions.get(user.id) ?: UserRestrictions(
+			member.id,
+			context.guild!!.id,
+		)
+
+		restriction.isMuted = !removal
+		restriction.returningMuteTime = endTime.takeIf { !removal }
+		restriction.save()
+
+		val returnTime = endTime.toDiscord(TimestampType.Default)
+
+		val action = if (!removal) "Muted" else "Unmuted"
+
+		try {
+			user.dm {
+				content = "You have been muted in voice channels in ${context.guild!!.asGuild().name} " +
+						"until $returnTime for the following reason:\n\n" +
+
+						context.arguments.reason
+			}
+
+			reportToModChannel(context.guild?.asGuild()) {
+				title = "Voice mute"
+				description = "$action ${user.mention} in voice channels"
+				field {
+					name = "Reason"
+					value = context.arguments.reason
+				}
+				if (!removal) {
+					field {
+						name = "Length"
+						value = if (length == 0L) "Permanent" else "${length.seconds} (until $returnTime)"
+					}
+				}
+				field {
+					name = "Responsible moderator"
+					value = context.user.mention
+				}
+			}
+		} catch (e: RestRequestException) {
+			reportToModChannel(context.guild?.asGuild()) {
+				title = "Voice mute"
+				description = "$action ${user.mention} in voice channels"
+				field {
+					name = "Reason"
+					value = context.arguments.reason
+				}
+				if (!removal) {
+					field {
+						name = "Length"
+						value = if (length == 0L) "Permanent" else "${length.seconds} (until $returnTime)"
+					}
+				}
+				field {
+					name = "Responsible moderator"
+					value = context.user.mention
+				}
+
+				field {
+					name = " "
+					value = "Failed to DM user."
+				}
+			}
 		}
 	}
 

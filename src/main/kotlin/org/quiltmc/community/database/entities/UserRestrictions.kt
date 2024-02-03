@@ -25,6 +25,10 @@ data class UserRestrictions(
 
 	var previousTimeouts: MutableList<Instant> = mutableListOf(),
 
+	var isMuted: Boolean = false,
+	// Separate check to allow a timeout at the same time as a mute
+	var returningMuteTime: Instant? = null,
+
 	@Deprecated("No longer used, kept for migration purposes")
 	var lastProgressiveTimeoutLength: Int = 0,
 ) : Entity<Snowflake> {

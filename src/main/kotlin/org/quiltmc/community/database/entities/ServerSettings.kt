@@ -49,6 +49,8 @@ data class ServerSettings(
 
 	val exemptUsers: MutableSet<Snowflake> = mutableSetOf(),
 	val exemptRoles: MutableSet<Snowflake> = mutableSetOf(),
+
+	var vcMuteRole: Snowflake? = null,
 ) : Entity<Snowflake> {
 	suspend fun save() {
 		val collection = getKoin().get<ServerSettingsCollection>()

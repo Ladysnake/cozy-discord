@@ -13,6 +13,8 @@ import dev.kord.core.behavior.UserBehavior
 import dev.kord.core.behavior.channel.threads.ThreadChannelBehavior
 import org.koin.core.component.inject
 import org.litote.kmongo.eq
+import org.litote.kmongo.ne
+import org.litote.kmongo.or
 import org.quiltmc.community.database.Collection
 import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.entities.OwnedThread
@@ -31,6 +33,9 @@ class OwnedThreadCollection : KordExKoinComponent {
 
 	suspend fun set(thread: OwnedThread) =
 		col.save(thread)
+
+	suspend fun getAllWithDuration() =
+		col.find(or(OwnedThread::maxThreadDuration ne null, OwnedThread::maxThreadAfterIdle ne null))
 
 	// endregion
 

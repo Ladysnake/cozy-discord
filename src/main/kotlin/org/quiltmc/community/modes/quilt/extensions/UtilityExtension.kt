@@ -69,6 +69,7 @@ import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import java.time.format.DateTimeFormatter
+import kotlin.time.Duration.Companion.INFINITE
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
@@ -773,6 +774,48 @@ class UtilityExtension : Extension() {
 						}
 
 						edit { content = "Thread archived." }
+					}
+				}
+
+				ephemeralSubCommand(::AutoLockArguments) {
+					name = "set-auto-lock"
+					description = "Set the auto-lock options for the current thread, if you have permission"
+
+					check { hasBaseModeratorRole() }
+					check { isInThread() }
+
+					action {
+						val channel = channel.asChannelOf<ThreadChannel>()
+						val member = user.asMember(guild!!.id)
+						val ownedThread = threads.get(channel)
+
+						if (ownedThread != null) {
+							if (ownedThread.preventArchiving) {
+								throw DiscordRelayedException(
+									"This thread is set to prevent archiving, and cannot be auto-locked."
+								)
+							}
+
+							// Update, but don't remove existing values
+							ownedThread.maxThreadDuration = arguments.maxTotalTime?.toDuration(TimeZone.UTC)
+								?: ownedThread.maxThreadDuration
+							ownedThread.maxThreadAfterIdle = arguments.maxIdleTime?.toDuration(TimeZone.UTC)
+								?: ownedThread.maxThreadAfterIdle
+							threads.set(ownedThread)
+						} else {
+							threads.set(
+								OwnedThread(
+									channel.id,
+									channel.owner.id,
+									channel.guild.id,
+									false,
+									arguments.maxTotalTime?.toDuration(TimeZone.UTC),
+									arguments.maxIdleTime?.toDuration(TimeZone.UTC)
+								)
+							)
+						}
+
+						edit { content = "Auto-lock settings updated." }
 					}
 				}
 
@@ -1879,6 +1922,36 @@ class UtilityExtension : Extension() {
 						it.delete("Temp role for force verify (>=10 minutes old)")
 					}
 			}
+
+			threads.getAllWithDuration().consumeEach {
+				val openTime = it._id.timestamp
+				val channel = kord.getChannelOf<ThreadChannel>(it._id)!!
+				val archiveTime = channel.archiveTimestamp.takeIf { channel.isArchived }
+				val guildSettings = getKoin().get<ServerSettingsCollection>().get(channel.guildId)
+				val now = Clock.System.now()
+
+				val maxThreadDuration = it.maxThreadDuration ?: guildSettings?.defaultTotalMaxThreadLength
+				if (maxThreadDuration != null && now > openTime + maxThreadDuration) {
+					channel.edit {
+						archived = true
+						locked = true
+						reason = "Thread automatically archived and locked after reaching max duration"
+					}
+
+					// Prevent automatic re-archiving if a moderator has manually unarchived the thread
+					it.maxThreadDuration = INFINITE
+					threads.set(it)
+				}
+
+				val maxThreadAfterIdle = it.maxThreadAfterIdle ?: guildSettings?.defaultIdleMaxThreadLength
+				if (maxThreadAfterIdle != null && archiveTime != null && now > archiveTime + maxThreadAfterIdle) {
+					channel.edit {
+						archived = true
+						locked = true
+						reason = "Thread automatically locked after reaching max idle duration"
+					}
+				}
+			}
 		}
 	}
 
@@ -1917,6 +1990,18 @@ class UtilityExtension : Extension() {
 			description = "Whether to lock the thread, if you're staff - defaults to false"
 
 			defaultValue = false
+		}
+	}
+
+	inner class AutoLockArguments : Arguments() {
+		val maxTotalTime by optionalDuration {
+			name = "max-total-time"
+			description = "Maximum total time to keep the thread unlocked from creation."
+		}
+
+		val maxIdleTime by optionalDuration {
+			name = "max-idle-time"
+			description = "Maximum time to keep the thread unlocked after archival."
 		}
 	}
 

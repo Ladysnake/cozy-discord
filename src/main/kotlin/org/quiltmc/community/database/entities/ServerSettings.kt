@@ -23,6 +23,7 @@ import org.quiltmc.community.*
 import org.quiltmc.community.database.Entity
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.enums.LadysnakeServerType
+import kotlin.time.Duration
 
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
@@ -44,6 +45,8 @@ data class ServerSettings(
 	var leaveServer: Boolean = false,
 	val threadOnlyChannels: MutableSet<Snowflake> = mutableSetOf(),
 	var defaultThreadLength: ArchiveDuration? = null,
+	var defaultTotalMaxThreadLength: Duration? = null,
+	var defaultIdleMaxThreadLength: Duration? = null,
 
 	val pingTimeoutBlacklist: MutableSet<Snowflake> = mutableSetOf(),
 
@@ -218,7 +221,7 @@ data class ServerSettings(
 
         if (defaultThreadLength != null) {
             val readableName = when (val length = defaultThreadLength!!) {
-                is ArchiveDuration.Unknown -> "Unknown (${length.duration} minutes)"
+                is ArchiveDuration.Unknown -> "Unknown (${length.duration})"
                 ArchiveDuration.Hour -> "1 hour"
                 ArchiveDuration.Day -> "1 day"
                 ArchiveDuration.ThreeDays -> "3 days"
@@ -228,6 +231,14 @@ data class ServerSettings(
         } else {
             builder.append(":x: Not configured (using longest server / channel setting)")
         }
+
+		builder.append("\n")
+		builder.append("Default Total Max Thread Length:".bold() + ' ')
+		builder.append(defaultTotalMaxThreadLength ?: ":x: Not configured")
+
+		builder.append("\n")
+		builder.append("Default Idle Max Thread Length:".bold() + ' ')
+		builder.append(defaultIdleMaxThreadLength ?: ":x: Not configured")
 
         with(embedBuilder) {
             color = DISCORD_BLURPLE

@@ -11,6 +11,7 @@ package org.quiltmc.community.database.entities
 import dev.kord.common.entity.Snowflake
 import kotlinx.serialization.Serializable
 import org.quiltmc.community.database.Entity
+import kotlin.time.Duration
 
 @Serializable
 @Suppress("ConstructorParameterNaming")  // MongoDB calls it that...
@@ -20,4 +21,7 @@ data class OwnedThread(
 	var owner: Snowflake,
 	val guild: Snowflake,
 	var preventArchiving: Boolean = false,
+
+	var maxThreadDuration: Duration? = null,
+	var maxThreadAfterIdle: Duration? = null,
 ) : Entity<Snowflake>

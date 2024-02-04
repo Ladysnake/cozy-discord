@@ -14,6 +14,7 @@
 package org.quiltmc.community
 
 import com.kotlindiscord.kord.extensions.ExtensibleBot
+import com.kotlindiscord.kord.extensions.checks.channelFor
 import com.kotlindiscord.kord.extensions.checks.guildFor
 import com.kotlindiscord.kord.extensions.checks.types.Check
 import com.kotlindiscord.kord.extensions.modules.extra.mappings.extMappings
@@ -32,6 +33,7 @@ import dev.kord.rest.builder.message.embed
 import org.quiltmc.community.cozy.modules.logs.extLogParser
 import org.quiltmc.community.cozy.modules.logs.processors.PiracyProcessor
 import org.quiltmc.community.cozy.modules.logs.processors.ProblematicLauncherProcessor
+import org.quiltmc.community.cozy.modules.logs.types.LogRetriever
 import org.quiltmc.community.cozy.modules.tags.TagFormatter
 import org.quiltmc.community.cozy.modules.tags.config.TagsConfig
 import org.quiltmc.community.cozy.modules.tags.tags
@@ -41,8 +43,7 @@ import org.quiltmc.community.database.collections.TagsCollection
 import org.quiltmc.community.database.collections.WelcomeChannelCollection
 import org.quiltmc.community.database.entities.InvalidMention
 import org.quiltmc.community.database.getSettings
-import org.quiltmc.community.logs.NonQuiltLoaderProcessor
-import org.quiltmc.community.logs.RuleBreakingModProcessor
+import org.quiltmc.community.logs.WrongLocationMessageSender
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
 import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
@@ -106,57 +107,19 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 			processor(PiracyProcessor())
 			processor(ProblematicLauncherProcessor())
 
-			// Quilt-specific processors
-			processor(NonQuiltLoaderProcessor())
-			processor(RuleBreakingModProcessor())
+			parser(WrongLocationMessageSender())
 
-//			@Suppress("TooGenericExceptionCaught")
-//			suspend fun predicate(handler: BaseLogHandler, event: Event): Boolean = with(handler) {
-//				val predicateLogger = KotlinLogging.logger(
-//					"org.quiltmc.community.AppKt.setupQuilt.extLogParser.predicate"
-//				)
-//
-//				val kord: Kord = getKoin().get()
-//				val channelId = channelSnowflakeFor(event)
-//				val guild = guildFor(event)
-//
-//				try {
-//					val skippableChannelIds = SKIPPABLE_HANDLER_CATEGORIES.mapNotNull {
-//						kord.getChannelOf<Category>(it)
-//							?.channels
-//							?.map { ch -> ch.id }
-//							?.toList()
-//					}.flatten()
-//
-//					val isSkippable = identifier in SKIPPABLE_HANDLER_IDS
-//
-//					if (guild?.id == TOOLCHAIN_GUILD && isSkippable) {
-//						predicateLogger.info {
-//							"Skipping handler '$identifier' in <#$channelId>: Skippable handler, and on Toolchain"
-//						}
-//
-//						return false
-//					}
-//
-//					if (channelId in skippableChannelIds && isSkippable) {
-//						predicateLogger.info {
-//							"Skipping handler '$identifier' in <#$channelId>: Skippable handler, and in a dev category"
-//						}
-//
-//						return false
-//					}
-//
-//					predicateLogger.debug { "Passing handler '$identifier' in <#$channelId>" }
-//
-//					return true
-//				} catch (e: Exception) {
-//					predicateLogger.warn(e) { "Skipping processor '$identifier' in <#$channelId> due to an error." }
-//
-//					return true
-//				}
-//			}
-//
-//			globalPredicate(::predicate)
+			globalPredicate { event ->
+				// If any condition is unmet, always let the normal parsers handle it and don't try to send a message
+				val skip = this !is WrongLocationMessageSender
+
+				val channel = channelFor(event) ?: return@globalPredicate skip
+				val guild = guildFor(event) ?: return@globalPredicate skip
+				val allowedChannels = LOG_PARSING_CONFINEMENT[guild.id] ?: return@globalPredicate skip
+				if (channel.id in allowedChannels) return@globalPredicate skip
+
+				this is WrongLocationMessageSender || this is LogRetriever
+			}
 		}
 
 		help {

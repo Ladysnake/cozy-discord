@@ -354,4 +354,18 @@ object AllMigrations {
 			setValue(ServerSettings::vcMuteRole, null)
 		)
 	}
+
+	suspend fun v29(db: CoroutineDatabase) {
+		with(db.getCollection<OwnedThread>(OwnedThreadCollection.name)) {
+			updateMany(
+				OwnedThread::maxThreadDuration exists false,
+				setValue(OwnedThread::maxThreadDuration, null)
+			)
+
+			updateMany(
+				OwnedThread::maxThreadAfterIdle exists false,
+				setValue(OwnedThread::maxThreadAfterIdle, null)
+			)
+		}
+	}
 }

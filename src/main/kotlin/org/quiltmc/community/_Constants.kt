@@ -150,3 +150,10 @@ internal val EXEMPTED_USERS = envOrNull("EXEMPTED_USERS")
 	?.split(",")
 	?.map { Snowflake(it) }
 	?: emptyList()
+
+internal val LOG_PARSING_CONFINEMENT = envOrNull("LOG_PARSING_CONFINEMENT")
+	?.split(';')
+	?.associate { it.substringBefore(':') to it.substringAfter(':').split(',') }
+	?.mapKeys { (k) -> Snowflake(k) }
+	?.mapValues { (_, v) -> v.map { Snowflake(it) } }
+	?: emptyMap()

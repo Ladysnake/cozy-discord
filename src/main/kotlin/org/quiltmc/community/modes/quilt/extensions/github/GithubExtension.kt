@@ -118,7 +118,7 @@ class GithubExtension : Extension() {
 	}
 
 	override suspend fun setup() {
-		for (guildId in GUILDS) {
+		for (guildId in getGuilds()) {
 			ephemeralSlashCommand {
 				name = "github"
 				description = "GitHub management commands"

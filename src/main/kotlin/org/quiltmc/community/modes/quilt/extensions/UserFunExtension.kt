@@ -12,8 +12,6 @@ import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSub
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
 import com.kotlindiscord.kord.extensions.extensions.*
-import com.kotlindiscord.kord.extensions.pagination.MessageButtonPaginator
-import com.kotlindiscord.kord.extensions.pagination.builders.PaginatorBuilder
 import com.kotlindiscord.kord.extensions.utils.dm
 import com.kotlindiscord.kord.extensions.utils.download
 import com.kotlindiscord.kord.extensions.utils.getKoin
@@ -614,7 +612,7 @@ class UserFunExtension : Extension() {
 							content = """
                                 |#$id:
                                 |> ${quote.quote.replace("\n", "\n> ")}
-                                |*- ${quote.author}*
+                                |*\- ${quote.author}*
                             """.trimMargin()
 							allowedMentions {
 								// By defining this, all mentions are prohibited, so nobody gets pinged from the quote
@@ -673,38 +671,26 @@ class UserFunExtension : Extension() {
 					val quotes = quoteCollection.getAll()
 					val user = user.asUser()
 
-					val paginator = PaginatorBuilder()
-
 					val pageTitle = "List of quotes"
 
-					quotes.map {
+					val chunkedQuotes = quotes.map {
 						val author = it.author
 						val quote = it.quote
 						val id = it._id
 
 						"""
-                                |#$id:
-                                |> $quote
-                                |*- $author*
-                            """.trimMargin()
-					}.toList().chunked(QUOTES_PER_PAGE).forEach { quotesInPage ->
-						paginator.page {
-							title = pageTitle
-							description = quotesInPage.joinToString("\n\n")
-						}
-					}
+							|#$id:
+							|> $quote
+							|*\- $author*
+						""".trimMargin()
+					}.toList().chunked(QUOTES_PER_PAGE)
 
-					val channel = user.getDmChannelOrNull()
-					if (channel == null) {
-						respond {
-							content = "**Error:** You must allow DMs from the but to list quotes."
-						}
-					} else {
-						val messagePaginator = MessageButtonPaginator(targetChannel = channel, builder = paginator)
-						messagePaginator.send()
-
-						respond {
-							content = "Sent! Check your DMs!"
+					editingPaginator {
+						chunkedQuotes.forEach { quotesInPage ->
+							page {
+								title = pageTitle
+								description = quotesInPage.joinToString("\n\n")
+							}
 						}
 					}
 				}

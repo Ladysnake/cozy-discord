@@ -475,3 +475,5 @@ val User.identifier: String get() = try {
 	// whoops kordex is probably already updated
 	"@$username"
 }
+
+suspend fun getGuilds() = getKoin().get<GlobalSettingsCollection>().get()?.ladysnakeGuilds ?: GUILDS

@@ -89,7 +89,7 @@ class SettingsExtension : Extension() {
 			}
 		}
 
-		GUILDS.forEach { guildId ->
+		getGuilds().forEach { guildId ->
 			ephemeralSlashCommand {
 				name = "config"
 				description = "Manage your bot settings"

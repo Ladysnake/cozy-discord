@@ -11,6 +11,9 @@ package org.quiltmc.community.modes.quilt.extensions
 import com.kotlindiscord.kord.extensions.checks.hasPermission
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
+import com.kotlindiscord.kord.extensions.components.buttons.EphemeralInteractionButtonContext
+import com.kotlindiscord.kord.extensions.components.components
+import com.kotlindiscord.kord.extensions.components.ephemeralButton
 import com.kotlindiscord.kord.extensions.extensions.Extension
 import com.kotlindiscord.kord.extensions.extensions.ephemeralSlashCommand
 import com.kotlindiscord.kord.extensions.extensions.event
@@ -30,14 +33,17 @@ import dev.kord.core.entity.Guild
 import dev.kord.core.event.Event
 import dev.kord.core.event.guild.BanAddEvent
 import dev.kord.core.event.guild.BanRemoveEvent
+import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Instant
+import org.koin.core.component.inject
 import org.quiltmc.community.GUILDS
 import org.quiltmc.community.asUser
+import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.getModLogChannel
 import org.quiltmc.community.inLadysnakeGuild
 import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
@@ -50,6 +56,7 @@ class SyncExtension : Extension() {
 	override val name: String = "sync"
 
 	private val logger = KotlinLogging.logger {}
+	private val globalSettings: GlobalSettingsCollection by inject()
 
 	private suspend fun <T : Event> CheckContext<T>.hasBanPerms() {
 		fail(
@@ -114,6 +121,8 @@ class SyncExtension : Extension() {
 				action {
 					val guilds = getGuilds()
 
+					require(guilds.isNotEmpty()) { "Impossible: command run in guild but no guilds were found" }
+
 					logger.info { "Syncing bans for ${guilds.size} guilds." }
 
 					guilds.forEach {
@@ -142,39 +151,74 @@ class SyncExtension : Extension() {
 						}
 					}
 
-					guilds.forEach { guild ->
-						val newBans = mutableListOf<Pair<Snowflake, String>>()
+					val syncStatus = CurrentState(allBans.size, 0, guilds.first())
 
-                            allBans.forEach { (userId, reason) ->
-                                if (guild.getBanOrNull(userId) == null) {
-                                    syncedBans[guild] = (syncedBans[guild] ?: 0) + 1
-
-								val newReason = "Synced: ${reason ?: "No reason given"}"
-
-                                    guild.ban(userId) {
-                                        this.reason = newReason
-                                    }
-
-                                    newBans.add(userId to newReason)
-                                }
-                            }
-
-                            guild.getModLogChannel()?.createEmbed {
-                                title = "Synced bans"
-                                description = "**Added bans:**\n" + newBans.joinToString("\n") { (id, reason) ->
-                                    "`$id` (<@!$id>) - $reason"
+					respond {
+						content = "Collected ${allBans.size} bans."
+						components {
+							ephemeralButton {
+								label = "Check progress"
+								action {
+									with(syncStatus) {
+										showState()
+									}
+								}
 							}
 						}
 					}
 
-					respond {
-						embed {
-							title = "Bans synced"
+					guilds.forEach { guild ->
+						syncStatus.syncingFor = guild
+						syncStatus.bansSynced = 0
 
-							description = syncedBans.map { "**${it.key.name}**: ${it.value} added" }
-								.joinToString("\n")
+						val newBans = mutableListOf<Pair<Snowflake, String>>()
+
+						allBans.forEach { (userId, reason) ->
+							syncStatus.bansSynced++
+
+							@Suppress("TooGenericExceptionCaught")
+							try {
+								if (guild.getBanOrNull(userId) == null) {
+									syncedBans[guild] = (syncedBans[guild] ?: 0) + 1
+
+									val newReason = "Synced: ${reason ?: "No reason given"}"
+
+									guild.ban(userId) {
+										this.reason = newReason
+									}
+
+									newBans.add(userId to newReason)
+								}
+							} catch (t: Throwable) {
+								if (syncStatus.previousException != null) {
+									t.addSuppressed(syncStatus.previousException)
+									throw t
+								}
+
+								syncStatus.previousException = t
+							}
 						}
+
+						guild.getModLogChannel()?.createEmbed {
+							title = "Synced bans"
+							description = "**Added bans:**\n" + newBans.joinToString("\n") { (id, reason) ->
+								"`$id` (<@!$id>) - $reason"
+							}
+
+							if (syncStatus.previousException != null) {
+								logger.error(syncStatus.previousException!!) { "An error occurred during ban syncing" }
+
+								field {
+									name = "Error"
+									value = "An error occurred during ban syncing. One or more bans may not have been synced."
+								}
+							}
+						}
+
+						syncStatus.previousException = null
 					}
+
+					syncStatus.syncingFor = null
 				}
 			}
 
@@ -394,29 +438,59 @@ class SyncExtension : Extension() {
                 }
             }
         }
-
-//        event<MemberUpdateEvent> {
-//            check { inLadysnakeGuild() }
-//
-//            action {
-//                try {
-//                    val guilds = getGuilds().filter { it.id != event.guildId }
-//
-//                    for (guild in guilds) {
-//                        val guildMember = guild.getMemberOrNull(event.member.id) ?: continue
-//
-//                        if (guildMember.timeoutUntil != event.member.timeoutUntil) {
-//                            guildMember.edit {
-//                                timeoutUntil = event.member.timeoutUntil
-//                            }
-//                        }
-//                    }
-//                } catch (e: RestRequestException) {
-//                  logger.error(e) { "Failed to sync member timeout ${event.member.id} (JSON error ${e.error?.code})" }
-//                }
-//            }
-//        }
 	}
 
-	private suspend fun getGuilds() = GUILDS.mapNotNull { kord.getGuildOrNull(it) }
+	private suspend fun getGuilds() = (globalSettings.get()?.ladysnakeGuilds ?: GUILDS)
+		.mapNotNull { kord.getGuildOrNull(it) }
+
+	private class CurrentState(
+		val bansToSync: Int,
+		var bansSynced: Int,
+		var syncingFor: Guild?,
+		var previousException: Throwable? = null
+	) {
+		val completionPercentage: Double
+			get() = bansSynced.toDouble() / bansToSync
+
+		@Suppress("MagicNumber")
+		suspend fun EphemeralInteractionButtonContext<*>.showState() {
+			respond {
+				embed {
+					title = "Current Sync Status"
+
+					if (syncingFor == null) {
+						description = "Completed syncing bans."
+						return@embed
+					}
+
+					description = "Syncing bans for ${syncingFor!!.name} (${syncingFor!!.id.value})\n" +
+						"Progress: $bansSynced/$bansToSync " +
+						"(${(completionPercentage * 100).toInt()}%)"
+
+					if (previousException != null) {
+						description += "\nDuring processing, an error occurred."
+						field {
+							val t = previousException!!
+							if (t.toString().length <= EmbedBuilder.Field.Limits.name) {
+								name = t.toString()
+								value = t.stackTraceToString().substringAfter("\n")
+							} else {
+								name = t::class.simpleName
+									?.takeIf { it.length <= EmbedBuilder.Field.Limits.name }
+									?: "Error"
+
+								value = t.stackTraceToString() // Keep the message / toString() first line
+							}
+
+							if (value.length > EmbedBuilder.Field.Limits.value) {
+								value = value.take(EmbedBuilder.Field.Limits.value - 4)
+									.substringBeforeLast("\n") +
+									"\n..."
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }

@@ -45,11 +45,11 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.toList
 import kotlinx.datetime.Instant
 import org.koin.core.component.inject
-import org.quiltmc.community.GUILDS
 import org.quiltmc.community.database.collections.ServerApplicationCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.entities.ServerApplication
 import org.quiltmc.community.database.entities.ServerSettings
+import org.quiltmc.community.getGuilds
 import org.quiltmc.community.hasBaseModeratorRole
 import org.quiltmc.community.inLadysnakeGuild
 import kotlin.time.Duration.Companion.seconds
@@ -68,7 +68,7 @@ class ApplicationsExtension : Extension() {
 		get() = "${toDiscord(TimestampType.LongDateTime)} (${toDiscord(TimestampType.RelativeTime)})"
 
 	override suspend fun setup() {
-		GUILDS.forEach {
+		getGuilds().forEach {
 			ephemeralSlashCommand {
 				name = "applications"
 				description = "Commands related to managing server applications"

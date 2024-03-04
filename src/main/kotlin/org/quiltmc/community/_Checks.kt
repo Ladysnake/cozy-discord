@@ -15,6 +15,7 @@ import dev.kord.core.entity.Member
 import dev.kord.core.event.Event
 import dev.kord.core.event.interaction.InteractionCreateEvent
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.quiltmc.community.database.collections.GlobalSettingsCollection
 import org.quiltmc.community.database.collections.ServerSettingsCollection
 import org.quiltmc.community.database.getSettings
 
@@ -83,7 +84,7 @@ suspend fun CheckContext<*>.hasPermissionInMainGuild(perm: Permission) {
 		return
 	}
 
-	val guild = event.kord.getGuildOrNull(MAIN_GUILD)!!
+	val guild = event.kord.getGuild(MAIN_GUILD)
 	val member = guild.getMemberOrNull(user.id)
 
 	if (member == null) {
@@ -120,6 +121,8 @@ suspend fun CheckContext<*>.inLadysnakeGuild() {
 
 		fail("Must be in one of the Ladysnake servers")
 	} else {
+		if (getKoin().get<GlobalSettingsCollection>().get()?.ladysnakeGuilds?.contains(guild.id) == true) return
+
 		if (guild.id !in GUILDS) {
 			fail("Must be in one of the Ladysnake servers")
 		}

@@ -24,16 +24,16 @@ import dev.kord.core.behavior.getChannelOfOrNull
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.rest.builder.message.embed
 import kotlinx.datetime.toInstant
-import org.quiltmc.community.GUILDS
 import org.quiltmc.community.OVERRIDING_USERS
 import org.quiltmc.community.any
 import org.quiltmc.community.copyFrom
+import org.quiltmc.community.getGuilds
 
 class MessageEditExtension : Extension() {
 	override val name = "message-modification"
 
 	override suspend fun setup() {
-        GUILDS.forEach {
+        getGuilds().forEach {
             ephemeralSlashCommand {
                 name = "edit"
                 description = "Edit a message sent by ${kord.getSelf().username}"

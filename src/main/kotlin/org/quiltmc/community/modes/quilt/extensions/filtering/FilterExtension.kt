@@ -162,7 +162,7 @@ class FilterExtension : Extension() {
 			}
 		}
 
-		GUILDS.forEach { guildId ->
+		getGuilds().forEach { guildId ->
 			ephemeralSlashCommand {
 				name = "filters"
 				description = "Filter management commands"

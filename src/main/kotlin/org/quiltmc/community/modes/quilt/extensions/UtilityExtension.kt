@@ -308,7 +308,7 @@ class UtilityExtension : Extension() {
 			}
 		}
 
-		GUILDS.forEach { guildId ->
+		getGuilds().forEach { guildId ->
 			ephemeralSlashCommand(::SelfTimeoutArguments) {
 				name = "self-timeout"
 				description = "Time yourself out for up to three days"

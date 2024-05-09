@@ -107,27 +107,27 @@ tasks {
 
 detekt {
 	buildUponDefaultConfig = true
-	config = rootProject.files("detekt.yml")
+	config.setFrom(rootProject.files("detekt.yml"))
 }
 
 // Credit to ZML for this workaround.
 // https://github.com/CadixDev/licenser/issues/6#issuecomment-817048318
 extensions.configure(LicenseExtension::class.java) {
 	exclude {
-		it.file.startsWith(buildDir)
+		it.file.startsWith(project.layout.buildDirectory.get().asFile)
 	}
 }
 
 sourceSets {
 	main {
 		java {
-			srcDir(file("$buildDir/generated/ksp/main/kotlin/"))
+			srcDir(file("${project.layout.buildDirectory.get().asFile.absolutePath}/generated/ksp/main/kotlin/"))
 		}
 	}
 
 	test {
 		java {
-			srcDir(file("$buildDir/generated/ksp/test/kotlin/"))
+			srcDir(file("${project.layout.buildDirectory.get().asFile.absolutePath}/generated/ksp/test/kotlin/"))
 		}
 	}
 }

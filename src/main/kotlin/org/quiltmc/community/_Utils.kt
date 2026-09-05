@@ -90,6 +90,11 @@ suspend fun Member.timeoutUntil(time: Instant, reason: String? = null) {
 	}
 }
 
+internal fun parseWebhookUrl(url: String): Pair<Snowflake, String> {
+	val parts = url.split("/").reversed()
+	return Snowflake(parts[1]) to parts[0]
+}
+
 suspend fun Guild.getModLogChannel() =
 	channels.firstOrNull { it.name == "moderation-log" }
         ?.asChannelOfOrNull<GuildMessageChannel>()

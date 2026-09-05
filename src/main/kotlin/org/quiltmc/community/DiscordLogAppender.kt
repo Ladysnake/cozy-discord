@@ -30,21 +30,7 @@ class DiscordLogAppender : AppenderBase<ILoggingEvent>(), KordExKoinComponent {
 	lateinit var url: String
 	var level: Level = Level.ALL
 
-	private val webhookId: Snowflake by lazy {
-		val parts = url.split("/").toMutableList()
-
-		parts.removeLast()
-		Snowflake(parts.removeLast())
-	}
-
-	private val webhookToken: String by lazy {
-		val parts = url.split("/").toMutableList()
-		parts.removeLast()
-	}
-
-	private val webhook: WebhookBehavior by lazy {
-		kord.unsafe.webhook(webhookId)
-	}
+	private val webhookInfo: Pair<Snowflake, String> by lazy { parseWebhookUrl(url) }
 
 	private val logger = KotlinLogging.logger("org.quiltmc.community.DiscordLogAppender")
 	private val kord: Kord by inject()
@@ -57,7 +43,7 @@ class DiscordLogAppender : AppenderBase<ILoggingEvent>(), KordExKoinComponent {
 
 		kord.launch {
 			try {
-				webhook.execute(webhookToken) {
+				kord.getWebhookWithTokenOrNull(webhookInfo.first, webhookInfo.second)?.execute(webhookInfo.second) {
 					embed {
 						description = eventObject.message
 						timestamp = Instant.fromEpochMilliseconds(eventObject.timeStamp)

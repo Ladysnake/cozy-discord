@@ -38,7 +38,7 @@ def loggers = ["CONSOLE"]
 if (logUrl != null) {
 	appender("DISCORD_WEBHOOK", DiscordLogAppender) {
 		level = WARN
-		url = System.getenv("DISCORD_LOGGER_URL")
+		url = logUrl
 	}
 
 	loggers << "DISCORD_WEBHOOK"

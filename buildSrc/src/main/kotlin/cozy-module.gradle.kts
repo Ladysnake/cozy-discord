@@ -25,6 +25,10 @@ repositories {
 	mavenLocal()
 	google()
 
+	maven("https://repo.kordex.dev/releases")
+	maven("https://repo.kordex.dev/snapshots")
+	maven("https://repo.kordex.dev/mirror")
+
 	maven {
 		name = "Sleeping Town"
 		url = uri("https://repo.sleeping.town")
@@ -71,8 +75,17 @@ repositories {
 }
 
 configurations.all {
-	resolutionStrategy.cacheDynamicVersionsFor(10, "seconds")
-	resolutionStrategy.cacheChangingModulesFor(10, "seconds")
+//	resolutionStrategy.cacheDynamicVersionsFor(10, "seconds")
+//	resolutionStrategy.cacheChangingModulesFor(10, "seconds")
+
+	// FIXME this is to redirect old kord version that doesnt exist anymore
+	resolutionStrategy.dependencySubstitution.all {
+		requested.let {
+			if (it is ModuleComponentSelector && it.group == "dev.kord" && it.version.endsWith("-SNAPSHOT")) {
+				useTarget("${it.group}:${it.module}:${it.version.removeSuffix("-SNAPSHOT")}")
+			}
+		}
+	}
 }
 
 tasks {

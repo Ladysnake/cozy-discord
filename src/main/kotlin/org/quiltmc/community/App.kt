@@ -77,26 +77,26 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	}
 
 	extensions {
-		add(::SettingsExtension)
+		add(::SettingsExtension) // store global settings in DB
 
-        add(::FilterExtension)
+        add(::FilterExtension) // message filters, member filterss
 
-        add(::MessageLogExtension)
-        add(::MinecraftExtension)
-        add(::SuggestionsExtension)
-        add(::SyncExtension)
-        add(::UtilityExtension)
-        add(::ModerationExtension)
-        add(::UserFunExtension)
-        add(::PersistentCacheExtension)
-        add(::MessageEditExtension)
-        add(::ExtraLogExtension)
-        add(::ForcedPermissionExtension)
-		add(::ConsoleLogExtension)
+        add(::MessageLogExtension) // rotating server logs
+        add(::MinecraftExtension) // MC changelogs
+//        add(::SuggestionsExtension) // feature suggestion threads
+        add(::SyncExtension) // sync bans and timeouts
+        add(::UtilityExtension) // nickname sync, heartbeat, announcement auto-publish, delete 'message pinned' and thread creation messages, auto-add moderators to threads, thread auto-bump (prevent archiving), self-timeout, view raw message content, save thread to file, thread auto-lock on archiving, ping groups, lock servers/channels, manage guilds that the bot is in, /fix-mute-role, /say, user-owned threads
+        add(::ModerationExtension) //message purge, slowmode, message spam prevention, mention spam prevention, bans, kicks, timeouts, vc-mutes, moderator-notes,
+        add(::UserFunExtension) // lottery (disabled), role assignment (disabled), /bean, quotes
+        add(::PersistentCacheExtension)  // persist message cache to disk
+        add(::MessageEditExtension) // edit messages sent by the bot
+        add(::ExtraLogExtension) // log: member join/leave, server status update, role create/update/delete
+//        add(::ForcedPermissionExtension) // force @everyone role to have use slash commands permission
+		add(::ConsoleLogExtension) // log guild memberships and global commands on startup
 
-        if (GITHUB_TOKEN != null) {
-            add(::GithubExtension)
-        }
+//        if (GITHUB_TOKEN != null) {
+//            add(::GithubExtension) // manage github org blocks
+//        }
 
         extMappings { }
 

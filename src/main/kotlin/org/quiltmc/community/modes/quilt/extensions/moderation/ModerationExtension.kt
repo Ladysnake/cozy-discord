@@ -248,9 +248,8 @@ class ModerationExtension(
 		if (Module.LIMIT_MENTIONING in enabledModules) {
 			event<MessageCreateEvent> {
 				check { failIfNot(event.message.type in listOf(MessageType.Default, MessageType.Reply)) }
-				check { failIf(event.message.data.authorId == kord.selfId) }
-				check { failIf(event.message.author?.isBot == true) }
-				check { failIf(event.guildId == null) }
+//				check { failIf(event.message.data.authorId == kord.selfId) } // not needed since we already ignore bots
+				check { failIf(event.message.author?.isBot ?: true) }
 				check { notHasBaseModeratorRole() }
 				check { notExempted() }
 				check {
@@ -258,13 +257,12 @@ class ModerationExtension(
 						event.getGuildOrNull()
 							?.getSettings()
 							?.pingTimeoutBlacklist
-							?.contains(event.message.data.authorId) == true
+							?.contains(event.message.data.authorId)
+							?: true
 					)
 				}
 
 				action {
-					val guild = event.guildId!!
-
 					val mentions = event.message.mentionedUserIds + event.message.mentionedRoleIds
 					if (mentions.size > MAX_MENTIONS_PER_MESSAGE && MAX_MENTIONS_PER_MESSAGE != 0) {
 						event.message.delete()
@@ -317,7 +315,6 @@ class ModerationExtension(
 					check { hasBaseModeratorRole() }
 
 					action {
-//					val guild = getGuild()?.asGuild() ?: return@action
 						if (arguments.mentionable is Role && arguments.allowReplyMentions == true) {
 							throw DiscordRelayedException("You cannot allow reply mentions for a role.")
 						}
@@ -479,7 +476,7 @@ class ModerationExtension(
 				check { hasBaseModeratorRole() }
 				check { inLadysnakeGuild() }
 
-				action(::beanUser)
+				action(::banUser)
 			}
 			ephemeralSlashCommand(::TimeoutArguments) {
 				name = "timeout"
@@ -1168,7 +1165,7 @@ class ModerationExtension(
 		}
 	}
 
-	private suspend fun beanUser(context: EphemeralSlashCommandContext<BanArguments, *>, ignored: ModalForm?) {
+	private suspend fun banUser(context: EphemeralSlashCommandContext<BanArguments, *>, ignored: ModalForm?) {
 		if (context.guild == null) {
 			throw DiscordRelayedException("This command can only be used in a guild.")
 		}
@@ -1222,10 +1219,11 @@ class ModerationExtension(
 
 		try {
 			user.dm {
-				content = "You have been banned from ${context.guild!!.asGuild().name} " +
-						"until $returnTime for the following reason:\n\n" +
+				content = """
+					You have been banned from ${context.guild!!.asGuild().name} until $returnTime for the following reason:
 
-						context.arguments.reason
+					${context.arguments.reason}
+					""".trimIndent()
 			}
 
 			reportToModChannel(context.guild?.asGuild()) {
@@ -1277,7 +1275,7 @@ class ModerationExtension(
 		if (restriction.isBanned) {
 			recentlyBannedUsers[restriction._id] = context.user.asUser()
 
-			// ban the user (the restriction just was created)
+			// ban the user (the restriction was just created)
 			member.ban {
 				this.reason = reason
 				deleteMessageDuration = context.arguments.daysToDelete.days

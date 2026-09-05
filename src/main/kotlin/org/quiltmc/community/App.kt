@@ -60,7 +60,6 @@ val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
 suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	common()
 	database(true)
-	settings()
 
 	chatCommands {
 		defaultPrefix = "%"
@@ -78,11 +77,12 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	}
 
 	extensions {
+		add(::SettingsExtension)
+
         add(::FilterExtension)
 
         add(::MessageLogExtension)
         add(::MinecraftExtension)
-        add(::SettingsExtension)
         add(::SuggestionsExtension)
         add(::SyncExtension)
         add(::UtilityExtension)
@@ -237,11 +237,9 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 
 @Suppress("UseIfInsteadOfWhen") // currently only one mode but that could change
 suspend fun main() {
-	val bot = when (MODE) {
-		"ladysnake" -> setupLadysnake()
-
+	return when (MODE) {
+		"ladysnake" -> setupLadysnake().start()
+		"server" -> error("Server mode not implemented yet!") // FIXME implement
 		else -> error("Invalid mode: $MODE")
 	}
-
-	bot.start()
 }

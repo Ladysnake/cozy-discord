@@ -219,12 +219,6 @@ suspend fun ExtensibleBotBuilder.common() {
 	}
 }
 
-suspend fun ExtensibleBotBuilder.settings() {
-	extensions {
-		add(::SettingsExtension)
-	}
-}
-
 fun Guild.getMaxArchiveDuration(): ArchiveDuration {
 	val features = features.filter {
 		it.value == "THREE_DAY_THREAD_ARCHIVE" ||

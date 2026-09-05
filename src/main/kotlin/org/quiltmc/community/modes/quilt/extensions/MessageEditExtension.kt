@@ -34,6 +34,7 @@ class MessageEditExtension : Extension() {
 
 	override suspend fun setup() {
         getGuilds().forEach {
+			// todo make a message command?
             ephemeralSlashCommand {
                 name = "edit"
                 description = "Edit a message sent by ${kord.getSelf().username}"

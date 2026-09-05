@@ -640,70 +640,7 @@ class UtilityExtension : Extension() {
 					}
 				}
 
-				ephemeralSubCommand(::RenameArguments) {
-					name = "rename"
-					description = "Rename the current thread, if you have permission"
-
-					check { isInThread() }
-
-					action {
-						val channel = channel.asChannelOfOrNull<ThreadChannel>()
-                            ?: run {
-                                respond {
-                                    content = "**Error:** ${channel.mention} isn't a thread!"
-                                }
-                                return@action
-                            }
-						val member = user.asMember(guild!!.id)
-						val roles = member.roles.toList().map { it.id }
-
-						if (privilegedRoles.any { it in roles }) {
-							channel.edit {
-								name = arguments.name
-
-								reason = "Renamed by ${member.tag}"
-							}
-
-							val suggestion = suggestions?.getByThread(channel.id)
-
-                            if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
-                                suggestion.status = SuggestionStatus.Open
-                                suggestion.positiveVoters.add(member.id)
-                                // because `suggestion` is non-null, `suggestions` is non-null
-                                suggestions!!.set(suggestion)
-                                // that also means `suggestionsExtension` is non-null
-                                suggestionsExtension!!.sendSuggestion(suggestion)
-                            }
-
-                            edit { content = "Thread renamed." }
-
-							return@action
-						}
-
-						if ((channel.ownerId != user.id && threads.isOwner(channel, user) != true)) {
-							edit { content = "**Error:** This is not your thread." }
-
-							return@action
-						}
-
-						channel.edit {
-							name = arguments.name
-
-							reason = "Renamed by ${member.tag}"
-						}
-
-						val suggestion = suggestions?.getByThread(channel.id)
-
-                        if (suggestion != null && suggestion.status == SuggestionStatus.RequiresName) {
-                            suggestion.status = SuggestionStatus.Open
-                            suggestions!!.set(suggestion)
-                            suggestionsExtension!!.sendSuggestion(suggestion)
-                        }
-
-                        edit { content = "Thread renamed." }
-                    }
-                }
-
+				// TODO figure out if this is still needed
 				ephemeralSubCommand(::ArchiveArguments) {
 					name = "archive"
 					description = "Archive the current thread, if you have permission"
@@ -787,7 +724,6 @@ class UtilityExtension : Extension() {
 
 					action {
 						val channel = channel.asChannelOf<ThreadChannel>()
-						val member = user.asMember(guild!!.id)
 						val ownedThread = threads.get(channel)
 
 						if (ownedThread != null) {
@@ -817,82 +753,6 @@ class UtilityExtension : Extension() {
 						}
 
 						edit { content = "Auto-lock settings updated." }
-					}
-				}
-
-				ephemeralSubCommand(::PinMessageArguments) {
-					name = "pin"
-					description = "Pin a message in this thread, if you have permission"
-
-					check { isInThread() }
-
-					action {
-						val channel = channel.asChannelOf<ThreadChannel>()
-						val member = user.asMember(guild!!.id)
-						val roles = member.roles.toList().map { it.id }
-
-						if (arguments.message.channelId != channel.id) {
-							edit {
-								content = "**Error:** You may only pin a message in the current thread."
-							}
-
-							return@action
-						}
-
-						if (privilegedRoles.any { it in roles }) {
-							arguments.message.pin("Pinned by ${member.tag}")
-							edit { content = "Message pinned." }
-
-							return@action
-						}
-
-						if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-							edit { content = "**Error:** This is not your thread." }
-
-							return@action
-						}
-
-						arguments.message.pin("Pinned by ${member.tag}")
-
-						edit { content = "Message pinned." }
-					}
-				}
-
-				ephemeralSubCommand(::PinMessageArguments) {
-					name = "unpin"
-					description = "Unpin a message in this thread, if you have permission"
-
-					check { isInThread() }
-
-					action {
-						val channel = channel.asChannelOf<ThreadChannel>()
-						val member = user.asMember(guild!!.id)
-						val roles = member.roles.toList().map { it.id }
-
-						if (arguments.message.channelId != channel.id) {
-							edit {
-								content = "**Error:** You may only pin a message in the current thread."
-							}
-
-							return@action
-						}
-
-						if (privilegedRoles.any { it in roles }) {
-							arguments.message.unpin("Unpinned by ${member.tag}")
-							edit { content = "Message unpinned." }
-
-							return@action
-						}
-
-						if (channel.ownerId != user.id && threads.isOwner(channel, user) != true) {
-							edit { content = "**Error:** This is not your thread." }
-
-							return@action
-						}
-
-						arguments.message.unpin("Unpinned by ${member.tag}")
-
-						edit { content = "Message unpinned." }
 					}
 				}
 
@@ -1640,97 +1500,6 @@ class UtilityExtension : Extension() {
 			}
         }
 
-        event<MessageCreateEvent> {
-            check { inLadysnakeGuild() }
-            check { isNotBot() }
-            check { isNotInThread() }
-            check { failIfNot(event.message.channelId in THREAD_ONLY_CHANNELS) }
-
-            action {
-                val settings = event.getGuildOrNull()!!.getSettings() ?: return@action
-                if (event.message.channelId in settings.threadOnlyChannels) {
-                    if (event.message.attachments.isEmpty()) {
-                        event.message.delete("Found in thread-only channel without attachment")
-                        event.member!!.dm {
-                            content = "Your message in <#${event.message.channelId}> was deleted. " +
-                                    "Please use the appropriate thread to talk about a post in this channel."
-                        }
-                    } else {
-                        val channel = event.message.channel.asChannelOf<TextChannel>()
-
-                        val messageContent = event.message.content
-
-                        @Suppress("MagicNumber")
-                        val threadName = if (messageContent.isBlank()) {
-                            val attachments = event.message.attachments
-                            if (attachments.size == 1) {
-                                attachments.first().filename
-                            } else {
-                                attachments.size.toString() + " attachments"
-                            }
-                        } else if (messageContent.length > 25) {
-                            messageContent.substring(0, 22) + "..."
-                        } else {
-                            messageContent
-                        }
-
-						val archiveDuration = channel.getArchiveDuration(guildFor(event)?.getSettings())
-                        val thread = channel.startPublicThreadWithMessage(
-                            event.message.id,
-                            threadName
-						) {
-							autoArchiveDuration = archiveDuration
-							reason = "Automatic thread for thread-only channel"
-						}
-
-                        val ownedThread = OwnedThread(
-                            thread.id,
-                            event.member!!.id,
-                            event.guildId!!,
-                            preventArchiving = false
-                        )
-
-                        threads.set(ownedThread)
-
-                        logger.info { "Thread auto-created for ${event.message.author!!.tag}" }
-
-                        val role = when (event.message.getGuild().id) {
-                            LADYSNAKE_GUILD -> event.message.getGuild().getRole(LADYSNAKE_MODERATOR_ROLE)
-                            YOUTUBE_GUILD -> event.message.getGuild().getRole(YOUTUBE_MODERATOR_ROLE)
-                            else -> return@action
-                        }
-
-                        thread.addUser(event.message.author!!.id)
-
-                        val message = thread.createMessage {
-                            content = "Oh hey there, we just gotta do a bit of moderator-related setup " +
-                                    "for this fun new creation..."
-                        }
-
-                        thread.withTyping {
-                            delay(MESSAGE_EDIT_DELAY)
-                        }
-
-                        message.edit {
-                            content = "Hey, ${role.mention}! Say cheese!"
-                        }
-
-                        thread.withTyping {
-                            delay(MESSAGE_EDIT_DELAY)
-                        }
-
-                        message.edit {
-                            content = "Welcome to your thread, ${event.message.author!!.mention}! " +
-                                    "You can discuss your post with others here, and you can use the thread " +
-                                    "commands, both `/thread` and the message commands, to manage your thread. "
-                        }
-
-                        message.pin("First message in the thread.")
-                    }
-                }
-            }
-        }
-
 		chatCommand(::SelfTimeoutArguments) {
 			name = "self-timeout"
 			description = "Time yourself out for up to three days"
@@ -1818,6 +1587,7 @@ class UtilityExtension : Extension() {
 			}
 		}
 
+		// TODO move to bot management module
         ephemeralSlashCommand {
             name = "guilds"
             description = "Manage guilds that the bot is in"
@@ -1890,29 +1660,6 @@ class UtilityExtension : Extension() {
                 }
             }
         }
-
-		ephemeralUserCommand {
-			name = "Force verify"
-
-			check { hasBaseModeratorRole() }
-			check { inLadysnakeGuild() }
-
-			action {
-				val message = "Temp role for force verify"
-				val tempRole = guild!!.createRole {
-					name = "Temp verification role"
-					reason = message
-				}
-
-				val member = event.interaction.target.asMember(guild!!.id)
-
-				member.addRole(tempRole.id, message)
-
-				respond {
-					content = "Force verified ${user.mention}"
-				}
-			}
-		}
 
 		scheduler.schedule(5.minutes, repeat = true) {
 			val tenMinutesAgo = Clock.System.now() - 10.minutes

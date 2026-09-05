@@ -262,304 +262,304 @@ class UserFunExtension : Extension() {
 
 		// region: Lottery / Giveaway / Drawing
 
-		ephemeralMessageCommand {
-			name = "Create a drawing"
-
-			check { hasBaseModeratorRole() }
-
-			action {
-				val message = targetMessages.first()
-
-				val attachments = message.attachments.associate { it.filename to it.download() }
-
-				message.channel.createMessage {
-					embed {
-						title = "Drawing"
-						description = message.content
-						color = DISCORD_BLURPLE
-
-						field {
-							name = "Host"
-							value = message.author?.mention ?: "N/A"
-							inline = true
-						}
-
-						field {
-							name = "Current entrants"
-							value = "0"
-						}
-					}
-
-					for ((name, attachment) in attachments) {
-						addFile(name, ChannelProvider { ByteArrayInputStream(attachment).toByteReadChannel() })
-					}
-
-					actionRow {
-						interactionButton(
-							ButtonStyle.Primary,
-							"lottery:${message.id}:enter"
-						) {
-							label = "Enter"
-							emoji(ReactionEmoji.Unicode("✅"))
-						}
-
-						interactionButton(
-							ButtonStyle.Danger,
-							"lottery:${message.id}:cancel"
-						) {
-							label = "Cancel"
-							emoji(ReactionEmoji.Unicode("❌"))
-						}
-
-						interactionButton(
-							ButtonStyle.Secondary,
-							"lottery:${message.id}:close"
-						) {
-							label = "Close"
-							emoji(ReactionEmoji.Unicode("🔒"))
-						}
-					}
-
-					val winnerCountDetectorRegex = Regex("""\d+ winners?""", RegexOption.IGNORE_CASE)
-
-					val winnerText = winnerCountDetectorRegex.find(message.content)?.value ?: "1 winner"
-					val winnerCount = winnerText.split(" ")[0].toIntOrNull() ?: 1
-
-					val newLottery = Lottery(
-						message.id,
-						mutableSetOf(),
-						winnerCount,
-					)
-
-					lotteryCollection.save(newLottery)
-				}
-
-				message.delete()
-
-				respond {
-					content = "Drawing created!"
-				}
-			}
-		}
-
-		ephemeralSlashCommand(::LotteryCreateArguments) {
-			name = "create-drawing"
-			description = "Create a drawing"
-
-			check { hasBaseModeratorRole() }
-
-			action {
-				val winnerCount = arguments.winners
-				val autoResponse = arguments.autoMessage
-				val desc = arguments.description
-				val channel: TopGuildMessageChannel =
-					arguments.channel?.asChannelOfOrNull() ?: getChannel().asChannelOf()
-
-				val message = channel.createMessage("Drawing!")
-
-				message.edit {
-					embed {
-						title = "Drawing"
-						description = desc
-						color = DISCORD_BLURPLE
-
-						field {
-							name = "Host"
-							value = user.mention
-							inline = true
-						}
-
-						field {
-							name = "Current entrants"
-							value = "0"
-						}
-
-						if (autoResponse != null) {
-							field {
-								name = "Enable DMs!"
-								value = "A message will be sent to you in DMs if you win. " +
-										"Be sure to enable DMs to get the message!"
-							}
-						}
-					}
-
-					actionRow {
-						interactionButton(
-							ButtonStyle.Primary,
-							"lottery:${message.id}:enter"
-						) {
-							label = "Enter"
-							emoji(ReactionEmoji.Unicode("✅"))
-						}
-
-						interactionButton(
-							ButtonStyle.Danger,
-							"lottery:${message.id}:cancel"
-						) {
-							label = "Cancel"
-							emoji(ReactionEmoji.Unicode("❌"))
-						}
-
-						interactionButton(
-							ButtonStyle.Secondary,
-							"lottery:${message.id}:close"
-						) {
-							label = "Close"
-							emoji(ReactionEmoji.Unicode("🔒"))
-						}
-					}
-				}
-
-				val newLottery = Lottery(
-					message.id,
-					mutableSetOf(),
-					winnerCount,
-					autoResponse
-				)
-
-				lotteryCollection.save(newLottery)
-
-				respond {
-					content = "Drawing created!"
-				}
-			}
-		}
-
-		event<ButtonInteractionCreateEvent> {
-			action {
-				val interaction = event.interaction
-
-				val idParts = interaction.componentId.split(":")
-
-				@Suppress("MagicNumber") // yeef 3 is too big apparently
-				if (idParts[0] != "lottery" || idParts.size != 3) {
-					return@action
-				}
-
-				val lotteryId = Snowflake(idParts[1])
-				val action = idParts[2]
-
-				val lottery = lotteryCollection.get(lotteryId) ?: return@action
-
-				when (action) {
-					"enter" -> {
-						lottery.participants.add(interaction.user.id)
-						lotteryCollection.save(lottery)
-
-						val msgEmbed = interaction.message.embeds.firstOrNull()
-
-						interaction.message.edit {
-							embed {
-								title = msgEmbed?.title
-								description = msgEmbed?.description
-								color = msgEmbed?.color ?: DISCORD_BLURPLE
-
-								for (field in msgEmbed?.fields ?: emptyList()) {
-									field {
-										name = field.name
-										value = field.value
-										inline = field.inline
-									}
-								}
-
-								fields.first { it.name == "Current entrants" }.value =
-									lottery.participants.size.toString()
-							}
-						}
-
-						interaction.respondEphemeral {
-							content = "You have entered the drawing!"
-						}
-					}
-
-					"cancel" -> {
-						val wasInLottery = lottery.participants.remove(interaction.user.id)
-
-						if (!wasInLottery) {
-							// ignore this user's strange request
-							interaction.deferEphemeralResponse()
-							return@action
-						}
-
-						lotteryCollection.save(lottery)
-
-						val msgEmbed = interaction.message.embeds.firstOrNull()
-
-						interaction.message.edit {
-							embed {
-								title = msgEmbed?.title
-								description = msgEmbed?.description
-								color = msgEmbed?.color ?: DISCORD_BLURPLE
-
-								for (field in msgEmbed?.fields ?: emptyList()) {
-									field {
-										name = field.name
-										value = field.value
-										inline = field.inline
-									}
-								}
-
-								fields.first { it.name == "Current entrants" }.value =
-									lottery.participants.size.toString()
-							}
-						}
-
-						interaction.respondEphemeral {
-							content = "You have left the drawing! (if you were in it)"
-						}
-					}
-
-					"close" -> {
-						val authorEmbedField = interaction.message.embeds.firstOrNull()
-							?.fields?.firstOrNull { it.name == "Host" } ?: run {
-							interaction.respondEphemeral {
-								content = "There may be an issue with this drawing..."
-							}
-							return@action
-						}
-
-						if (authorEmbedField.value != interaction.user.mention) {
-							interaction.respondEphemeral {
-								content = "You can't close this drawing!"
-							}
-							return@action
-						}
-
-						val channel = interaction.channel.asChannelOf<GuildMessageChannel>()
-						val winners = lottery.participants.shuffled()
-							.mapNotNull { channel.guild.getMemberOrNull(it) }
-							.take(lottery.winners)
-
-						channel.withTyping {
-							interaction.message.edit {
-								components = mutableListOf()
-							}
-
-							interaction.respondEphemeral {
-								content = "Chosen ${winners.size} winners and creating the message..."
-							}
-
-							interaction.message.reply {
-								embed {
-									title = "Event ended"
-									description = "The event has ended! Here are the winners:\n\n" +
-											winners.joinToString("\n") { it.mention }
-								}
-							}
-						}
-
-						if (lottery.autoMessage != null) {
-							winners.forEach {
-								it.dm(
-									"You have won a drawing! Response added to the drawing:\n\n" +
-											lottery.autoMessage
-								)
-							}
-						}
-					}
-				}
-			}
-		}
+//		ephemeralMessageCommand {
+//			name = "Create a drawing"
+//
+//			check { hasBaseModeratorRole() }
+//
+//			action {
+//				val message = targetMessages.first()
+//
+//				val attachments = message.attachments.associate { it.filename to it.download() }
+//
+//				message.channel.createMessage {
+//					embed {
+//						title = "Drawing"
+//						description = message.content
+//						color = DISCORD_BLURPLE
+//
+//						field {
+//							name = "Host"
+//							value = message.author?.mention ?: "N/A"
+//							inline = true
+//						}
+//
+//						field {
+//							name = "Current entrants"
+//							value = "0"
+//						}
+//					}
+//
+//					for ((name, attachment) in attachments) {
+//						addFile(name, ChannelProvider { ByteArrayInputStream(attachment).toByteReadChannel() })
+//					}
+//
+//					actionRow {
+//						interactionButton(
+//							ButtonStyle.Primary,
+//							"lottery:${message.id}:enter"
+//						) {
+//							label = "Enter"
+//							emoji(ReactionEmoji.Unicode("✅"))
+//						}
+//
+//						interactionButton(
+//							ButtonStyle.Danger,
+//							"lottery:${message.id}:cancel"
+//						) {
+//							label = "Cancel"
+//							emoji(ReactionEmoji.Unicode("❌"))
+//						}
+//
+//						interactionButton(
+//							ButtonStyle.Secondary,
+//							"lottery:${message.id}:close"
+//						) {
+//							label = "Close"
+//							emoji(ReactionEmoji.Unicode("🔒"))
+//						}
+//					}
+//
+//					val winnerCountDetectorRegex = Regex("""\d+ winners?""", RegexOption.IGNORE_CASE)
+//
+//					val winnerText = winnerCountDetectorRegex.find(message.content)?.value ?: "1 winner"
+//					val winnerCount = winnerText.split(" ")[0].toIntOrNull() ?: 1
+//
+//					val newLottery = Lottery(
+//						message.id,
+//						mutableSetOf(),
+//						winnerCount,
+//					)
+//
+//					lotteryCollection.save(newLottery)
+//				}
+//
+//				message.delete()
+//
+//				respond {
+//					content = "Drawing created!"
+//				}
+//			}
+//		}
+//
+//		ephemeralSlashCommand(::LotteryCreateArguments) {
+//			name = "create-drawing"
+//			description = "Create a drawing"
+//
+//			check { hasBaseModeratorRole() }
+//
+//			action {
+//				val winnerCount = arguments.winners
+//				val autoResponse = arguments.autoMessage
+//				val desc = arguments.description
+//				val channel: TopGuildMessageChannel =
+//					arguments.channel?.asChannelOfOrNull() ?: getChannel().asChannelOf()
+//
+//				val message = channel.createMessage("Drawing!")
+//
+//				message.edit {
+//					embed {
+//						title = "Drawing"
+//						description = desc
+//						color = DISCORD_BLURPLE
+//
+//						field {
+//							name = "Host"
+//							value = user.mention
+//							inline = true
+//						}
+//
+//						field {
+//							name = "Current entrants"
+//							value = "0"
+//						}
+//
+//						if (autoResponse != null) {
+//							field {
+//								name = "Enable DMs!"
+//								value = "A message will be sent to you in DMs if you win. " +
+//										"Be sure to enable DMs to get the message!"
+//							}
+//						}
+//					}
+//
+//					actionRow {
+//						interactionButton(
+//							ButtonStyle.Primary,
+//							"lottery:${message.id}:enter"
+//						) {
+//							label = "Enter"
+//							emoji(ReactionEmoji.Unicode("✅"))
+//						}
+//
+//						interactionButton(
+//							ButtonStyle.Danger,
+//							"lottery:${message.id}:cancel"
+//						) {
+//							label = "Cancel"
+//							emoji(ReactionEmoji.Unicode("❌"))
+//						}
+//
+//						interactionButton(
+//							ButtonStyle.Secondary,
+//							"lottery:${message.id}:close"
+//						) {
+//							label = "Close"
+//							emoji(ReactionEmoji.Unicode("🔒"))
+//						}
+//					}
+//				}
+//
+//				val newLottery = Lottery(
+//					message.id,
+//					mutableSetOf(),
+//					winnerCount,
+//					autoResponse
+//				)
+//
+//				lotteryCollection.save(newLottery)
+//
+//				respond {
+//					content = "Drawing created!"
+//				}
+//			}
+//		}
+//
+//		event<ButtonInteractionCreateEvent> {
+//			action {
+//				val interaction = event.interaction
+//
+//				val idParts = interaction.componentId.split(":")
+//
+//				@Suppress("MagicNumber") // yeef 3 is too big apparently
+//				if (idParts[0] != "lottery" || idParts.size != 3) {
+//					return@action
+//				}
+//
+//				val lotteryId = Snowflake(idParts[1])
+//				val action = idParts[2]
+//
+//				val lottery = lotteryCollection.get(lotteryId) ?: return@action
+//
+//				when (action) {
+//					"enter" -> {
+//						lottery.participants.add(interaction.user.id)
+//						lotteryCollection.save(lottery)
+//
+//						val msgEmbed = interaction.message.embeds.firstOrNull()
+//
+//						interaction.message.edit {
+//							embed {
+//								title = msgEmbed?.title
+//								description = msgEmbed?.description
+//								color = msgEmbed?.color ?: DISCORD_BLURPLE
+//
+//								for (field in msgEmbed?.fields ?: emptyList()) {
+//									field {
+//										name = field.name
+//										value = field.value
+//										inline = field.inline
+//									}
+//								}
+//
+//								fields.first { it.name == "Current entrants" }.value =
+//									lottery.participants.size.toString()
+//							}
+//						}
+//
+//						interaction.respondEphemeral {
+//							content = "You have entered the drawing!"
+//						}
+//					}
+//
+//					"cancel" -> {
+//						val wasInLottery = lottery.participants.remove(interaction.user.id)
+//
+//						if (!wasInLottery) {
+//							// ignore this user's strange request
+//							interaction.deferEphemeralResponse()
+//							return@action
+//						}
+//
+//						lotteryCollection.save(lottery)
+//
+//						val msgEmbed = interaction.message.embeds.firstOrNull()
+//
+//						interaction.message.edit {
+//							embed {
+//								title = msgEmbed?.title
+//								description = msgEmbed?.description
+//								color = msgEmbed?.color ?: DISCORD_BLURPLE
+//
+//								for (field in msgEmbed?.fields ?: emptyList()) {
+//									field {
+//										name = field.name
+//										value = field.value
+//										inline = field.inline
+//									}
+//								}
+//
+//								fields.first { it.name == "Current entrants" }.value =
+//									lottery.participants.size.toString()
+//							}
+//						}
+//
+//						interaction.respondEphemeral {
+//							content = "You have left the drawing! (if you were in it)"
+//						}
+//					}
+//
+//					"close" -> {
+//						val authorEmbedField = interaction.message.embeds.firstOrNull()
+//							?.fields?.firstOrNull { it.name == "Host" } ?: run {
+//							interaction.respondEphemeral {
+//								content = "There may be an issue with this drawing..."
+//							}
+//							return@action
+//						}
+//
+//						if (authorEmbedField.value != interaction.user.mention) {
+//							interaction.respondEphemeral {
+//								content = "You can't close this drawing!"
+//							}
+//							return@action
+//						}
+//
+//						val channel = interaction.channel.asChannelOf<GuildMessageChannel>()
+//						val winners = lottery.participants.shuffled()
+//							.mapNotNull { channel.guild.getMemberOrNull(it) }
+//							.take(lottery.winners)
+//
+//						channel.withTyping {
+//							interaction.message.edit {
+//								components = mutableListOf()
+//							}
+//
+//							interaction.respondEphemeral {
+//								content = "Chosen ${winners.size} winners and creating the message..."
+//							}
+//
+//							interaction.message.reply {
+//								embed {
+//									title = "Event ended"
+//									description = "The event has ended! Here are the winners:\n\n" +
+//											winners.joinToString("\n") { it.mention }
+//								}
+//							}
+//						}
+//
+//						if (lottery.autoMessage != null) {
+//							winners.forEach {
+//								it.dm(
+//									"You have won a drawing! Response added to the drawing:\n\n" +
+//											lottery.autoMessage
+//								)
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
 
 		// endregion
 

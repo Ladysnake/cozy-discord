@@ -92,6 +92,7 @@ class ModerationExtension(
 	private var idActionCommand = "`/id-action`"
 
 	override suspend fun setup() {
+		// region purge
 		if (Module.PURGE in enabledModules) {
 			ephemeralSlashCommand(::PurgeArguments) {
 				name = "purge"
@@ -140,6 +141,9 @@ class ModerationExtension(
 				}
 			}
 		}
+		// endregion
+
+		// region channel slowmode
 		if (Module.CHANNEL_SLOWMODE in enabledModules) {
 			ephemeralSlashCommand(::SlowModeArguments) {
 				name = "slowmode"
@@ -150,6 +154,9 @@ class ModerationExtension(
 				action(::slowmode)
 			}
 		}
+		// endregion
+
+		// region limit spam
 		if (Module.LIMIT_SPAM in enabledModules) {
 			// map of user ids to the most recent message ids
 			val recentMessages = mutableMapOf<Snowflake, MutableList<Snowflake>>()
@@ -164,63 +171,80 @@ class ModerationExtension(
 					}
 					val user = event.message.author?.id ?: return@action
 					val messageId = event.message.id
-					val recentMessagesForUser = recentMessages.getOrPut(user) { mutableListOf() }
 
-					recentMessagesForUser.add(messageId)
+					var recentMessagesCount = 0
+					var messagesThisSecondCount = 0
 
-					// remove all messages older than 1 minute
-					recentMessagesForUser.removeAll {
-						(it.timeMark + 60.seconds).hasPassedNow()
+					synchronized(recentMessages) {
+						val recentMessagesForUser = recentMessages.getOrPut(user) { mutableListOf() }
+
+						recentMessagesForUser.add(messageId)
+
+						// remove all messages older than 1 minute
+						recentMessagesForUser.removeAll {
+							(it.timeMark + 60.seconds).hasPassedNow()
+						}
+						recentMessagesCount = recentMessagesForUser.count()
+
+						// also check for spam that happened in a second
+						messagesThisSecondCount = recentMessagesForUser.filterNot {
+							(it.timeMark + 1.seconds).hasPassedNow()
+						}.count()
 					}
 
-					// also check for spam that happened in a second
-					val spamCheck = recentMessagesForUser.filterNot {
-						(it.timeMark + 1.seconds).hasPassedNow()
-					}
-
-					if (spamCheck.size > ABSOLUTE_MAX_PER_SECOND || spamCheck.size > ABSOLUTE_MAX_PER_MINUTE) {
+					if (messagesThisSecondCount > ABSOLUTE_MAX_PER_SECOND) {
 						// over the limit, time the user out
 						event.message.getAuthorAsMember().timeout(2.minutes)
 						event.message.author.tryDM(event.getGuildOrNull()) {
-							content = "You have been timed out for spamming in an associated server. " +
-									"Please do not spam."
-						}
-						return@action
-					}
-
-					if (recentMessagesForUser.size > MAX_MESSAGES_PER_MINUTE) {
-						event.message.delete()
-						event.message.author.tryDM(event.getGuildOrNull()) {
-							content = "You have exceeded the maximum amount of messages per minute. " +
-									"Please wait a minute before sending another message."
+							content = """
+								You have been timed out for spamming in an associated server.
+								Please do not spam.
+								""".trimIndent()
 						}
 					}
-
-					if (spamCheck.size > MAX_MESSAGES_PER_SECOND) {
+					else if (recentMessagesCount > MAX_MESSAGES_PER_MINUTE) {
 						event.message.delete()
 						event.message.author.tryDM(event.getGuildOrNull()) {
-							content = "You have exceeded the maximum amount of messages per second. " +
-									"Please wait a second before sending another message."
+							content = """
+								You have exceeded the maximum amount of messages per minute.
+								Please wait a minute before sending another message.
+								""".trimIndent()
+						}
+					}
+					else if (messagesThisSecondCount > MAX_MESSAGES_PER_SECOND) {
+						event.message.delete()
+						event.message.author.tryDM(event.getGuildOrNull()) {
+							content = """
+								You have exceeded the maximum amount of messages per second.
+								Please wait a few seconds before sending another message.
+								""".trimIndent()
 						}
 					}
 				}
 			}
 
 			// finally make sure the recent messages map is cleaned up on a regular basis to not use up too much memory
-			var schedulerCallback: suspend () -> Unit = {}
-			schedulerCallback = {
-				recentMessages.forEach { (_, messages) ->
-					// remove all messages older than 1 minute
-					messages.removeAll {
-						(it.timeMark + 60.seconds).hasPassedNow()
-					}
-				}
+			scheduler.schedule(5.minutes, pollingSeconds = 10, repeat = true) {
+				synchronized(recentMessages) {
+					val toRemove = mutableListOf<Snowflake>()
+					recentMessages.forEach { (userId, messages) ->
+						// remove all messages older than 1 minute
+						messages.removeAll {
+							(it.timeMark + 60.seconds).hasPassedNow()
+						}
 
-				// reschedule the callback
-				scheduler.schedule(5.minutes, pollingSeconds = 10, callback = schedulerCallback)
+						if (messages.isEmpty()) {
+							toRemove.add(userId)
+						}
+					}
+
+					toRemove.forEach(recentMessages::remove)
+				}
 			}
-			scheduler.schedule(5.minutes, pollingSeconds = 10, callback = schedulerCallback)
 		}
+		// endregion
+
+		// region limit mentioning
 		if (Module.LIMIT_MENTIONING in enabledModules) {
 			event<MessageCreateEvent> {
 				check { failIfNot(event.message.type in listOf(MessageType.Default, MessageType.Reply)) }
@@ -444,6 +468,9 @@ class ModerationExtension(
 				}
 			}
 		}
+		// endregion
+
+		// region user management
 		if (Module.USER_MANAGEMENT in enabledModules) {
 			ephemeralSlashCommand(::BanArguments) {
 				name = "ban"
@@ -1071,6 +1098,7 @@ class ModerationExtension(
 				}
 			}
 		}
+		// endregion
 
 		logger.info {
 			"Loaded ${slashCommands.size} commands and " +

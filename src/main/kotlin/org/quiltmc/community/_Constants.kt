@@ -112,8 +112,8 @@ internal val MAX_MESSAGES_PER_MINUTE = envOrNull("MAX_MESSAGES_PER_MINUTE")?.toI
 internal val MAX_MESSAGES_PER_SECOND = envOrNull("MAX_MESSAGES_PER_SECOND")?.toInt() ?: 3
 internal val MAX_MENTIONS_PER_MESSAGE = envOrNull("MAX_MENTIONS_PER_MESSAGE")?.toInt() ?: 3
 
-internal val ABSOLUTE_MAX_PER_SECOND = ceil(MAX_MESSAGES_PER_SECOND * 1.5).toInt()
 internal val ABSOLUTE_MAX_PER_MINUTE = ceil(MAX_MESSAGES_PER_MINUTE * 1.5).toInt()
+internal val ABSOLUTE_MAX_PER_SECOND = min(ceil(MAX_MESSAGES_PER_SECOND * 1.5).toInt(), ABSOLUTE_MAX_PER_MINUTE)
 
 internal val GALLERY_CHANNEL = Snowflake(
 	envOrNull("GALLERY_CHANNEL_ID")?.toLong()

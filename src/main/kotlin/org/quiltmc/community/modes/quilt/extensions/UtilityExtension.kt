@@ -93,7 +93,7 @@ val TEXT_CHANNEL_TYPES: Array<ChannelType> = arrayOf(
 	ChannelType.GuildNews,
 )
 
-val STATUS_CHANNEL_ID = envOrNull("STATUS_CHANNEL")
+val HEARTBEAT_CHANNEL_ID = envOrNull("HEARTBEAT_CHANNEL_ID")
 val DELETE_DELAY = 10.seconds
 val MESSAGE_EDIT_DELAY = 3.seconds
 val PIN_DELETE_DELAY = 10.seconds
@@ -128,10 +128,11 @@ class UtilityExtension : Extension() {
 	}
 
 	override suspend fun setup() {
-		if (STATUS_CHANNEL_ID != null) {
+		if (HEARTBEAT_CHANNEL_ID != null) {
 			event<ReadyEvent> {
 				action {
-					val channel = kord.getChannelOf<TextChannel>(Snowflake(STATUS_CHANNEL_ID))
+
+					val channel = kord.getChannelOf<TextChannel>(Snowflake(HEARTBEAT_CHANNEL_ID))
 
 					channel?.createMessage {
 						content = buildString {

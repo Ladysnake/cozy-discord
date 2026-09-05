@@ -4,49 +4,32 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+@file:Suppress("UnusedPrivateProperty")
+
 package org.quiltmc.community.modes.quilt.extensions
 
-import com.kotlindiscord.kord.extensions.DISCORD_BLURPLE
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
 import com.kotlindiscord.kord.extensions.commands.application.slash.publicSubCommand
 import com.kotlindiscord.kord.extensions.commands.converters.impl.*
-import com.kotlindiscord.kord.extensions.extensions.*
-import com.kotlindiscord.kord.extensions.utils.dm
-import com.kotlindiscord.kord.extensions.utils.download
+import com.kotlindiscord.kord.extensions.extensions.Extension
+import com.kotlindiscord.kord.extensions.extensions.publicMessageCommand
+import com.kotlindiscord.kord.extensions.extensions.publicSlashCommand
 import com.kotlindiscord.kord.extensions.utils.getKoin
 import com.kotlindiscord.kord.extensions.utils.suggestIntMap
-import dev.kord.common.entity.ButtonStyle
 import dev.kord.common.entity.ChannelType
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.behavior.UserBehavior
-import dev.kord.core.behavior.channel.asChannelOf
-import dev.kord.core.behavior.channel.asChannelOfOrNull
-import dev.kord.core.behavior.channel.createMessage
-import dev.kord.core.behavior.channel.withTyping
-import dev.kord.core.behavior.edit
-import dev.kord.core.behavior.interaction.respondEphemeral
-import dev.kord.core.behavior.reply
-import dev.kord.core.builder.components.emoji
-import dev.kord.core.entity.ReactionEmoji
-import dev.kord.core.entity.channel.GuildMessageChannel
-import dev.kord.core.entity.channel.TopGuildMessageChannel
-import dev.kord.core.event.interaction.ButtonInteractionCreateEvent
-import dev.kord.rest.builder.message.actionRow
 import dev.kord.rest.builder.message.allowedMentions
 import dev.kord.rest.builder.message.embed
-import io.ktor.client.request.forms.*
-import io.ktor.utils.io.jvm.javaio.*
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import org.koin.core.component.inject
 import org.quiltmc.community.database.collections.LotteryCollection
 import org.quiltmc.community.database.collections.QuoteCollection
-import org.quiltmc.community.database.entities.Lottery
 import org.quiltmc.community.hasBaseModeratorRole
 import org.quiltmc.community.inLadysnakeGuild
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
-import java.io.ByteArrayInputStream
 
 private const val QUOTES_PER_PAGE = 5
 

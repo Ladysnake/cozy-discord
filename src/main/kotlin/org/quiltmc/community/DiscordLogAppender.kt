@@ -19,7 +19,6 @@ import dev.kord.common.annotation.KordExperimental
 import dev.kord.common.annotation.KordUnsafe
 import dev.kord.common.entity.Snowflake
 import dev.kord.core.Kord
-import dev.kord.core.behavior.WebhookBehavior
 import dev.kord.core.behavior.execute
 import dev.kord.rest.builder.message.embed
 import io.github.oshai.kotlinlogging.KotlinLogging

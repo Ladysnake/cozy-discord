@@ -15,7 +15,9 @@ import com.kotlindiscord.kord.extensions.DISCORD_GREEN
 import com.kotlindiscord.kord.extensions.DISCORD_RED
 import com.kotlindiscord.kord.extensions.DiscordRelayedException
 import com.kotlindiscord.kord.extensions.annotations.DoNotChain
-import com.kotlindiscord.kord.extensions.checks.*
+import com.kotlindiscord.kord.extensions.checks.channelType
+import com.kotlindiscord.kord.extensions.checks.isInThread
+import com.kotlindiscord.kord.extensions.checks.isNotBot
 import com.kotlindiscord.kord.extensions.checks.types.CheckContext
 import com.kotlindiscord.kord.extensions.commands.Arguments
 import com.kotlindiscord.kord.extensions.commands.application.slash.ephemeralSubCommand
@@ -35,7 +37,6 @@ import dev.kord.common.annotation.KordPreview
 import dev.kord.common.entity.*
 import dev.kord.core.behavior.channel.*
 import dev.kord.core.behavior.channel.threads.edit
-import dev.kord.core.behavior.createRole
 import dev.kord.core.behavior.edit
 import dev.kord.core.entity.channel.GuildMessageChannel
 import dev.kord.core.entity.channel.MessageChannel
@@ -66,7 +67,6 @@ import org.quiltmc.community.database.entities.OwnedThread
 import org.quiltmc.community.database.entities.PingGroup
 import org.quiltmc.community.database.entities.UserFlags
 import org.quiltmc.community.database.getSettings
-import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionStatus
 import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import java.time.format.DateTimeFormatter
 import kotlin.time.Duration.Companion.INFINITE
@@ -131,7 +131,6 @@ class UtilityExtension : Extension() {
 		if (HEARTBEAT_CHANNEL_ID != null) {
 			event<ReadyEvent> {
 				action {
-
 					val channel = kord.getChannelOf<TextChannel>(Snowflake(HEARTBEAT_CHANNEL_ID))
 
 					channel?.createMessage {

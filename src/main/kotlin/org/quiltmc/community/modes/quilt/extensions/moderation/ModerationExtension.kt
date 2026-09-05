@@ -201,8 +201,7 @@ class ModerationExtension(
 								Please do not spam.
 								""".trimIndent()
 						}
-					}
-					else if (recentMessagesCount > MAX_MESSAGES_PER_MINUTE) {
+					} else if (recentMessagesCount > MAX_MESSAGES_PER_MINUTE) {
 						event.message.delete()
 						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = """
@@ -210,8 +209,7 @@ class ModerationExtension(
 								Please wait a minute before sending another message.
 								""".trimIndent()
 						}
-					}
-					else if (messagesThisSecondCount > MAX_MESSAGES_PER_SECOND) {
+					} else if (messagesThisSecondCount > MAX_MESSAGES_PER_SECOND) {
 						event.message.delete()
 						event.message.author.tryDM(event.getGuildOrNull()) {
 							content = """

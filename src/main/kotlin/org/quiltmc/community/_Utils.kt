@@ -51,7 +51,6 @@ import org.quiltmc.community.database.Database
 import org.quiltmc.community.database.collections.*
 import org.quiltmc.community.database.entities.ServerSettings
 import org.quiltmc.community.database.storage.MongoDBDataAdapter
-import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 

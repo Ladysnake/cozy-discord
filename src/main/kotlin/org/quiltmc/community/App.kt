@@ -5,7 +5,7 @@
  */
 
 // AnnotationOnSeparateLine because detekt is dumb in this specific location for some reason
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "AnnotationOnSeparateLine")
+@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE", "AnnotationOnSeparateLine", "MaxLineLength")
 @file:OptIn(PrivilegedIntent::class)
 
 /*
@@ -46,13 +46,11 @@ import org.quiltmc.community.database.getSettings
 import org.quiltmc.community.logs.WrongLocationMessageSender
 import org.quiltmc.community.modes.quilt.extensions.*
 import org.quiltmc.community.modes.quilt.extensions.filtering.FilterExtension
-import org.quiltmc.community.modes.quilt.extensions.github.GithubExtension
 import org.quiltmc.community.modes.quilt.extensions.minecraft.MinecraftExtension
 import org.quiltmc.community.modes.quilt.extensions.moderation.ModerationExtension
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.ExtraLogExtension
 import org.quiltmc.community.modes.quilt.extensions.rotatinglog.MessageLogExtension
 import org.quiltmc.community.modes.quilt.extensions.settings.SettingsExtension
-import org.quiltmc.community.modes.quilt.extensions.suggestions.SuggestionsExtension
 import kotlin.time.Duration.Companion.minutes
 
 val MODE = envOrNull("MODE")?.lowercase() ?: "ladysnake"
@@ -79,7 +77,7 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	extensions {
 		add(::SettingsExtension) // store global settings in DB
 
-        add(::FilterExtension) // message filters, member filterss
+        add(::FilterExtension) // message filters, member filters
 
         add(::MessageLogExtension) // rotating server logs
         add(::MinecraftExtension) // MC changelogs

@@ -2,7 +2,7 @@ FROM eclipse-temurin:17-jdk-alpine
 
 WORKDIR /bot
 
-VOLUME /data
+RUN mkdir /data
 
 COPY ./build/libs/CozyDiscord-*-all.jar /usr/local/lib/CozyDiscord.jar
 

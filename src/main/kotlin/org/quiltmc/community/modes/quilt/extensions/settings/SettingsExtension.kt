@@ -421,10 +421,6 @@ class SettingsExtension : Extension() {
             }
 
             group("general") {
-                this@SettingsExtension.logger.error {
-					"This shouldn't be required to be in a group! Kordex is a bit funky though"
-                }
-
                 description = "General commands which don't fit in any other category"
 
                 ephemeralSubCommand(::OptionalGuildSnowflakeArg) {

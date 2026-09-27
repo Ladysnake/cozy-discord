@@ -12,11 +12,3 @@ pluginManagement {
 }
 
 rootProject.name = "CozyDiscord"
-
-dependencyResolutionManagement {
-	versionCatalogs {
-		create("libs") {
-			from(files("libs.versions.toml"))
-		}
-	}
-}

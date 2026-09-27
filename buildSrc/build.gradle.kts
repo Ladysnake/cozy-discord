@@ -9,7 +9,7 @@ plugins {
 }
 
 // poor man's version catalog
-val versionFile = project.file("../libs.versions.toml")
+val versionFile = project.file("../gradle/libs.versions.toml")
 val versionFileContents = versionFile.readText()
 
 val versions = versionFileContents

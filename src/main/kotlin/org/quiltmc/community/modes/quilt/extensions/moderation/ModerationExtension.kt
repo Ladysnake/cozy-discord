@@ -633,7 +633,7 @@ class ModerationExtension(
 
 					val reason = "Manual advancement by ${user.mention}: ${arguments.reason}"
 
-					advanceTimeout(member, arguments.reason)
+					advanceTimeout(member, reason)
 
 					respond {
 						content = "Timeout / tempban advanced."

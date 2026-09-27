@@ -82,7 +82,7 @@ configurations.all {
 	resolutionStrategy.dependencySubstitution.all {
 		requested.let {
 			if (it is ModuleComponentSelector && it.group == "dev.kord" && it.version.endsWith("-SNAPSHOT")) {
-				useTarget("${it.group}:${it.module}:${it.version.removeSuffix("-SNAPSHOT")}")
+				useTarget("${it.group}:${it.module}:0.14.0")
 			}
 		}
 	}

@@ -91,6 +91,7 @@ dependencies {
 	implementation(libs.ktor.core)
 	implementation(libs.ktor.encoding)
 	implementation(libs.ktor.content.negotiation)
+	implementation(libs.ktor.ser.json)
 
 //	implementation(project(":module-log-parser"))
 //	implementation(project(":module-welcome"))

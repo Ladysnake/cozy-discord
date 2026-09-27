@@ -177,9 +177,7 @@ suspend fun ExtensibleBotBuilder.database(migrate: Boolean = false) {
             }
 
 			if (migrate) {
-				runBlocking {
-					db.migrate()
-				}
+				db.migrate()
 			}
 		}
 	}

@@ -233,7 +233,6 @@ suspend fun setupLadysnake() = ExtensibleBot(DISCORD_TOKEN) {
 	}
 }
 
-@Suppress("UseIfInsteadOfWhen") // currently only one mode but that could change
 suspend fun main() {
 	return when (MODE) {
 		"ladysnake" -> setupLadysnake().start()

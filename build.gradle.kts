@@ -88,6 +88,7 @@ dependencies {
 	implementation(libs.graphql)
 	implementation(libs.scrimage)
 
+	implementation(libs.ktor.core)
 	implementation(libs.ktor.encoding)
 	implementation(libs.ktor.content.negotiation)
 

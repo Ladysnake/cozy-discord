@@ -55,7 +55,6 @@ allprojects {
 }
 
 dependencies {
-	implementation("io.ktor:ktor-client-encoding:2.2.4")
 	detektPlugins(libs.detekt)
 	detektPlugins(libs.detekt.libraries)
 
@@ -88,6 +87,9 @@ dependencies {
 	implementation(libs.kx.ser)
 	implementation(libs.graphql)
 	implementation(libs.scrimage)
+
+	implementation(libs.ktor.encoding)
+	implementation(libs.ktor.content.negotiation)
 
 //	implementation(project(":module-log-parser"))
 //	implementation(project(":module-welcome"))

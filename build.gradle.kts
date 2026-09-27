@@ -48,8 +48,8 @@ allprojects {
 		}
 
 		maven {
-			name = "JitPack"
-			url = uri("https://jitpack.io")
+			name = "Up-Mods"
+			url = uri("https://maven.uuid.gg/releases")
 		}
 	}
 }

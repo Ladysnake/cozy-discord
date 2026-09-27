@@ -42,6 +42,7 @@ import dev.kord.rest.builder.component.TextInputBuilder
 import dev.kord.rest.builder.interaction.ModalBuilder
 import dev.kord.rest.builder.message.EmbedBuilder
 import dev.kord.rest.request.RestRequestException
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -53,12 +54,11 @@ import org.quiltmc.community.database.storage.MongoDBDataAdapter
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
-@Suppress("MagicNumber")  // It's the status code...
 suspend fun Kord.getGuildIgnoring403(id: Snowflake) =
 	try {
 		getGuildOrNull(id)
 	} catch (e: RestRequestException) {
-		if (e.status.code != 403) {
+		if (e.status.code != HttpStatusCode.Forbidden.value) {
 			throw (e)
 		}
 
